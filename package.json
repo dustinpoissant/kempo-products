@@ -1,0 +1,35 @@
+{
+  "name": "kempo-products",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A product catalog for kempo cms: browse, filter and inquire about products, with no checkout required",
+  "license": "MIT",
+  "author": "Dustin Poissant",
+  "type": "module",
+  "main": "sdk.js",
+  "scripts": {
+    "test": "kempo-test -l minimal",
+    "link:local": "npm install ../kempo ../kempo-server ../kempo-ui --no-save --no-legacy-peer-deps --force"
+  },
+  "kempo": {
+    "public-scope": "products"
+  },
+  "exports": {
+    "./install": "./install.js",
+    "./update": "./update.js",
+    "./uninstall": "./uninstall.js",
+    "./sdk": "./sdk.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dustinpoissant/kempo-products.git"
+  },
+  "peerDependencies": {
+    "kempo": ">=4.3.0",
+    "kempo-server": ">=3.4.0",
+    "kempo-ui": ">=0.5.0"
+  },
+  "devDependencies": {
+    "kempo-testing-framework": "^1.4.11"
+  }
+}
