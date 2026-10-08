@@ -1,5 +1,87 @@
 {
   "docs": "https://github.com/dustinpoissant/kempo-products#readme",
   "git": "https://github.com/dustinpoissant/kempo-products",
-  "public-scope": "products"
+  "public-scope": "products",
+  "schema": "./server/db/schema.js",
+  "permissions": [
+    {
+      "name": "products:read",
+      "description": "See draft and archived products, stock levels and purchases in the admin"
+    },
+    {
+      "name": "products:create",
+      "description": "Add new products"
+    },
+    {
+      "name": "products:update",
+      "description": "Edit products, including their price, options and stock"
+    },
+    {
+      "name": "products:delete",
+      "description": "Delete products"
+    },
+    {
+      "name": "products:types:manage",
+      "description": "Create, edit and delete product types and the custom fields they have"
+    },
+    {
+      "name": "products:purchases:record",
+      "description": "Record a purchase made elsewhere, and reverse one"
+    }
+  ],
+  "settings": [
+    {
+      "name": "currency",
+      "value": "usd",
+      "type": "string",
+      "description": "The three-letter currency code prices are shown in, e.g. usd, eur, gbp"
+    },
+    {
+      "name": "prices_visible",
+      "value": "true",
+      "type": "boolean",
+      "description": "Show prices to visitors. Turn off to run a catalog that never shows what things cost"
+    },
+    {
+      "name": "page_size",
+      "value": "24",
+      "type": "number",
+      "description": "How many products the public product list shows per page"
+    }
+  ],
+  "groups": [
+    {
+      "name": "kempo-products:viewer",
+      "description": "Can see everything in the catalog, including drafts, but not change it",
+      "permissions": [
+        "system:admin:access",
+        "products:read"
+      ]
+    },
+    {
+      "name": "kempo-products:manager",
+      "description": "Can add, edit and delete products and record purchases",
+      "permissions": [
+        "system:admin:access",
+        "products:read",
+        "products:create",
+        "products:update",
+        "products:delete",
+        "products:purchases:record"
+      ]
+    },
+    {
+      "name": "kempo-products:admin",
+      "description": "Can manage products, and set up the product types and fields they have",
+      "permissions": [
+        "system:admin:access",
+        "products:read",
+        "products:create",
+        "products:update",
+        "products:delete",
+        "products:purchases:record",
+        "products:types:manage"
+      ]
+    }
+  ]
 }

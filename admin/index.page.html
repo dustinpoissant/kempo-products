@@ -1,0 +1,162 @@
+<!--
+locked: true
+-->
+<page title="Products - Admin">
+<content>
+  <script type="module" src="/kempo-ui/components/Table.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcSearch.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcFilters.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcFieldSortHide.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcFirstPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPrevPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcNextPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcLastPage.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPageSelect.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcPageSize.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcDeleteRecord.js"></script>
+  <script type="module" src="/kempo-ui/components/Icon.js"></script>
+  <script type="module" src="/kempo/components/Permission.js"></script>
+  <script type="module" src="/products/components/RowAction.js"></script>
+
+  <h1 class="mb">Products</h1>
+
+  <k-table
+    id="productsTable"
+    enable-pages
+    page-size="25"
+    page-size-options="[10,25,50,100]"
+    placeholder="No products yet."
+    filtered-placeholder="No products match your search."
+  >
+    <div slot="top" class="d-f full" style="align-items: center; gap: var(--spacer_h); flex-wrap: wrap;">
+      <kc-tc-search style="width: 16rem"></kc-tc-search>
+      <kc-tc-filters></kc-tc-filters>
+      <kc-tc-field-sort-hide></kc-tc-field-sort-hide>
+      <div class="flex"></div>
+      <k-permission has="products:purchases:record">
+        <a href="/admin/extension/kempo-products/purchases" class="btn"><k-icon name="repeat"></k-icon> Purchases</a>
+      </k-permission>
+      <k-permission has="products:types:manage">
+        <a href="/admin/extension/kempo-products/types" class="btn"><k-icon name="folder"></k-icon> Types</a>
+      </k-permission>
+      <k-permission has="products:types:manage">
+        <a href="/admin/extension/kempo-products/fields" class="btn"><k-icon name="settings"></k-icon> Fields</a>
+      </k-permission>
+      <k-permission has="products:create">
+        <a href="/admin/extension/kempo-products/new" class="btn primary" id="newProductBtn"><k-icon name="add"></k-icon> New Product</a>
+      </k-permission>
+    </div>
+    <div class="d-f full" style="align-items: center;">
+      <div>
+        <kc-tc-first-page></kc-tc-first-page>
+        <kc-tc-prev-page></kc-tc-prev-page>
+        <kc-tc-next-page></kc-tc-next-page>
+        <kc-tc-last-page></kc-tc-last-page>
+      </div>
+      <div class="flex"></div>
+      <div><kc-tc-page-select></kc-tc-page-select></div>
+      <div class="flex"></div>
+      <div><kc-tc-page-size></kc-tc-page-size></div>
+    </div>
+  </k-table>
+
+  <script type="module">
+    import { getConfig, getProducts, getTypes, deleteProduct, displayMoney } from '/products/sdk.js';
+    import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
+    import Toast from '/kempo-ui/components/Toast.js';
+    import Dialog from '/kempo-ui/components/Dialog.js';
+    import { showFlash } from '/products/components/ProductForm.js';
+
+    await window.customElements.whenDefined('k-table');
+    const $table = document.getElementById('productsTable');
+
+    const [, permData] = await getAllCurrentUserPermissions();
+    const myPerms = new Set(permData?.permissions ?? []);
+    const can = name => myPerms.has(`products:${name}`);
+
+    const addControl = (tag, slot, attributes = {}) => {
+      const $control = document.createElement(tag);
+      $control.setAttribute('slot', slot);
+      for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
+      $table.appendChild($control);
+    };
+    addControl('k-prod-row-action', 'before', { action: 'view', icon: 'show', title: 'View on the site' });
+    if(can('update')) addControl('k-prod-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    if(can('delete')){
+      $table.setAttribute('request-delete', '');
+      addControl('kc-tc-delete-record', 'after');
+    }
+
+    const [, config] = await getConfig();
+    const [, typeData] = await getTypes();
+    const typeNames = Object.fromEntries((typeData?.types ?? []).map(type => [type.key, type.name]));
+
+    /* Display-only values are precomputed as plain strings so the table never formats user-supplied text itself. */
+    const decorate = product => ({
+      ...product,
+      typeText: typeNames[product.type] ?? '',
+      statusText: product.status[0].toUpperCase() + product.status.slice(1),
+      availabilityText: product.availability[0].toUpperCase() + product.availability.slice(1),
+      priceText: product.price === null ? (product.priceLabel || '') : displayMoney(product.price, config.currency, config.decimals),
+      stockText: product.stock === -1 ? 'Unlimited' : String(product.stock),
+      tagsText: product.tags.join(', '),
+      managedText: product.managedBy || product.owner,
+    });
+
+    const columns = products => [
+      { name: 'name', label: 'Name', size: 240, editable: false },
+      { name: 'typeText', label: 'Type', size: 130, editable: false },
+      { name: 'statusText', label: 'Status', size: 100, editable: false },
+      { name: 'availabilityText', label: 'Availability', size: 120, editable: false },
+      { name: 'priceText', label: 'Price', size: 110, editable: false },
+      { name: 'stockText', label: 'Stock', size: 100, editable: false },
+      { name: 'tagsText', label: 'Tags', size: 160, editable: false },
+      ...(products.some(product => product.managedBy || product.owner) ? [{ name: 'managedText', label: 'Managed by', size: 170, editable: false }] : []),
+    ];
+
+    /* The table searches, filters and pages the records itself, so every product is loaded (200 at a time). */
+    const load = async () => {
+      const products = [];
+      for(let offset = 0; ; offset += 200){
+        const [error, page] = await getProducts({ limit: 200, offset });
+        if(error){
+          Toast.error(error.msg || 'Failed to load products');
+          return;
+        }
+        products.push(...page.items);
+        if(!page.items.length || products.length >= page.total) break;
+      }
+      $table.setData({ records: products.map(decorate), fields: columns(products) });
+    };
+
+    $table.addEventListener('requestDelete', ({ detail: { records, approve, reject } }) => {
+      const [record] = records;
+      if(record.owner){
+        reject();
+        Toast.error(`"${record.name}" is managed by the ${record.owner} extension and cannot be deleted here`);
+        return;
+      }
+      Dialog.confirm(`Delete "${record.name}"? This action cannot be undone.`, async confirmed => {
+        if(!confirmed){ reject(); return; }
+        const [error] = await deleteProduct(record.id);
+        if(error){
+          reject();
+          Toast.error(error.msg || 'Failed to delete product');
+          return;
+        }
+        approve();
+        Toast.success('Product deleted');
+        load();
+      });
+    });
+
+    $table.addEventListener('productAction', ({ detail: { action, record } }) => {
+      if(action === 'edit') location.href = `/admin/extension/kempo-products/edit?id=${encodeURIComponent(record.id)}`;
+      if(action === 'view') window.open(`/products/${encodeURIComponent(record.slug)}/`, '_blank');
+    });
+
+    await load();
+    showFlash();
+  </script>
+</content>
+</page>

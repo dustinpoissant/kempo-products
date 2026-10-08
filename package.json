@@ -5,10 +5,18 @@
   "description": "A product catalog for kempo cms: browse, filter and inquire about products, with no checkout required",
   "license": "MIT",
   "author": "Dustin Poissant",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dustinpoissant/kempo-products.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dustinpoissant/kempo-products/issues"
+  },
+  "homepage": "https://github.com/dustinpoissant/kempo-products#readme",
   "type": "module",
   "main": "sdk.js",
   "scripts": {
-    "test": "kempo-test -l minimal",
+    "test": "node --test",
     "link:local": "npm install ../kempo ../kempo-server ../kempo-ui --no-save --no-legacy-peer-deps --force"
   },
   "kempo": {
@@ -17,19 +25,33 @@
   "exports": {
     "./install": "./install.js",
     "./update": "./update.js",
-    "./uninstall": "./uninstall.js",
     "./sdk": "./sdk.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dustinpoissant/kempo-products.git"
+  "files": [
+    "admin",
+    "public",
+    "server",
+    "install.js",
+    "update.js",
+    "sdk.js",
+    "kempo-config.json"
+  ],
+  "dependencies": {
+    "drizzle-orm": "^0.45.2"
   },
   "peerDependencies": {
     "kempo": ">=4.3.0",
+    "kempo-media": ">=0.2.3",
     "kempo-server": ">=3.4.0",
     "kempo-ui": ">=0.5.0"
   },
+  "peerDependenciesMeta": {
+    "kempo-media": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "kempo-testing-framework": "^1.4.11"
+    "drizzle-kit": "^0.31.10",
+    "postgres": "^3.4.9"
   }
 }
