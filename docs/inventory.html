@@ -27,8 +27,8 @@
     <button id="toggleNavSideMenu" class="link" aria-label="Menu">
       <k-icon name="menu"></k-icon>
     </button>
-    <a href="./" class="d-if ph">
-      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
       Kempo Products
     </a>
     <a href="./components.html" class="m-d-n">Components</a>
@@ -143,26 +143,23 @@
     <p>If you make what you sell, the materials are what run out, not the products. <a href="https://github.com/dustinpoissant/kempo-products-inventory" target="_blank">kempo-products-inventory</a> connects this catalog to <a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">kempo-inventory</a>: sell a model car and the resin, paint and filament it is made from come out of stock automatically, and every product that can no longer be made goes out of stock with it.</p>
     <p>Neither extension needs the other. Install the connector when you use both. Kempo will not enable it until both are installed.</p>
 
-    <h2 id="made-from">Telling it what a product is made from</h2>
-    <p>Open a product and use the <strong>Made from</strong> panel. Each row is an inventory item, how much of it one unit uses, and, optionally, which choice of an option it is for:</p>
-    <div class="table-wrapper">
-      <table>
-        <thead><tr><th>Product</th><th>Material</th><th>Per unit</th><th>Used</th></tr></thead>
-        <tbody>
-          <tr><td>Model car</td><td>Black resin</td><td>175</td><td>always</td></tr>
-          <tr><td>Model car</td><td>TPU filament</td><td>12</td><td>always</td></tr>
-          <tr><td>Model car</td><td>Red paint</td><td>20</td><td>only with Color: Red</td></tr>
-          <tr><td>Model car</td><td>Blue paint</td><td>20</td><td>only with Color: Blue</td></tr>
-          <tr><td>Keychain</td><td>Black resin</td><td>35</td><td>always</td></tr>
-        </tbody>
-      </table>
+    <h2 id="made-from" class="mt">Telling it what a product is made from</h2>
+    <p>Open a product and use the <strong>Made from</strong> panel, which sits above the Save button. Each row is an inventory item, how much of it one unit uses, and, optionally, which choice of an option it is for.</p>
+    <div class="mb">
+      <img src="./media/admin-made-from.png" alt="The Made from panel on the 1969 Camaro's product form, with the options above it. Four materials are listed: TPU filament (12), Blue paint (20, only with Color: Blue), Red paint (20, only with Color: Red) and Black resin (175)." class="full b r" />
+      <small class="d-b tc-muted">The Made from panel. This car always uses 175 of resin and 12 of TPU, and 20 of red or blue paint depending on the colour chosen. Each row shows how much of that material is in stock.</small>
     </div>
     <p>Inventory counts whole numbers with no unit, so keep stock in grams and millilitres: <code>175</code>, not <code>0.175</code> kilograms.</p>
+    <p>Notice the option panel above it: the <strong>Blue</strong> choice is unticked because there is not enough blue paint for one more car. The connector did that, and it also made the product's stock read-only, because inventory now decides it.</p>
 
-    <h3>Selling a piece you already made</h3>
+    <h3 class="mt">Selling a piece you already made</h3>
     <p>Open the item in the inventory admin and choose <strong>Make product from this item</strong>. The new product form opens with the name filled in and the item already listed as its material, one for one, so the product's stock is the item's quantity. Fill in the price and the rest, and save.</p>
+    <div class="mb">
+      <img src="./media/admin-inventory-item.png" alt="An inventory item's page, with a Products panel under the form listing the products that use it and a Make product from this item button." class="full b r" />
+      <small class="d-b tc-muted">The panel the connector adds to every inventory item's page. It also lists the products already made from the item.</small>
+    </div>
 
-    <h2 id="selling">What happens when it sells</h2>
+    <h2 id="selling" class="mt">What happens when it sells</h2>
     <ul>
       <li><strong>Selling takes the materials.</strong> When a purchase is recorded, 175 g of resin, 12 g of TPU and 20 ml of the colour that was bought are taken from inventory, all together or not at all. Each inventory movement carries the order reference.</li>
       <li><strong>Stock follows the materials.</strong> A product's stock is how many can be made from what is on hand, limited by the scarcest material. A colour is marked sold out when there is not enough of its paint for one more.</li>
@@ -170,11 +167,15 @@
       <li><strong>Reversing a purchase puts back exactly what it took</strong>, even if the materials were edited since.</li>
     </ul>
 
-    <h2 id="shared">Products that share materials</h2>
+    <h2 id="shared" class="mt">Products that share materials</h2>
     <p>With 300 g of PLA and two products that each need 200 g, both show one in stock. When one sells, 100 g is left, which is not enough for either, so <strong>both</strong> go out of stock. Neither product has to know about the other: the connector recalculates every product made from a material whenever that material changes.</p>
 
-    <h2 id="problems">When it goes wrong</h2>
+    <h2 id="problems" class="mt">When it goes wrong</h2>
     <p>Normally nothing does, because a product refuses to sell more than it thinks it can make. But if stock was changed behind the system's back, for example directly in the database, the materials for a purchase may not be there. The purchase stands, because it already happened. The connector records a <strong>problem</strong> with the order reference on the <strong>Product Stock</strong> admin page, and recalculates the affected products so they show what is really left. <strong>Recalculate everything</strong> on that page is the repair tool.</p>
+    <div class="mb">
+      <img src="./media/admin-product-stock.png" alt="The Product Stock admin page: a Recalculate everything button and a table of linked products with how many can be made and what each is made from." class="full b r" />
+      <small class="d-b tc-muted">The Product Stock page lists everything that is linked and how many of each can be made. Anything that needs attention appears above the table.</small>
+    </div>
     <p>An inventory item that products are made from cannot be deleted until it is removed from them.</p>
     <p>A product made from inventory shows its stock as read-only in the products admin, with the connector's name, so an edit there cannot be silently overwritten. To change it, change the inventory, or remove the product's materials to hand it back.</p>
   

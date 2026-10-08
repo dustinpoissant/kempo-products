@@ -27,8 +27,8 @@
     <button id="toggleNavSideMenu" class="link" aria-label="Menu">
       <k-icon name="menu"></k-icon>
     </button>
-    <a href="./" class="d-if ph">
-      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
       Kempo Products
     </a>
     <a href="./components.html" class="m-d-n">Components</a>
@@ -146,10 +146,10 @@
   <span class="hljs-attr">&quot;hooks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;kempo-products:purchase:recorded&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/purchase-recorded.js&quot;</span> <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre>
 
-    <h2 id="sdk">Server SDK</h2>
+    <h2 id="sdk" class="mt">Server SDK</h2>
     <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getProducts, createProduct, setStock, recordPurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;</code></pre>
     <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
         <tbody>
@@ -169,7 +169,7 @@
       </table>
     </div>
 
-    <h2 id="register">Shipping a type and its fields</h2>
+    <h2 id="register" class="mt">Shipping a type and its fields</h2>
     <p>An extension can arrive with a ready-made type, so a "vehicles" extension comes with a Vehicle type already set up. <code>registerType</code> and <code>registerFields</code> are safe to call again on every update:</p>
     <pre><code class="hljs javascript"><span class="hljs-comment">// install.js</span>
 <span class="hljs-keyword">import</span> { registerType, registerFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
@@ -190,9 +190,9 @@
   <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterTypes</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>);
 };</code></pre>
 
-    <h2 id="ownership">Ownership</h2>
+    <h2 id="ownership" class="mt">Ownership</h2>
     <p>Types, fields and products can each belong to an extension. The owner alone can delete them or change what defines them, and people can still edit everything else, so an extension's products stay useful in the admin.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th></th><th>Only the owner can</th><th>Anyone with the permission can still</th></tr></thead>
         <tbody>
@@ -204,11 +204,11 @@
     </div>
     <p>Ownership only comes from the server SDK: pass your extension's name as <code>owner</code>. The HTTP routes never read an owner from a request, so it cannot be claimed from a browser.</p>
 
-    <h2 id="hooks">Hooks</h2>
+    <h2 id="hooks" class="mt">Hooks</h2>
     <p>Declare them in your <code>kempo-config.json</code> <code>hooks</code>. Every payload carries <code>actor</code>: the extension that made the change, or <code>''</code> for a person using the admin.</p>
-    <h3>Guards</h3>
+    <h3 class="mt">Guards</h3>
     <p>Guards run before the work. Edit the payload object in place to change what is saved, or <code>throw { code, msg }</code> to refuse; the caller receives exactly that error. Everything is validated after the guards run, so a guard cannot sneak in a value that would not otherwise be accepted.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Event</th><th>Payload</th></tr></thead>
         <tbody>
@@ -220,9 +220,9 @@
         </tbody>
       </table>
     </div>
-    <h3>Notifications</h3>
+    <h3 class="mt">Notifications</h3>
     <p>Notifications run after the change is committed. Nothing they do can undo it.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Event</th><th>Payload</th></tr></thead>
         <tbody>
@@ -237,9 +237,9 @@
     </div>
     <p>Handlers run one at a time in the order they were registered, and are awaited, so a slow one holds up the request that triggered it. A notification handler that throws is logged and does not stop the others.</p>
 
-    <h2 id="panels">Adding to the pages</h2>
+    <h2 id="panels" class="mt">Adding to the pages</h2>
     <p>A page cannot define a <code>&lt;location&gt;</code> of its own, so extensions add to products' pages through <strong>fragments</strong>: a file named after a fragment the page includes, in your own package, which kempo picks up without any registration.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Fragment</th><th>Where it appears</th><th>Put it in</th></tr></thead>
         <tbody>
@@ -250,7 +250,7 @@
       </table>
     </div>
     <p>A fragment has one winner, chosen by an optional <code>priority</code> on its wrapper, so use one that is specific to your extension. The admin form also tells a panel what is going on:</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Event on the form</th><th>When</th><th><code>event.detail</code></th></tr></thead>
         <tbody>

@@ -1,7 +1,7 @@
 <page pageName="Components" title="Components - Kempo Products">
   <content>
     <p>kempo-products gives you ready-made components to show products anywhere on a site: a home page, a landing page, a blog post. They are ordinary HTML elements, so you use them by adding two things to a page: a <code>&lt;script&gt;</code> that loads the component, and the element itself.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Element</th><th>Shows</th></tr></thead>
         <tbody>
@@ -13,7 +13,7 @@
     </div>
     <p>Only published products ever show. A draft or archived product is never public, whatever you put in an attribute.</p>
 
-    <h2 id="home-page">Featured products on your home page</h2>
+    <h2 id="home-page" class="mt">Featured products on your home page</h2>
     <p>Open your home page (<code>public/index.page.html</code>, or <strong>Admin &gt; Content &gt; Pages</strong>) and add this where you want the products:</p>
     <pre><code class="language-html">&lt;script type="module" src="/products/components/ProductList.js"&gt;&lt;/script&gt;
 
@@ -27,12 +27,17 @@
       <li><code>no-url</code> stops the list reading or writing the page's address (see <a href="#two-lists">two lists on one page</a>).</li>
     </ul>
 
-    <h2 id="k-prod-list">&lt;k-prod-list&gt;</h2>
+    <h2 id="k-prod-list" class="mt">&lt;k-prod-list&gt;</h2>
     <p>Every attribute is optional. With none, it is the full catalog with a search box, filters and paging, which is what <code>/products/</code> shows.</p>
 
-    <h3 id="choosing">Choosing which products</h3>
+    <div class="mb">
+      <img src="./media/public-list.png" alt="The full catalog list: a search box, type and sort drop-downs, and a grid of product cards." class="full b r" />
+      <small class="d-b tc-muted">A <code>&lt;k-prod-list&gt;</code> with no attributes: search, filters, sorting and a grid of products.</small>
+    </div>
+
+    <h3 id="choosing" class="mt">Choosing which products</h3>
     <p>These are fixed: a visitor cannot change them, so they decide what the list can ever contain. Use as many together as you like; a product must match all of them.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Attribute</th><th>Shows only</th><th>Example</th></tr></thead>
         <tbody>
@@ -47,9 +52,9 @@
     </div>
     <p>A product's slug is its address: it is the last part of <code>/products/1969-camaro/</code>, and you can see and change it in the product form.</p>
 
-    <h3 id="start-state">Where it starts</h3>
+    <h3 id="start-state" class="mt">Where it starts</h3>
     <p>These set the starting point. Visitors can change them with the controls, unless you hide the controls.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Attribute</th><th>Sets</th><th>Values</th></tr></thead>
         <tbody>
@@ -60,8 +65,8 @@
     </div>
     <p>With <code>slugs</code> and no <code>sort</code>, products come in the order you listed them. Give a <code>sort</code> and that order wins instead.</p>
 
-    <h3 id="look">How it looks</h3>
-    <div class="table-wrapper">
+    <h3 id="look" class="mt">How it looks</h3>
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Attribute</th><th>Effect</th></tr></thead>
         <tbody>
@@ -74,7 +79,7 @@
     </div>
     <p><code>limit</code> and <code>page-size</code> do different jobs. <code>limit="4"</code> is "only ever four". <code>page-size="12"</code> is "twelve at a time, with buttons for the rest".</p>
 
-    <h3 id="recipes">Recipes</h3>
+    <h3 id="recipes" class="mt">Recipes</h3>
     <p>Each of these is one line.</p>
     <pre><code class="language-html">&lt;!-- The newest six, as a strip on the home page --&gt;
 &lt;k-prod-list sort="newest" limit="6" hide-controls no-url&gt;&lt;/k-prod-list&gt;
@@ -100,12 +105,12 @@
 &lt;!-- The whole catalog, which is what /products/ is --&gt;
 &lt;k-prod-list&gt;&lt;/k-prod-list&gt;</code></pre>
 
-    <h3 id="two-lists">Two lists on one page</h3>
+    <h3 id="two-lists" class="mt">Two lists on one page</h3>
     <p>Without <code>no-url</code>, a list keeps what it is searching and filtering in the page's address (<code>/products/?q=camaro&amp;sort=price-asc</code>), so a filtered list can be bookmarked and survives a refresh. That is right for a page that is only the catalog. But on a page with a list among other things, or with two lists, they would all read and rewrite the same address and fight over it. Put <code>no-url</code> on any list that is not the page's main content.</p>
 
-    <h3 id="address">What the address does on a catalog page</h3>
+    <h3 id="address" class="mt">What the address does on a catalog page</h3>
     <p>On <code>/products/</code>, or any page with a <code>&lt;k-prod-list&gt;</code> that has no <code>no-url</code>, these work in the address:</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Address</th><th>Does</th></tr></thead>
         <tbody>
@@ -120,14 +125,14 @@
     <p>So a link such as <code>/products/?type=model-car&amp;f.scale=1:18&amp;sort=price-asc</code> is a good thing to put in a menu.</p>
     <p>Only choice-list fields that you marked <strong>Visitors can filter by this</strong> get a filter drop-down. Text, number and other fields can be matched with the <code>filters</code> attribute (an exact match), but they have no drop-down.</p>
 
-    <h3>Anything that goes wrong</h3>
+    <h3 class="mt">Anything that goes wrong</h3>
     <ul>
       <li>A <code>filters</code> attribute that is not valid JSON is ignored and a warning is written to the browser console. It is the most common mistake: the attribute needs single quotes outside and double quotes inside, <code>filters='{"scale":"1:18"}'</code>.</li>
       <li>A slug that does not exist is simply left out.</li>
       <li>A list with nothing to show says "No products found."</li>
     </ul>
 
-    <h2 id="k-prod-card">&lt;k-prod-card&gt;</h2>
+    <h2 id="k-prod-card" class="mt">&lt;k-prod-card&gt;</h2>
     <p>One product as a card: its first picture, name and price, linked to its page, with a "Sold", "Sale pending" or "Out of stock" badge when it is not for sale. <code>&lt;k-prod-list&gt;</code> is made of these.</p>
     <p>It is given data and not a name, so you use it from a script. This is for when you want your own layout:</p>
     <pre><code class="language-html">&lt;script type="module"&gt;
@@ -145,7 +150,7 @@
   }
 &lt;/script&gt;
 &lt;div id="picks" class="d-f"&gt;&lt;/div&gt;</code></pre>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Property</th><th>Is</th></tr></thead>
         <tbody>
@@ -158,13 +163,13 @@
     </div>
     <p>A card has a slot named <code>actions</code> under the price, for a button an extension adds, such as add to cart.</p>
 
-    <h2 id="k-prod-detail">&lt;k-prod-detail&gt;</h2>
+    <h2 id="k-prod-detail" class="mt">&lt;k-prod-detail&gt;</h2>
     <p>A product's page. The <code>/products/&lt;slug&gt;/</code> page is this and little else.</p>
     <pre><code class="language-html">&lt;script type="module" src="/products/components/ProductDetail.js"&gt;&lt;/script&gt;
 &lt;k-prod-detail slug="1969-camaro"&gt;&lt;/k-prod-detail&gt;</code></pre>
     <p>Without <code>slug</code> it uses the last part of the page's address, which is how <code>/products/1969-camaro/</code> works.</p>
     <p>It shows the pictures, the name and price, the options a buyer chooses, the description and the product's details. As options are chosen it writes them into the address (<code>?color=red&amp;clear-coat=no</code>), so a shared link opens with the same choices, and it asks the server for the price each time so the number shown is the number that would be charged. A choice that does not exist or is sold out in the address is ignored.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Event</th><th>When</th><th><code>event.detail</code></th></tr></thead>
         <tbody>
@@ -175,7 +180,7 @@
     <p>An extension that adds a buy button listens for <code>selection-change</code> to know what is selected. The slots are <code>actions</code> (under the options, for that button) and <code>extra</code> (under the description).</p>
     <p>The page also writes a meta description and schema.org <code>Product</code> data (price, picture and availability) for search engines.</p>
 
-    <h2 id="sdk">Building your own</h2>
+    <h2 id="sdk" class="mt">Building your own</h2>
     <p>The components are built on a small browser SDK, which is also what you use for anything custom. Import it from any page on the site:</p>
     <pre><code class="language-js">import { getConfig, getProducts, getProduct, getPrice, displayMoney } from '/products/sdk.js';
 
@@ -183,8 +188,8 @@ const [error, data] = await getProducts({ tag: 'featured', sort: 'price-asc', li
 // data.items, data.total, data.images (a map of picture id to its path and thumbnail)</code></pre>
     <p>Every call resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
 
-    <h3>getProducts(params)</h3>
-    <div class="table-wrapper">
+    <h3 class="mt">getProducts(params)</h3>
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Parameter</th><th>Does</th></tr></thead>
         <tbody>
@@ -202,7 +207,7 @@ const [error, data] = await getProducts({ tag: 'featured', sort: 'price-asc', li
     </div>
     <p>It always returns published products only, to visitors. (A signed-in person who can manage the catalog may also pass <code>status</code> to see drafts, which is what the admin uses.) What comes back never includes the exact stock count, only whether a product is <code>inStock</code>, and no price when the site hides prices.</p>
 
-    <h3>Showing a price</h3>
+    <h3 class="mt">Showing a price</h3>
     <p>Prices are whole numbers of the smallest unit: <code>4999</code> is $49.99. Do not do the arithmetic yourself:</p>
     <pre><code class="language-js">const [, config] = await getConfig();
 displayMoney(4999, config.currency, config.decimals);   // "$49.99"</code></pre>
@@ -210,10 +215,10 @@ displayMoney(4999, config.currency, config.decimals);   // "$49.99"</code></pre>
     <pre><code class="language-js">const [, { price }] = await getPrice('1969-camaro', { color: 'gold', 'clear-coat': 'no' });
 price.unit;   // 5249, in the smallest unit</code></pre>
 
-    <h3>The same thing over HTTP</h3>
+    <h3 class="mt">The same thing over HTTP</h3>
     <p>Everything above is <code>GET /products/api/products</code> with the same parameters in the query string, for example <code>/products/api/products?tag=featured&amp;sort=price-asc&amp;limit=8</code>. The <a href="./reference.html#api">reference</a> lists every route.</p>
 
-    <h2 id="styling">Styling</h2>
+    <h2 id="styling" class="mt">Styling</h2>
     <p>The components use the site's kempo-css theme (its colours, spacing and radius), so they follow your site's look, and dark mode, without extra work. They are built with shadow DOM, which keeps a page's own CSS from breaking them, but it also means a page's CSS cannot restyle their insides. To go beyond what the theme gives you, build your own markup from the SDK as in <a href="#sdk">Building your own</a>.</p>
     <p>The product grid fits as many columns as there is room for, with cards at least 15rem wide.</p>
   </content>

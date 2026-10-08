@@ -27,8 +27,8 @@
     <button id="toggleNavSideMenu" class="link" aria-label="Menu">
       <k-icon name="menu"></k-icon>
     </button>
-    <a href="./" class="d-if ph">
-      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
       Kempo Products
     </a>
     <a href="./components.html" class="m-d-n">Components</a>
@@ -140,9 +140,9 @@
   <main>
     <h1>Reference</h1>
     
-    <h2 id="api">HTTP API</h2>
+    <h2 id="api" class="mt">HTTP API</h2>
     <p>JSON routes under <code>/products/api/</code>. Reads are public: they return published products only, with no exact stock count, no owner details, and no prices when <code>prices_visible</code> is off. Everything that changes something needs the permission shown.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Route</th><th>Permission</th><th>Purpose</th></tr></thead>
         <tbody>
@@ -164,8 +164,8 @@
     </div>
     <p>A person who holds <code>products:read</code> also sees drafts, archived products and exact stock from the read routes. The same calls are available in the browser as <a href="./components.html#sdk">the SDK</a> at <code>/products/sdk.js</code>.</p>
 
-    <h2 id="permissions">Permissions and groups</h2>
-    <div class="table-wrapper">
+    <h2 id="permissions" class="mt">Permissions and groups</h2>
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Permission</th><th>Allows</th></tr></thead>
         <tbody>
@@ -177,7 +177,7 @@
       </table>
     </div>
     <p>Published products need no permission to see. Three groups are provided, each of which also lets its members into the admin:</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Group</th><th>Can</th></tr></thead>
         <tbody>
@@ -188,9 +188,9 @@
       </table>
     </div>
 
-    <h2 id="settings">Settings</h2>
+    <h2 id="settings" class="mt">Settings</h2>
     <p>Under <strong>Admin &gt; Settings</strong>.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Setting</th><th>Default</th><th>Meaning</th></tr></thead>
         <tbody>
@@ -201,7 +201,7 @@
       </table>
     </div>
 
-    <h2 id="money">Money</h2>
+    <h2 id="money" class="mt">Money</h2>
     <p>Money is always a whole number of the currency's smallest unit: <code>4999</code> is $49.99. This is so there is never a rounding error, and it is the same convention kempo-payments uses. The number of decimal places depends on the currency: two for most, none for currencies such as the yen (<code>500</code> is 500 yen), and three for currencies such as the Kuwaiti dinar.</p>
     <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { parseMoney, formatMoney, displayMoney } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 
@@ -211,7 +211,7 @@
 <span class="hljs-title function_">formatMoney</span>(<span class="hljs-number">4999</span>);                  <span class="hljs-comment">// &#x27;49.99&#x27;</span>
 <span class="hljs-title function_">displayMoney</span>(<span class="hljs-number">4999</span>, <span class="hljs-string">&#x27;usd&#x27;</span>);          <span class="hljs-comment">// &#x27;$49.99&#x27;</span></code></pre>
 
-    <h2 id="development">Development</h2>
+    <h2 id="development" class="mt">Development</h2>
     <pre><code class="hljs bash">npm run <span class="hljs-built_in">link</span>:<span class="hljs-built_in">local</span>          <span class="hljs-comment"># symlinks the sibling kempo checkouts</span>
 docker compose up -d        <span class="hljs-comment"># a throwaway Postgres on port 5443</span>
 <span class="hljs-built_in">export</span> DATABASE_URL=postgresql://kempo:kempo@localhost:5443/kempo_products_test

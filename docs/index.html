@@ -27,8 +27,8 @@
     <button id="toggleNavSideMenu" class="link" aria-label="Menu">
       <k-icon name="menu"></k-icon>
     </button>
-    <a href="./" class="d-if ph">
-      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
       Kempo Products
     </a>
     <a href="./components.html" class="m-d-n">Components</a>
@@ -151,7 +151,7 @@
 
     <p>It works on its own. A dealership can list its cars with no checkout at all, and a shop can add a checkout later to sell the same catalog online. Nothing here depends on an inventory system, though a <a href="./inventory.html">connector</a> joins the two when you use both.</p>
 
-    <h2 id="what-it-does">What it does</h2>
+    <h2 id="what-it-does" class="mt">What it does</h2>
     <ul>
       <li><strong>Types and fields you build in the admin.</strong> Make a "Vehicle" with make, model and year, or a "Model car" with a scale and a brand, without writing code.</li>
       <li><strong>Options with relative prices.</strong> One base price, and each choice adds to it or takes from it: "no clear coat, <code>-1.00</code>". No typing a full price for every combination.</li>
@@ -161,64 +161,58 @@
       <li><strong>A purchase hook other extensions build on.</strong> Whoever takes the orders records a purchase; products takes the stock and tells everything that cares.</li>
     </ul>
 
-    <h2>Where to start</h2>
-    <div class="row">
-      <div class="span-4 t-span-6 m-span-12 p">
-        <a href="./catalog.html" class="card no-link d-b">
-          <h3 class="tc-primary mt0">Your catalog</h3>
-          <p class="tc-muted">Types, fields, products, prices, stock and options.</p>
-        </a>
-      </div>
-      <div class="span-4 t-span-6 m-span-12 p">
-        <a href="./components.html" class="card no-link d-b">
-          <h3 class="tc-primary mt0">Components</h3>
-          <p class="tc-muted">Put products on any page, and choose exactly which ones.</p>
-        </a>
-      </div>
-      <div class="span-4 t-span-6 m-span-12 p">
-        <a href="./purchases.html" class="card no-link d-b">
-          <h3 class="tc-primary mt0">Purchases and stock</h3>
-          <p class="tc-muted">Recording a sale, reversing it, and sales made elsewhere.</p>
-        </a>
-      </div>
-      <div class="span-4 t-span-6 m-span-12 p">
-        <a href="./import-export.html" class="card no-link d-b">
-          <h3 class="tc-primary mt0">Import and export</h3>
-          <p class="tc-muted">Move a catalog in from a spreadsheet, or out to one.</p>
-        </a>
-      </div>
-      <div class="span-4 t-span-6 m-span-12 p">
-        <a href="./inventory.html" class="card no-link d-b">
-          <h3 class="tc-primary mt0">With inventory</h3>
-          <p class="tc-muted">Selling a product uses up the materials it is made from.</p>
-        </a>
-      </div>
-      <div class="span-4 t-span-6 m-span-12 p">
-        <a href="./extending.html" class="card no-link d-b">
-          <h3 class="tc-primary mt0">Building on it</h3>
-          <p class="tc-muted">The server SDK, hooks, ownership, and adding to the admin.</p>
-        </a>
-      </div>
+    <h2 class="mt">Where to start</h2>
+    <div class="d-g mb" style="grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); grid-auto-rows: auto auto; gap: var(--spacer);">
+      <a href="./catalog.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Your catalog</h3>
+        <p class="tc-muted">Types, fields, products, prices, stock and options.</p>
+      </a>
+      <a href="./components.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Components</h3>
+        <p class="tc-muted">Put products on any page, and choose exactly which ones.</p>
+      </a>
+      <a href="./purchases.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Purchases and stock</h3>
+        <p class="tc-muted">Recording a sale, reversing it, and sales made elsewhere.</p>
+      </a>
+      <a href="./import-export.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Import and export</h3>
+        <p class="tc-muted">Move a catalog in from a spreadsheet, or out to one.</p>
+      </a>
+      <a href="./inventory.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">With inventory</h3>
+        <p class="tc-muted">Selling a product uses up the materials it is made from.</p>
+      </a>
+      <a href="./extending.html" class="card no-link" style="display: grid; grid-template-rows: subgrid; grid-row: span 2;">
+        <h3 class="tc-primary mt0">Building on it</h3>
+        <p class="tc-muted">The server SDK, hooks, ownership, and adding to the admin.</p>
+      </a>
     </div>
 
-    <h2 id="quick-start">Quick start</h2>
-    <ol>
-      <li>
-        Install the package in your kempo site:
-        <pre><code class="hljs bash">npm install kempo-products</code></pre>
-      </li>
-      <li>Open <strong>Admin &gt; Extensions</strong> and install <strong>kempo-products</strong>. A <strong>Products</strong> entry appears in the admin menu.</li>
-      <li>Add a product. Give it a name, set it to <strong>Published</strong>, and save. It is now public at <code>/products/</code>.</li>
-      <li>
-        Show a few on your home page, by adding this where you want them:
-        <pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/products/components/ProductList.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+    <h2 id="quick-start" class="mt">Quick start</h2>
+    <h3 class="mt">1. Install the package</h3>
+    <p>In your kempo site:</p>
+    <pre><code class="hljs bash">npm install kempo-products</code></pre>
+    <h3 class="mt">2. Install the extension</h3>
+    <p>Open <strong>Admin &gt; Extensions</strong> and install <strong>kempo-products</strong>. A <strong>Products</strong> entry appears in the admin menu.</p>
+    <h3 class="mt">3. Add a product</h3>
+    <p>Give it a name, set it to <strong>Published</strong>, and save. It is now public at <code>/products/</code>.</p>
+    <div class="mb">
+      <img src="./media/admin-products.png" alt="The Products admin page: a searchable table of products with buttons to import, export, record purchases, manage types and fields, and add a new product." class="full b r" />
+      <small class="d-b tc-muted">The Products page in the admin. Everything about the catalog is managed from here.</small>
+    </div>
+    <div class="mb">
+      <img src="./media/public-list.png" alt="The public products page: a search box, type and sort controls, and a grid of product cards with a picture, name and price." class="full b r" />
+      <small class="d-b tc-muted">What visitors see at <code>/products/</code>, with no setup.</small>
+    </div>
+    <h3 class="mt">4. Show some on your home page</h3>
+    <p>Add this where you want them:</p>
+    <pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/products/components/ProductList.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">tag</span>=<span class="hljs-string">&quot;featured&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;4&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span></code></pre>
-        Tag a few products <code>featured</code> and they appear. <a href="./components.html">The components page</a> covers every way of choosing products.
-      </li>
-    </ol>
+    <p>Tag a few products <code>featured</code> and they appear. <a href="./components.html">The components page</a> covers every way of choosing products.</p>
 
-    <h2 id="works-with">Works with</h2>
-    <div class="table-wrapper">
+    <h2 id="works-with" class="mt">Works with</h2>
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Extension</th><th>How</th></tr></thead>
         <tbody>

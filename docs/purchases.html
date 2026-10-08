@@ -27,8 +27,8 @@
     <button id="toggleNavSideMenu" class="link" aria-label="Menu">
       <k-icon name="menu"></k-icon>
     </button>
-    <a href="./" class="d-if ph">
-      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
       Kempo Products
     </a>
     <a href="./components.html" class="m-d-n">Components</a>
@@ -142,7 +142,7 @@
     
     <p>This extension does not take orders. Whoever does, whether that is a checkout extension, the admin form for sales made on Etsy or in person, or another extension, tells products that something was purchased. Products then prices the lines, takes the stock, and lets every other extension know.</p>
 
-    <h2 id="recording">Recording a purchase</h2>
+    <h2 id="recording" class="mt">Recording a purchase</h2>
     <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { recordPurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 
 <span class="hljs-keyword">const</span> [error, purchase] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">recordPurchase</span>({
@@ -159,21 +159,25 @@
     </ul>
     <p>Then <code>kempo-products:purchase:recorded</code> fires with the purchase. That is how other extensions react: the inventory connector uses it to take the materials out of inventory. Nothing a listener does can undo the purchase.</p>
 
-    <h2 id="reversing">Reversing a purchase</h2>
+    <h2 id="reversing" class="mt">Reversing a purchase</h2>
     <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { reversePurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 
 <span class="hljs-keyword">await</span> <span class="hljs-title function_">reversePurchase</span>(<span class="hljs-string">&#x27;order-1042&#x27;</span>);</code></pre>
     <p>For a cancelled or refunded order. It puts finite stock back, marks the purchase reversed, and fires <code>kempo-products:purchase:reversed</code>. A purchase can only be reversed once, a product deleted since is skipped, and a reversed reference cannot be recorded again.</p>
 
-    <h2 id="manual">Sales made elsewhere</h2>
+    <h2 id="manual" class="mt">Sales made elsewhere</h2>
     <p>Under <strong>Products &gt; Purchases</strong> a person can record a sale made on Etsy, in person, or over the phone, and reverse one. It does the same as above, so stock and anything listening stay right, with two differences that only apply to this form:</p>
     <ul>
       <li>A product that has no price (a "call for price" item) can be given a price on the line.</li>
       <li>The product need not be published or marked available. You are recording something that already happened.</li>
     </ul>
+    <div class="mb">
+      <img src="./media/admin-purchases.png" alt="The Purchases admin page: a Record a purchase form with a reference, a product and quantity, above a table of recorded purchases with Reverse buttons." class="full b r" />
+      <small class="d-b tc-muted">Recording a sale made elsewhere, and the purchases recorded so far. A reversed purchase (the last row) cannot be reversed again.</small>
+    </div>
     <p>Code that records a purchase (for example a checkout) is never given either of these. It gets the catalog's price and the catalog's rules.</p>
 
-    <h2 id="managed">Managed stock</h2>
+    <h2 id="managed" class="mt">Managed stock</h2>
     <p>An extension that keeps a product's stock in step with something else, such as inventory, declares that, and people then see the stock and which choices are in stock as read-only, with the extension's name:</p>
     <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { setManagedBy, setStock, setChoiceAvailability } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 

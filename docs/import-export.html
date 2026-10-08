@@ -27,8 +27,8 @@
     <button id="toggleNavSideMenu" class="link" aria-label="Menu">
       <k-icon name="menu"></k-icon>
     </button>
-    <a href="./" class="d-if ph">
-      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+    <a href="./" class="d-if ph" style="align-items: center">
+      <img src="./media/icon-white.svg" alt="" class="pr" width="28" height="28" />
       Kempo Products
     </a>
     <a href="./components.html" class="m-d-n">Components</a>
@@ -142,9 +142,9 @@
     
     <p><strong>Export</strong> on the products page downloads the catalog. <strong>Import</strong> reads a file back, which is also how you move a catalog in from another shop's spreadsheet.</p>
 
-    <h2 id="export">Export</h2>
+    <h2 id="export" class="mt">Export</h2>
     <p>Two kinds of file:</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>File</th><th>Holds</th></tr></thead>
         <tbody>
@@ -156,7 +156,7 @@
     <p>Images are not exported, because a picture's id means nothing on another site.</p>
     <p>Product names that a spreadsheet would run as a formula (starting with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code>) are written with a leading apostrophe, so they open as text. The apostrophe is removed again on import. A negative price adjustment such as <code>-1.00</code> is left alone.</p>
 
-    <h2 id="import">Import</h2>
+    <h2 id="import" class="mt">Import</h2>
     <p>Choose a <code>.csv</code> or <code>.json</code> file. The dialog checks it and says what will happen before anything is changed: how many products will be added, how many updated, how many are already there and will be left alone, and which rows could not be read, with their line numbers.</p>
     <ul>
       <li>Rows are matched to products by <strong>slug</strong> (made from the name when a row has none), so importing the same file twice never adds anything twice.</li>
@@ -165,9 +165,14 @@
       <li>In a spreadsheet, an <strong>empty cell leaves what a product already has unchanged</strong> (and uses the default for a new product). A file with just <code>slug</code> and <code>price</code> columns updates prices and nothing else.</li>
     </ul>
 
-    <h2 id="columns">Spreadsheet columns</h2>
+    <div class="mb">
+      <img src="./media/admin-import.png" alt="The Import products dialog with a file chosen and a summary: 1 to add, 0 to update, 1 already there and left alone, 2 that could not be read, with the two problem rows listed." class="full b r" />
+      <small class="d-b tc-muted">The check before importing. Nothing has changed yet: this says one product would be added, one is already there, and two rows have problems (a missing name, and a type that does not exist).</small>
+    </div>
+
+    <h2 id="columns" class="mt">Spreadsheet columns</h2>
     <p>Only <code>name</code> is required. Column names are not case sensitive.</p>
-    <div class="table-wrapper">
+    <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Column</th><th>Holds</th></tr></thead>
         <tbody>
@@ -187,7 +192,7 @@
 Mini Cooper,Model car,published,32.00,4,"british, small",1:18
 VW Beetle,Model car,draft,28.50,,classic,1:24</code></pre>
 
-    <h3 id="json">The JSON file</h3>
+    <h3 id="json" class="mt">The JSON file</h3>
     <p>The JSON export has the products, the types and the fields. Importing it creates any type or field the site does not have yet, as things people manage, so a catalog can move from one site to another in one step. A type or field that already exists is left alone, whatever the file says.</p>
     <p>For code, the same thing is available from the server SDK:</p>
     <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { buildExport, importFile } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;

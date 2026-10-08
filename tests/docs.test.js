@@ -49,6 +49,20 @@ test('every page has a title, one main heading and a description', () => {
   }
 });
 
+test('every image exists, and every picture of the admin says what it shows', () => {
+  const problems = [];
+  for(const name of pages){
+    for(const [, tag] of read(name).matchAll(/<img\s([^>]*)>/g)){
+      const src = /src="([^"]+)"/.exec(tag)?.[1] ?? '';
+      const alt = /alt="([^"]*)"/.exec(tag)?.[1];
+      if(!existsSync(join(docs, src))) problems.push(`${name}: ${src} is missing`);
+      if(alt === undefined) problems.push(`${name}: ${src} has no alt attribute`);
+      if(src.endsWith('.png') && !alt) problems.push(`${name}: ${src} needs a description`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
 test('every code sample was highlighted at build time', () => {
   for(const name of pages) assert.ok(!/<code class="language-/.test(read(name)), `${name} has an unhighlighted sample`);
 });
