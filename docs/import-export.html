@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Import and export - Kempo Products</title>
+  <meta name="description" content="A product catalog for kempo cms: browse, filter and search products with no checkout required, and connect them to inventory." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph">
+      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Products
+    </a>
+    <a href="./components.html" class="m-d-n">Components</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-products" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-products" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Products</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./catalog.html">Your catalog</a></h5>
+      <div class="ml mb -mt">
+        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#products" class="d-b">Products</a>
+        <a href="./catalog.html#price" class="d-b">Price</a>
+        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#options" class="d-b">Options and prices</a>
+        <a href="./catalog.html#images" class="d-b">Images</a>
+      </div>
+      <h5><a href="./components.html">Components</a></h5>
+      <div class="ml mb -mt">
+        <a href="./components.html#home-page" class="d-b">Products on your home page</a>
+        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#recipes" class="d-b">Recipes</a>
+        <a href="./components.html#address" class="d-b">The address</a>
+        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
+        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#sdk" class="d-b">Browser SDK</a>
+        <a href="./components.html#styling" class="d-b">Styling</a>
+      </div>
+      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
+        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
+        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
+        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#columns" class="d-b">Spreadsheet columns</a>
+      </div>
+      <h5><a href="./inventory.html">With inventory</a></h5>
+      <div class="ml mb -mt">
+        <a href="./inventory.html#made-from" class="d-b">Made from</a>
+        <a href="./inventory.html#selling" class="d-b">Selling</a>
+        <a href="./inventory.html#shared" class="d-b">Shared materials</a>
+        <a href="./inventory.html#problems" class="d-b">When it goes wrong</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#money" class="d-b">Money</a>
+        <a href="./reference.html#development" class="d-b">Development</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-products" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-products" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Import and export</h1>
+    
+    <p><strong>Export</strong> on the products page downloads the catalog. <strong>Import</strong> reads a file back, which is also how you move a catalog in from another shop's spreadsheet.</p>
+
+    <h2 id="export">Export</h2>
+    <p>Two kinds of file:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>File</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td>Spreadsheet (<code>.csv</code>)</td><td>One row per product, with a column for every field. Opens in Excel or Google Sheets.</td></tr>
+          <tr><td>Everything (<code>.json</code>)</td><td>Products plus the types and fields they use, to move a catalog to another site.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Images are not exported, because a picture's id means nothing on another site.</p>
+    <p>Product names that a spreadsheet would run as a formula (starting with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code>) are written with a leading apostrophe, so they open as text. The apostrophe is removed again on import. A negative price adjustment such as <code>-1.00</code> is left alone.</p>
+
+    <h2 id="import">Import</h2>
+    <p>Choose a <code>.csv</code> or <code>.json</code> file. The dialog checks it and says what will happen before anything is changed: how many products will be added, how many updated, how many are already there and will be left alone, and which rows could not be read, with their line numbers.</p>
+    <ul>
+      <li>Rows are matched to products by <strong>slug</strong> (made from the name when a row has none), so importing the same file twice never adds anything twice.</li>
+      <li>The default for a product that is already there is to <strong>leave it alone</strong>. Choose <strong>Update it from the file</strong> to change it.</li>
+      <li>Rows are independent: one that cannot be read is reported and the rest carry on.</li>
+      <li>In a spreadsheet, an <strong>empty cell leaves what a product already has unchanged</strong> (and uses the default for a new product). A file with just <code>slug</code> and <code>price</code> columns updates prices and nothing else.</li>
+    </ul>
+
+    <h2 id="columns">Spreadsheet columns</h2>
+    <p>Only <code>name</code> is required. Column names are not case sensitive.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Column</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td><code>slug</code></td><td>The product's address. Made from the name when empty</td></tr>
+          <tr><td><code>name</code>, <code>description</code>, <code>tags</code></td><td>Text. Tags are comma separated</td></tr>
+          <tr><td><code>type</code></td><td>A type's name or key. The type must exist already</td></tr>
+          <tr><td><code>status</code>, <code>availability</code></td><td>As in the admin: <code>published</code>, <code>sold</code> and so on</td></tr>
+          <tr><td><code>price</code>, <code>price_label</code></td><td>A decimal such as <code>49.99</code>. The label shows when there is no price</td></tr>
+          <tr><td><code>stock</code></td><td>A whole number, or empty for unlimited</td></tr>
+          <tr><td><code>options</code></td><td>The product's options as JSON, which is what Export writes</td></tr>
+          <tr><td><code>field.&lt;key&gt;</code></td><td>One column per custom field, for example <code>field.scale</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A small file that adds two products:</p>
+    <pre><code class="hljs plaintext">name,type,status,price,stock,tags,field.scale
+Mini Cooper,Model car,published,32.00,4,"british, small",1:18
+VW Beetle,Model car,draft,28.50,,classic,1:24</code></pre>
+
+    <h3 id="json">The JSON file</h3>
+    <p>The JSON export has the products, the types and the fields. Importing it creates any type or field the site does not have yet, as things people manage, so a catalog can move from one site to another in one step. A type or field that already exists is left alone, whatever the file says.</p>
+    <p>For code, the same thing is available from the server SDK:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { buildExport, importFile } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+
+<span class="hljs-keyword">const</span> [, file] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">buildExport</span>({ <span class="hljs-attr">format</span>: <span class="hljs-string">&#x27;csv&#x27;</span> });    <span class="hljs-comment">// { filename, contentType, body }</span>
+<span class="hljs-keyword">const</span> [, result] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">importFile</span>(text, { <span class="hljs-attr">onMatch</span>: <span class="hljs-string">&#x27;update&#x27;</span>, <span class="hljs-attr">dryRun</span>: <span class="hljs-literal">true</span> });
+<span class="hljs-comment">// { created, updated, skipped, errors: [{ line, name, message }], notes }</span></code></pre>
+  
+    <hr />
+    <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

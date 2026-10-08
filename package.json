@@ -17,7 +17,9 @@
   "main": "sdk.js",
   "scripts": {
     "test": "node --test --test-concurrency=1",
-    "link:local": "npm install ../kempo ../kempo-server ../kempo-ui --no-save --no-legacy-peer-deps --force"
+    "link:local": "npm install ../kempo ../kempo-server ../kempo-ui --no-save --no-legacy-peer-deps --force",
+    "docs:build": "node scripts/build-docs.js",
+    "docs:dev": "npx kempo-server --root docs --port 4049"
   },
   "kempo": {
     "public-scope": "products"
@@ -30,7 +32,6 @@
   "files": [
     "admin",
     "public",
-    "docs",
     "server",
     "install.js",
     "update.js",
@@ -53,6 +54,7 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "highlight.js": "^11.11.1"
   }
 }

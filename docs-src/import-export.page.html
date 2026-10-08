@@ -1,0 +1,59 @@
+<page pageName="Import and export" title="Import and export - Kempo Products">
+  <content>
+    <p><strong>Export</strong> on the products page downloads the catalog. <strong>Import</strong> reads a file back, which is also how you move a catalog in from another shop's spreadsheet.</p>
+
+    <h2 id="export">Export</h2>
+    <p>Two kinds of file:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>File</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td>Spreadsheet (<code>.csv</code>)</td><td>One row per product, with a column for every field. Opens in Excel or Google Sheets.</td></tr>
+          <tr><td>Everything (<code>.json</code>)</td><td>Products plus the types and fields they use, to move a catalog to another site.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Images are not exported, because a picture's id means nothing on another site.</p>
+    <p>Product names that a spreadsheet would run as a formula (starting with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code>) are written with a leading apostrophe, so they open as text. The apostrophe is removed again on import. A negative price adjustment such as <code>-1.00</code> is left alone.</p>
+
+    <h2 id="import">Import</h2>
+    <p>Choose a <code>.csv</code> or <code>.json</code> file. The dialog checks it and says what will happen before anything is changed: how many products will be added, how many updated, how many are already there and will be left alone, and which rows could not be read, with their line numbers.</p>
+    <ul>
+      <li>Rows are matched to products by <strong>slug</strong> (made from the name when a row has none), so importing the same file twice never adds anything twice.</li>
+      <li>The default for a product that is already there is to <strong>leave it alone</strong>. Choose <strong>Update it from the file</strong> to change it.</li>
+      <li>Rows are independent: one that cannot be read is reported and the rest carry on.</li>
+      <li>In a spreadsheet, an <strong>empty cell leaves what a product already has unchanged</strong> (and uses the default for a new product). A file with just <code>slug</code> and <code>price</code> columns updates prices and nothing else.</li>
+    </ul>
+
+    <h2 id="columns">Spreadsheet columns</h2>
+    <p>Only <code>name</code> is required. Column names are not case sensitive.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Column</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td><code>slug</code></td><td>The product's address. Made from the name when empty</td></tr>
+          <tr><td><code>name</code>, <code>description</code>, <code>tags</code></td><td>Text. Tags are comma separated</td></tr>
+          <tr><td><code>type</code></td><td>A type's name or key. The type must exist already</td></tr>
+          <tr><td><code>status</code>, <code>availability</code></td><td>As in the admin: <code>published</code>, <code>sold</code> and so on</td></tr>
+          <tr><td><code>price</code>, <code>price_label</code></td><td>A decimal such as <code>49.99</code>. The label shows when there is no price</td></tr>
+          <tr><td><code>stock</code></td><td>A whole number, or empty for unlimited</td></tr>
+          <tr><td><code>options</code></td><td>The product's options as JSON, which is what Export writes</td></tr>
+          <tr><td><code>field.&lt;key&gt;</code></td><td>One column per custom field, for example <code>field.scale</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A small file that adds two products:</p>
+    <pre><code class="language-csv">name,type,status,price,stock,tags,field.scale
+Mini Cooper,Model car,published,32.00,4,"british, small",1:18
+VW Beetle,Model car,draft,28.50,,classic,1:24</code></pre>
+
+    <h3 id="json">The JSON file</h3>
+    <p>The JSON export has the products, the types and the fields. Importing it creates any type or field the site does not have yet, as things people manage, so a catalog can move from one site to another in one step. A type or field that already exists is left alone, whatever the file says.</p>
+    <p>For code, the same thing is available from the server SDK:</p>
+    <pre><code class="language-js">import { buildExport, importFile } from 'kempo-products/sdk';
+
+const [, file] = await buildExport({ format: 'csv' });    // { filename, contentType, body }
+const [, result] = await importFile(text, { onMatch: 'update', dryRun: true });
+// { created, updated, skipped, errors: [{ line, name, message }], notes }</code></pre>
+  </content>
+</page>

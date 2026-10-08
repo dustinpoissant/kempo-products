@@ -1,0 +1,115 @@
+<fragment>
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph">
+      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Products
+    </a>
+    <a href="./components.html" class="m-d-n">Components</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-products" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-products" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Products</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./catalog.html">Your catalog</a></h5>
+      <div class="ml mb -mt">
+        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#products" class="d-b">Products</a>
+        <a href="./catalog.html#price" class="d-b">Price</a>
+        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#options" class="d-b">Options and prices</a>
+        <a href="./catalog.html#images" class="d-b">Images</a>
+      </div>
+      <h5><a href="./components.html">Components</a></h5>
+      <div class="ml mb -mt">
+        <a href="./components.html#home-page" class="d-b">Products on your home page</a>
+        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#recipes" class="d-b">Recipes</a>
+        <a href="./components.html#address" class="d-b">The address</a>
+        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
+        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#sdk" class="d-b">Browser SDK</a>
+        <a href="./components.html#styling" class="d-b">Styling</a>
+      </div>
+      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
+        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
+        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
+        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#columns" class="d-b">Spreadsheet columns</a>
+      </div>
+      <h5><a href="./inventory.html">With inventory</a></h5>
+      <div class="ml mb -mt">
+        <a href="./inventory.html#made-from" class="d-b">Made from</a>
+        <a href="./inventory.html#selling" class="d-b">Selling</a>
+        <a href="./inventory.html#shared" class="d-b">Shared materials</a>
+        <a href="./inventory.html#problems" class="d-b">When it goes wrong</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#money" class="d-b">Money</a>
+        <a href="./reference.html#development" class="d-b">Development</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-products" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-products" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+</fragment>

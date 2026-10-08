@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building on it - Kempo Products</title>
+  <meta name="description" content="A product catalog for kempo cms: browse, filter and search products with no checkout required, and connect them to inventory." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph">
+      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Products
+    </a>
+    <a href="./components.html" class="m-d-n">Components</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-products" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-products" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Products</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./catalog.html">Your catalog</a></h5>
+      <div class="ml mb -mt">
+        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#products" class="d-b">Products</a>
+        <a href="./catalog.html#price" class="d-b">Price</a>
+        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#options" class="d-b">Options and prices</a>
+        <a href="./catalog.html#images" class="d-b">Images</a>
+      </div>
+      <h5><a href="./components.html">Components</a></h5>
+      <div class="ml mb -mt">
+        <a href="./components.html#home-page" class="d-b">Products on your home page</a>
+        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#recipes" class="d-b">Recipes</a>
+        <a href="./components.html#address" class="d-b">The address</a>
+        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
+        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#sdk" class="d-b">Browser SDK</a>
+        <a href="./components.html#styling" class="d-b">Styling</a>
+      </div>
+      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
+        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
+        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
+        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#columns" class="d-b">Spreadsheet columns</a>
+      </div>
+      <h5><a href="./inventory.html">With inventory</a></h5>
+      <div class="ml mb -mt">
+        <a href="./inventory.html#made-from" class="d-b">Made from</a>
+        <a href="./inventory.html#selling" class="d-b">Selling</a>
+        <a href="./inventory.html#shared" class="d-b">Shared materials</a>
+        <a href="./inventory.html#problems" class="d-b">When it goes wrong</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#money" class="d-b">Money</a>
+        <a href="./reference.html#development" class="d-b">Development</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-products" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-products" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Building on it</h1>
+    
+    <p>An extension that adds to the catalog declares the dependency in its <code>kempo-config.json</code>, and subscribes to what it needs:</p>
+    <pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;dependencies&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;kempo-products&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;hooks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;kempo-products:purchase:recorded&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/purchase-recorded.js&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre>
+
+    <h2 id="sdk">Server SDK</h2>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getProducts, createProduct, setStock, recordPurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;</code></pre>
+    <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>getProducts({ q, type, status, availability, tag, filters, ids, slugs, owner, inStock, sort, limit, offset })</code></td><td>List and search. Returns <code>{ items, total }</code></td></tr>
+          <tr><td><code>getProduct(idOrSlug)</code></td><td>One product, with its options</td></tr>
+          <tr><td><code>createProduct(data, { owner })</code>, <code>updateProduct(id, data, { owner })</code>, <code>deleteProduct(id, { owner })</code></td><td>Manage products. <code>owner</code> makes them your extension's</td></tr>
+          <tr><td><code>getPrice(productId, selections)</code></td><td>The server's price for <code>{ optionKey: choiceKey }</code>: <code>{ unit, base, lines, currency }</code></td></tr>
+          <tr><td><code>recordPurchase(data, { manual })</code>, <code>reversePurchase(ref)</code>, <code>getPurchase(ref)</code>, <code>getPurchases()</code></td><td>See <a href="./purchases.html">Purchases and stock</a></td></tr>
+          <tr><td><code>setStock(id, stock, { actor })</code>, <code>adjustStock(id, delta, { actor })</code></td><td>Change stock; <code>-1</code> is unlimited. Atomic, and never below zero</td></tr>
+          <tr><td><code>setManagedBy(id, extension)</code></td><td>Declare that your extension keeps this product's stock and choice availability in step with something else</td></tr>
+          <tr><td><code>setChoiceAvailability(id, optionKey, choiceKey, available, { actor })</code></td><td>Mark one choice in or out of stock</td></tr>
+          <tr><td><code>getTypes</code>, <code>registerType(owner, { name })</code>, <code>unregisterTypes(owner)</code></td><td>Product types</td></tr>
+          <tr><td><code>getFields</code>, <code>registerField(owner, definition)</code>, <code>registerFields</code>, <code>unregisterFields(owner)</code></td><td>Fields. <code>definition.productType</code> scopes one to a type</td></tr>
+          <tr><td><code>unregisterProducts(owner, { release })</code></td><td>For uninstall: delete what you own, or hand it back to people</td></tr>
+          <tr><td><code>buildExport({ format })</code>, <code>importFile(text, { onMatch, dryRun })</code></td><td>See <a href="./import-export.html">Import and export</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="register">Shipping a type and its fields</h2>
+    <p>An extension can arrive with a ready-made type, so a "vehicles" extension comes with a Vehicle type already set up. <code>registerType</code> and <code>registerFields</code> are safe to call again on every update:</p>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// install.js</span>
+<span class="hljs-keyword">import</span> { registerType, registerFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; {
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerType</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>, { <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Vehicle&#x27;</span> });
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerFields</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>, [
+    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;make&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Make&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;text&#x27;</span>, <span class="hljs-attr">productType</span>: <span class="hljs-string">&#x27;vehicle&#x27;</span> },
+    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;year&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Year&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;number&#x27;</span>, <span class="hljs-attr">productType</span>: <span class="hljs-string">&#x27;vehicle&#x27;</span> },
+  ]);
+};</code></pre>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// uninstall.js</span>
+<span class="hljs-keyword">import</span> { unregisterFields, unregisterTypes, unregisterProducts } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; {
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterProducts</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>, { <span class="hljs-attr">release</span>: <span class="hljs-literal">true</span> });   <span class="hljs-comment">// or omit release to delete them</span>
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterFields</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>);
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterTypes</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>);
+};</code></pre>
+
+    <h2 id="ownership">Ownership</h2>
+    <p>Types, fields and products can each belong to an extension. The owner alone can delete them or change what defines them, and people can still edit everything else, so an extension's products stay useful in the admin.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th></th><th>Only the owner can</th><th>Anyone with the permission can still</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Product</strong></td><td>change its slug, name and type; delete it</td><td>edit its description, price, options, tags, images, field values and stock</td></tr>
+          <tr><td><strong>Type</strong></td><td>rename it; delete it</td><td>change its description and position</td></tr>
+          <tr><td><strong>Field</strong></td><td>delete it; change its key, kind, requirement or choices</td><td>rename it; change its help text and whether it is listed or filterable</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Ownership only comes from the server SDK: pass your extension's name as <code>owner</code>. The HTTP routes never read an owner from a request, so it cannot be claimed from a browser.</p>
+
+    <h2 id="hooks">Hooks</h2>
+    <p>Declare them in your <code>kempo-config.json</code> <code>hooks</code>. Every payload carries <code>actor</code>: the extension that made the change, or <code>''</code> for a person using the admin.</p>
+    <h3>Guards</h3>
+    <p>Guards run before the work. Edit the payload object in place to change what is saved, or <code>throw { code, msg }</code> to refuse; the caller receives exactly that error. Everything is validated after the guards run, so a guard cannot sneak in a value that would not otherwise be accepted.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-products:product:before_create</code></td><td><code>{ draft, userId }</code> (editable)</td></tr>
+          <tr><td><code>kempo-products:product:before_update</code></td><td><code>{ product, changes, userId }</code> (editable)</td></tr>
+          <tr><td><code>kempo-products:product:before_delete</code></td><td><code>{ product, userId }</code></td></tr>
+          <tr><td><code>kempo-products:type:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-products:field:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Notifications</h3>
+    <p>Notifications run after the change is committed. Nothing they do can undo it.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-products:product:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ product, previous?, userId }</code></td></tr>
+          <tr><td><code>kempo-products:product:stock_changed</code></td><td><code>{ product, previousStock, stock, reason }</code></td></tr>
+          <tr><td><code>kempo-products:purchase:recorded</code></td><td><code>{ purchase }</code></td></tr>
+          <tr><td><code>kempo-products:purchase:reversed</code></td><td><code>{ purchase }</code></td></tr>
+          <tr><td><code>kempo-products:type:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ type, previous? }</code></td></tr>
+          <tr><td><code>kempo-products:field:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ field, previous? }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Handlers run one at a time in the order they were registered, and are awaited, so a slow one holds up the request that triggered it. A notification handler that throws is logged and does not stop the others.</p>
+
+    <h2 id="panels">Adding to the pages</h2>
+    <p>A page cannot define a <code>&lt;location&gt;</code> of its own, so extensions add to products' pages through <strong>fragments</strong>: a file named after a fragment the page includes, in your own package, which kempo picks up without any registration.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Fragment</th><th>Where it appears</th><th>Put it in</th></tr></thead>
+        <tbody>
+          <tr><td><code>products-admin-product-panels</code></td><td>The admin product form, above the Save button</td><td><code>admin/products-admin-product-panels.fragment.html</code></td></tr>
+          <tr><td><code>products-list-extra</code></td><td>Under the public product list</td><td><code>public/products-list-extra.fragment.html</code></td></tr>
+          <tr><td><code>products-detail-extra</code></td><td>Under a public product page</td><td><code>public/products-detail-extra.fragment.html</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A fragment has one winner, chosen by an optional <code>priority</code> on its wrapper, so use one that is specific to your extension. The admin form also tells a panel what is going on:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Event on the form</th><th>When</th><th><code>event.detail</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>draft-change</code></td><td>The form is edited</td><td><code>{ changed, draft }</code></td></tr>
+          <tr><td><code>product-saved</code></td><td>The product has been stored</td><td><code>{ product, created, waitUntil }</code>. A panel with more to save calls <code>waitUntil(promise)</code> and the page waits for it before leaving</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">const</span> form = <span class="hljs-variable language_">document</span>.<span class="hljs-title function_">querySelector</span>(<span class="hljs-string">&#x27;k-prod-form&#x27;</span>);
+form.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;product-saved&#x27;</span>, <span class="hljs-function"><span class="hljs-params">event</span> =&gt;</span> {
+  event.<span class="hljs-property">detail</span>.<span class="hljs-title function_">waitUntil</span>(<span class="hljs-title function_">saveMyOwnThing</span>(event.<span class="hljs-property">detail</span>.<span class="hljs-property">product</span>.<span class="hljs-property">id</span>));
+});</code></pre>
+    <p>On the public pages, <code>&lt;k-prod-card&gt;</code> and <code>&lt;k-prod-detail&gt;</code> have slots (<code>actions</code>, <code>extra</code>) and <code>&lt;k-prod-detail&gt;</code> fires <code>selection-change</code>, which is how a buy button learns which options are chosen. See <a href="./components.html">Components</a>.</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

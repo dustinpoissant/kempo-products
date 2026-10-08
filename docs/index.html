@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kempo Products</title>
+  <meta name="description" content="A product catalog for kempo cms: browse, filter and search products with no checkout required, and connect them to inventory." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph">
+      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Products
+    </a>
+    <a href="./components.html" class="m-d-n">Components</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-products" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-products" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Products</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./catalog.html">Your catalog</a></h5>
+      <div class="ml mb -mt">
+        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#products" class="d-b">Products</a>
+        <a href="./catalog.html#price" class="d-b">Price</a>
+        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#options" class="d-b">Options and prices</a>
+        <a href="./catalog.html#images" class="d-b">Images</a>
+      </div>
+      <h5><a href="./components.html">Components</a></h5>
+      <div class="ml mb -mt">
+        <a href="./components.html#home-page" class="d-b">Products on your home page</a>
+        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#recipes" class="d-b">Recipes</a>
+        <a href="./components.html#address" class="d-b">The address</a>
+        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
+        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#sdk" class="d-b">Browser SDK</a>
+        <a href="./components.html#styling" class="d-b">Styling</a>
+      </div>
+      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
+        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
+        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
+        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#columns" class="d-b">Spreadsheet columns</a>
+      </div>
+      <h5><a href="./inventory.html">With inventory</a></h5>
+      <div class="ml mb -mt">
+        <a href="./inventory.html#made-from" class="d-b">Made from</a>
+        <a href="./inventory.html#selling" class="d-b">Selling</a>
+        <a href="./inventory.html#shared" class="d-b">Shared materials</a>
+        <a href="./inventory.html#problems" class="d-b">When it goes wrong</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#money" class="d-b">Money</a>
+        <a href="./reference.html#development" class="d-b">Development</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-products" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-products" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Kempo Products</h1>
+    
+    <div class="ta-center mb">
+      <p>
+        <a href="https://github.com/dustinpoissant/kempo-products" class="btn primary mr" target="_blank">GitHub</a>
+        <a href="https://www.npmjs.com/package/kempo-products" class="btn" target="_blank">npm</a>
+      </p>
+      <p class="large">A product catalog for <a href="https://github.com/dustinpoissant/kempo" target="_blank">kempo</a>. Show what you sell or have on offer, let people browse, filter and search it, and add a way to buy later.</p>
+      <p class="tc-muted">Pre-release: not on npm yet.</p>
+    </div>
+
+    <p>It works on its own. A dealership can list its cars with no checkout at all, and a shop can add a checkout later to sell the same catalog online. Nothing here depends on an inventory system, though a <a href="./inventory.html">connector</a> joins the two when you use both.</p>
+
+    <h2 id="what-it-does">What it does</h2>
+    <ul>
+      <li><strong>Types and fields you build in the admin.</strong> Make a "Vehicle" with make, model and year, or a "Model car" with a scale and a brand, without writing code.</li>
+      <li><strong>Options with relative prices.</strong> One base price, and each choice adds to it or takes from it: "no clear coat, <code>-1.00</code>". No typing a full price for every combination.</li>
+      <li><strong>Public pages that need no setup.</strong> A searchable, filterable list at <code>/products/</code> and a page for each product, with its options kept in the address so a link opens with the same choices.</li>
+      <li><strong>Components for your own pages.</strong> A few hand-picked products on the home page is one line of HTML.</li>
+      <li><strong>Optional everything else.</strong> Prices, stock and images are all optional, so a catalog that is only a showcase stays simple.</li>
+      <li><strong>A purchase hook other extensions build on.</strong> Whoever takes the orders records a purchase; products takes the stock and tells everything that cares.</li>
+    </ul>
+
+    <h2>Where to start</h2>
+    <div class="row">
+      <div class="span-4 t-span-6 m-span-12 p">
+        <a href="./catalog.html" class="card no-link d-b">
+          <h3 class="tc-primary mt0">Your catalog</h3>
+          <p class="tc-muted">Types, fields, products, prices, stock and options.</p>
+        </a>
+      </div>
+      <div class="span-4 t-span-6 m-span-12 p">
+        <a href="./components.html" class="card no-link d-b">
+          <h3 class="tc-primary mt0">Components</h3>
+          <p class="tc-muted">Put products on any page, and choose exactly which ones.</p>
+        </a>
+      </div>
+      <div class="span-4 t-span-6 m-span-12 p">
+        <a href="./purchases.html" class="card no-link d-b">
+          <h3 class="tc-primary mt0">Purchases and stock</h3>
+          <p class="tc-muted">Recording a sale, reversing it, and sales made elsewhere.</p>
+        </a>
+      </div>
+      <div class="span-4 t-span-6 m-span-12 p">
+        <a href="./import-export.html" class="card no-link d-b">
+          <h3 class="tc-primary mt0">Import and export</h3>
+          <p class="tc-muted">Move a catalog in from a spreadsheet, or out to one.</p>
+        </a>
+      </div>
+      <div class="span-4 t-span-6 m-span-12 p">
+        <a href="./inventory.html" class="card no-link d-b">
+          <h3 class="tc-primary mt0">With inventory</h3>
+          <p class="tc-muted">Selling a product uses up the materials it is made from.</p>
+        </a>
+      </div>
+      <div class="span-4 t-span-6 m-span-12 p">
+        <a href="./extending.html" class="card no-link d-b">
+          <h3 class="tc-primary mt0">Building on it</h3>
+          <p class="tc-muted">The server SDK, hooks, ownership, and adding to the admin.</p>
+        </a>
+      </div>
+    </div>
+
+    <h2 id="quick-start">Quick start</h2>
+    <ol>
+      <li>
+        Install the package in your kempo site:
+        <pre><code class="hljs bash">npm install kempo-products</code></pre>
+      </li>
+      <li>Open <strong>Admin &gt; Extensions</strong> and install <strong>kempo-products</strong>. A <strong>Products</strong> entry appears in the admin menu.</li>
+      <li>Add a product. Give it a name, set it to <strong>Published</strong>, and save. It is now public at <code>/products/</code>.</li>
+      <li>
+        Show a few on your home page, by adding this where you want them:
+        <pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/products/components/ProductList.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">tag</span>=<span class="hljs-string">&quot;featured&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;4&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span></code></pre>
+        Tag a few products <code>featured</code> and they appear. <a href="./components.html">The components page</a> covers every way of choosing products.
+      </li>
+    </ol>
+
+    <h2 id="works-with">Works with</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Extension</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a></td><td>Optional. When it is installed, products get pictures. Without it the field is simply not shown.</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-inventory" target="_blank">kempo-inventory</a></td><td>Tracks raw materials and stock. Not needed by products, but see <a href="./inventory.html">the connector</a>.</td></tr>
+          <tr><td><a href="https://github.com/dustinpoissant/kempo-products-inventory" target="_blank">kempo-products-inventory</a></td><td>The connector. Requires both of the above: selling a product takes its materials out of inventory.</td></tr>
+          <tr><td>kempo-commerce</td><td>Planned. Cart, orders and checkout, built on this catalog.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  
+    <hr />
+    <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

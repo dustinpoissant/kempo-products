@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your catalog - Kempo Products</title>
+  <meta name="description" content="A product catalog for kempo cms: browse, filter and search products with no checkout required, and connect them to inventory." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph">
+      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Products
+    </a>
+    <a href="./components.html" class="m-d-n">Components</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-products" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-products" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Products</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./catalog.html">Your catalog</a></h5>
+      <div class="ml mb -mt">
+        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#products" class="d-b">Products</a>
+        <a href="./catalog.html#price" class="d-b">Price</a>
+        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#options" class="d-b">Options and prices</a>
+        <a href="./catalog.html#images" class="d-b">Images</a>
+      </div>
+      <h5><a href="./components.html">Components</a></h5>
+      <div class="ml mb -mt">
+        <a href="./components.html#home-page" class="d-b">Products on your home page</a>
+        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#recipes" class="d-b">Recipes</a>
+        <a href="./components.html#address" class="d-b">The address</a>
+        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
+        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#sdk" class="d-b">Browser SDK</a>
+        <a href="./components.html#styling" class="d-b">Styling</a>
+      </div>
+      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
+        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
+        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
+        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#columns" class="d-b">Spreadsheet columns</a>
+      </div>
+      <h5><a href="./inventory.html">With inventory</a></h5>
+      <div class="ml mb -mt">
+        <a href="./inventory.html#made-from" class="d-b">Made from</a>
+        <a href="./inventory.html#selling" class="d-b">Selling</a>
+        <a href="./inventory.html#shared" class="d-b">Shared materials</a>
+        <a href="./inventory.html#problems" class="d-b">When it goes wrong</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#money" class="d-b">Money</a>
+        <a href="./reference.html#development" class="d-b">Development</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-products" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-products" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Your catalog</h1>
+    
+    <p>Everything on this page is done in the admin, under <strong>Products</strong>, with no code.</p>
+
+    <h2 id="types-and-fields">Types and fields</h2>
+    <p>A product has only what every catalog needs: a name, an address, a description, a status, a price, stock, pictures and tags. Everything else is up to you.</p>
+    <p>Under <strong>Products &gt; Types</strong> make a type, such as "Vehicle" or "Model car". Under <strong>Products &gt; Fields</strong> give it fields: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". A field applies to every product or to one type, and a product only shows the fields of its type.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Kind of field</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td>Short text, long text</td><td>Words. Short is up to 1,000 characters, long up to 20,000</td></tr>
+          <tr><td>Number</td><td>Any number</td></tr>
+          <tr><td>Yes / no</td><td>A switch</td></tr>
+          <tr><td>Date</td><td>A date</td></tr>
+          <tr><td>Colour</td><td>A colour, chosen with a picker</td></tr>
+          <tr><td>Rating</td><td>One to five stars</td></tr>
+          <tr><td>Choice list</td><td>One of a list you define</td></tr>
+          <tr><td>Images and files</td><td>Only when <a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a> is installed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Tick <strong>Visitors can filter by this</strong> on a choice-list field and it becomes a drop-down on the public list. A field can be changed to another kind only where nothing can be lost: a choice list can become text, and short text can become long text.</p>
+
+    <h2 id="products">Products</h2>
+    <p>A product's <strong>status</strong> is <code>draft</code>, <code>published</code> or <code>archived</code>. Only published products are public. Its <strong>availability</strong> is <code>available</code>, <code>pending</code> or <code>sold</code>, for things like a dealership's "sale pending". Neither needs a count.</p>
+    <p>A product's <strong>address</strong> (its slug) is made from its name, and is the last part of its page: <code>/products/1969-camaro/</code>. You can change it. A few words are reserved because they are this extension's own addresses: <code>api</code>, <code>components</code>, <code>vendor</code>, <code>sdk</code>, <code>index</code>, <code>admin</code>, <code>new</code> and <code>edit</code>.</p>
+    <p><strong>Tags</strong> are short labels such as <code>featured</code> or <code>sale</code>. They are searchable, and the <a href="./components.html">components</a> can show only the products with a tag, which is the simplest way to curate a home page.</p>
+
+    <h2 id="price">Price</h2>
+    <p>A price is optional. A product with no price shows its <strong>price label</strong> instead, such as "Call for price". Turn off the <code>prices_visible</code> setting to run a catalog that never shows what things cost.</p>
+    <p>Prices are stored as whole numbers of the smallest unit (<code>4999</code> is $49.99), so there is never a rounding error. The <a href="./reference.html#money">reference</a> covers currencies without cents.</p>
+
+    <h2 id="stock">Stock</h2>
+    <p>Stock is a number, or blank for <strong>unlimited</strong>, which is the default. A catalog that never counts anything never shows "out of stock". When a product is bought its stock goes down, and at zero it shows as out of stock.</p>
+    <p>If another extension keeps a product's stock in step with something else (the <a href="./inventory.html">inventory connector</a> does), the stock box is read-only and says who is maintaining it, so an edit cannot be silently overwritten.</p>
+
+    <h2 id="options">Options and prices</h2>
+    <p>Options are the choices a buyer makes: colour, clear coat, size. Each choice carries a price, and <strong>by default that price is relative to the product's base price</strong>:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Base price</th><th>Choice</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>$49.99</td><td>No clear coat, <code>-1.00</code></td><td>$48.99</td></tr>
+          <tr><td>$49.99</td><td>Gold paint, <code>+2.50</code></td><td>$52.49</td></tr>
+          <tr><td>$49.99</td><td>Red paint, <code>0.00</code></td><td>$49.99</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>You set one base price and adjust from it, instead of typing a full price for every combination. Adjustments from several options add up, and a price never goes below zero.</p>
+    <p>An option can instead be set to <strong>replace the base price</strong>, so each of its choices is a full price. That is how most shops price sizes. Only one option per product can do this, and adjustments from the others still apply on top.</p>
+    <p>A choice can be marked sold out, and it is then shown as unavailable and cannot be bought.</p>
+
+    <h3>Choosing options is in the address</h3>
+    <p>When a visitor chooses an option, it is written into the address: <code>/products/1969-camaro/?color=red&amp;clear-coat=no</code>. A refresh or a shared link brings the same choices back. The name is the option's key and the value is the choice's key. A choice that does not exist, or is sold out, is ignored.</p>
+    <p>The price on the page is asked of the server every time the choices change, so it is always the number that would be charged. <strong>Never trust a price from a browser.</strong> Anything that charges money should ask for it with <code>getPrice</code>.</p>
+
+    <h2 id="images">Images</h2>
+    <p>If <a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a> is installed and enabled, the product form lets you upload pictures. The first is the primary one shown in lists. Without it the field is simply not shown, and pages show no picture.</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

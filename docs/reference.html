@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference - Kempo Products</title>
+  <meta name="description" content="A product catalog for kempo cms: browse, filter and search products with no checkout required, and connect them to inventory." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph">
+      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Products
+    </a>
+    <a href="./components.html" class="m-d-n">Components</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-products" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-products" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Products</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./catalog.html">Your catalog</a></h5>
+      <div class="ml mb -mt">
+        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#products" class="d-b">Products</a>
+        <a href="./catalog.html#price" class="d-b">Price</a>
+        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#options" class="d-b">Options and prices</a>
+        <a href="./catalog.html#images" class="d-b">Images</a>
+      </div>
+      <h5><a href="./components.html">Components</a></h5>
+      <div class="ml mb -mt">
+        <a href="./components.html#home-page" class="d-b">Products on your home page</a>
+        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#recipes" class="d-b">Recipes</a>
+        <a href="./components.html#address" class="d-b">The address</a>
+        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
+        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#sdk" class="d-b">Browser SDK</a>
+        <a href="./components.html#styling" class="d-b">Styling</a>
+      </div>
+      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
+        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
+        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
+        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#columns" class="d-b">Spreadsheet columns</a>
+      </div>
+      <h5><a href="./inventory.html">With inventory</a></h5>
+      <div class="ml mb -mt">
+        <a href="./inventory.html#made-from" class="d-b">Made from</a>
+        <a href="./inventory.html#selling" class="d-b">Selling</a>
+        <a href="./inventory.html#shared" class="d-b">Shared materials</a>
+        <a href="./inventory.html#problems" class="d-b">When it goes wrong</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#money" class="d-b">Money</a>
+        <a href="./reference.html#development" class="d-b">Development</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-products" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-products" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Reference</h1>
+    
+    <h2 id="api">HTTP API</h2>
+    <p>JSON routes under <code>/products/api/</code>. Reads are public: they return published products only, with no exact stock count, no owner details, and no prices when <code>prices_visible</code> is off. Everything that changes something needs the permission shown.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Route</th><th>Permission</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET config</code></td><td>none</td><td>The currency, whether prices show, whether images are available, and the allowed values</td></tr>
+          <tr><td><code>GET products</code></td><td>none</td><td>List and search. Parameters are on <a href="./components.html#sdk">the Components page</a></td></tr>
+          <tr><td><code>GET products/&lt;id or slug&gt;</code></td><td>none</td><td>One product, with its options, the fields of its type, and its images</td></tr>
+          <tr><td><code>POST products</code></td><td><code>products:create</code></td><td>Create a product</td></tr>
+          <tr><td><code>PATCH products/&lt;id&gt;</code></td><td><code>products:update</code></td><td>Change a product. Only what is sent changes</td></tr>
+          <tr><td><code>DELETE products/&lt;id&gt;</code></td><td><code>products:delete</code></td><td>Delete a product</td></tr>
+          <tr><td><code>GET price?product=&amp;options=</code></td><td>none</td><td>The server's price for a set of choices. <code>options</code> is JSON: <code>{"color":"gold"}</code></td></tr>
+          <tr><td><code>GET types</code>, <code>GET fields</code></td><td>none</td><td>The types and fields. <code>fields?type=model-car</code> gives what a product of that type shows</td></tr>
+          <tr><td><code>POST</code>, <code>PATCH</code>, <code>DELETE</code> on <code>types</code> and <code>fields</code></td><td><code>products:types:manage</code></td><td>Manage types and fields</td></tr>
+          <tr><td><code>GET purchases</code></td><td><code>products:read</code></td><td>Recorded purchases</td></tr>
+          <tr><td><code>POST purchases</code>, <code>POST purchases/&lt;ref&gt;/reverse</code></td><td><code>products:purchases:record</code></td><td>Record a sale made elsewhere, and reverse one</td></tr>
+          <tr><td><code>GET export?format=csv|json</code></td><td><code>products:read</code></td><td>Download the catalog</td></tr>
+          <tr><td><code>POST import</code></td><td><code>products:create</code> and <code>products:update</code></td><td>Import a file: <code>{ content, onMatch, dryRun }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A person who holds <code>products:read</code> also sees drafts, archived products and exact stock from the read routes. The same calls are available in the browser as <a href="./components.html#sdk">the SDK</a> at <code>/products/sdk.js</code>.</p>
+
+    <h2 id="permissions">Permissions and groups</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Permission</th><th>Allows</th></tr></thead>
+        <tbody>
+          <tr><td><code>products:read</code></td><td>See drafts and archived products, exact stock, and purchases in the admin</td></tr>
+          <tr><td><code>products:create</code>, <code>products:update</code>, <code>products:delete</code></td><td>Manage products</td></tr>
+          <tr><td><code>products:types:manage</code></td><td>Create, edit and delete types and fields</td></tr>
+          <tr><td><code>products:purchases:record</code></td><td>Record a purchase made elsewhere, and reverse one</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Published products need no permission to see. Three groups are provided, each of which also lets its members into the admin:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Group</th><th>Can</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-products:viewer</code></td><td>See everything in the catalog, including drafts, but not change it</td></tr>
+          <tr><td><code>kempo-products:manager</code></td><td>Add, edit and delete products, and record purchases</td></tr>
+          <tr><td><code>kempo-products:admin</code></td><td>Everything a manager can, and set up types and fields</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="settings">Settings</h2>
+    <p>Under <strong>Admin &gt; Settings</strong>.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Setting</th><th>Default</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>currency</code></td><td><code>usd</code></td><td>The three-letter currency code prices are shown in, such as <code>eur</code> or <code>gbp</code></td></tr>
+          <tr><td><code>prices_visible</code></td><td><code>true</code></td><td>Show prices to visitors. Turn off to run a catalog that never shows what things cost</td></tr>
+          <tr><td><code>page_size</code></td><td><code>24</code></td><td>Products per page on the public list</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="money">Money</h2>
+    <p>Money is always a whole number of the currency's smallest unit: <code>4999</code> is $49.99. This is so there is never a rounding error, and it is the same convention kempo-payments uses. The number of decimal places depends on the currency: two for most, none for currencies such as the yen (<code>500</code> is 500 yen), and three for currencies such as the Kuwaiti dinar.</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { parseMoney, formatMoney, displayMoney } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+
+<span class="hljs-title function_">parseMoney</span>(<span class="hljs-string">&#x27;49.99&#x27;</span>);                <span class="hljs-comment">// [null, 4999]</span>
+<span class="hljs-title function_">parseMoney</span>(<span class="hljs-string">&#x27;-1.00&#x27;</span>);                <span class="hljs-comment">// [null, -100]   (an option&#x27;s adjustment)</span>
+<span class="hljs-title function_">parseMoney</span>(<span class="hljs-string">&#x27;1.999&#x27;</span>);                <span class="hljs-comment">// [error, null]  (never rounded silently)</span>
+<span class="hljs-title function_">formatMoney</span>(<span class="hljs-number">4999</span>);                  <span class="hljs-comment">// &#x27;49.99&#x27;</span>
+<span class="hljs-title function_">displayMoney</span>(<span class="hljs-number">4999</span>, <span class="hljs-string">&#x27;usd&#x27;</span>);          <span class="hljs-comment">// &#x27;$49.99&#x27;</span></code></pre>
+
+    <h2 id="development">Development</h2>
+    <pre><code class="hljs bash">npm run <span class="hljs-built_in">link</span>:<span class="hljs-built_in">local</span>          <span class="hljs-comment"># symlinks the sibling kempo checkouts</span>
+docker compose up -d        <span class="hljs-comment"># a throwaway Postgres on port 5443</span>
+<span class="hljs-built_in">export</span> DATABASE_URL=postgresql://kempo:kempo@localhost:5443/kempo_products_test
+npx drizzle-kit push --force
+npm <span class="hljs-built_in">test</span></code></pre>
+    <p>The database tests skip themselves when no database is reachable, and refuse to run unless its name ends in <code>_test</code>, because they empty the tables. <strong>A green run with <code>SKIPPED</code> did not test the database.</strong></p>
+    <p>This documentation is built from <code>docs-src/</code> into <code>docs/</code>, which GitHub Pages serves. Edit <code>docs-src</code>, then run <code>npm run docs:build</code>. Never edit <code>docs</code> directly, because the next build replaces it.</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purchases and stock - Kempo Products</title>
+  <meta name="description" content="A product catalog for kempo cms: browse, filter and search products with no checkout required, and connect them to inventory." />
+  <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo-hljs.min.css" />
+  <script>
+    window.kempo = {
+      pathToStylesheet: 'https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css',
+      pathsToIcons: ['https://cdn.jsdelivr.net/npm/kempo-ui@0.5/icons']
+    };
+  </script>
+  <style>
+    [id] { scroll-margin-top: 5rem; }
+  </style>
+  
+
+</head>
+<body>
+  
+  <k-nav fixed class="bg-primary">
+    <button id="toggleNavSideMenu" class="link" aria-label="Menu">
+      <k-icon name="menu"></k-icon>
+    </button>
+    <a href="./" class="d-if ph">
+      <img src="./media/icon.svg" alt="" class="pr" width="28" height="28" />
+      Kempo Products
+    </a>
+    <a href="./components.html" class="m-d-n">Components</a>
+    <a href="./reference.html" class="m-d-n">Reference</a>
+    <div class="flex"></div>
+    <a href="https://www.npmjs.com/package/kempo-products" target="_blank" aria-label="npm"><k-icon name="npm"></k-icon></a>
+    <a href="https://github.com/dustinpoissant/kempo-products" target="_blank" aria-label="GitHub"><k-icon name="github-mark"></k-icon></a>
+    <k-theme-switcher
+      class="mr"
+      style="
+        --padding: 0.5rem;
+        --c_active: var(--tc_on_primary);
+        --tc_active: var(--c_primary);
+        --c_inactive__hover: rgba(255, 255, 255, 0.1);
+      "
+    ></k-theme-switcher>
+  </k-nav>
+  <k-nav-spacer></k-nav-spacer>
+  <k-aside id="navSideMenu" main="overlay" state="offscreen">
+    <menu>
+      <div class="ta-center bb mb r0">
+        <h1 class="tc-primary">Kempo Products</h1>
+      </div>
+      <h5><a href="./">Overview</a></h5>
+      <div class="ml mb -mt">
+        <a href="./#what-it-does" class="d-b">What it does</a>
+        <a href="./#quick-start" class="d-b">Quick start</a>
+        <a href="./#works-with" class="d-b">Works with</a>
+      </div>
+      <h5><a href="./catalog.html">Your catalog</a></h5>
+      <div class="ml mb -mt">
+        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#products" class="d-b">Products</a>
+        <a href="./catalog.html#price" class="d-b">Price</a>
+        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#options" class="d-b">Options and prices</a>
+        <a href="./catalog.html#images" class="d-b">Images</a>
+      </div>
+      <h5><a href="./components.html">Components</a></h5>
+      <div class="ml mb -mt">
+        <a href="./components.html#home-page" class="d-b">Products on your home page</a>
+        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#recipes" class="d-b">Recipes</a>
+        <a href="./components.html#address" class="d-b">The address</a>
+        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
+        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#sdk" class="d-b">Browser SDK</a>
+        <a href="./components.html#styling" class="d-b">Styling</a>
+      </div>
+      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <div class="ml mb -mt">
+        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
+        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
+        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
+        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+      </div>
+      <h5><a href="./import-export.html">Import and export</a></h5>
+      <div class="ml mb -mt">
+        <a href="./import-export.html#export" class="d-b">Export</a>
+        <a href="./import-export.html#import" class="d-b">Import</a>
+        <a href="./import-export.html#columns" class="d-b">Spreadsheet columns</a>
+      </div>
+      <h5><a href="./inventory.html">With inventory</a></h5>
+      <div class="ml mb -mt">
+        <a href="./inventory.html#made-from" class="d-b">Made from</a>
+        <a href="./inventory.html#selling" class="d-b">Selling</a>
+        <a href="./inventory.html#shared" class="d-b">Shared materials</a>
+        <a href="./inventory.html#problems" class="d-b">When it goes wrong</a>
+      </div>
+      <h5><a href="./extending.html">Building on it</a></h5>
+      <div class="ml mb -mt">
+        <a href="./extending.html#sdk" class="d-b">Server SDK</a>
+        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#ownership" class="d-b">Ownership</a>
+        <a href="./extending.html#hooks" class="d-b">Hooks</a>
+        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+      </div>
+      <h5><a href="./reference.html">Reference</a></h5>
+      <div class="ml mb -mt">
+        <a href="./reference.html#api" class="d-b">HTTP API</a>
+        <a href="./reference.html#permissions" class="d-b">Permissions</a>
+        <a href="./reference.html#settings" class="d-b">Settings</a>
+        <a href="./reference.html#money" class="d-b">Money</a>
+        <a href="./reference.html#development" class="d-b">Development</a>
+      </div>
+      <hr />
+      <a href="https://www.npmjs.com/package/kempo-products" target="_blank"><k-icon name="npm"></k-icon> View on npm</a><br />
+      <a href="https://github.com/dustinpoissant/kempo-products" target="_blank"><k-icon name="github-mark"></k-icon> View on GitHub</a>
+    </menu>
+  </k-aside>
+  <script type="module">
+    document.getElementById('toggleNavSideMenu').addEventListener('click', async () => {
+      await window.customElements.whenDefined('k-aside');
+      document.getElementById('navSideMenu').toggle();
+    });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[href^="#"]');
+      if(!link) return;
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if(!target) return;
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
+      document.getElementById('navSideMenu')?.hide?.();
+    });
+  </script>
+
+  <main>
+    <h1>Purchases and stock</h1>
+    
+    <p>This extension does not take orders. Whoever does, whether that is a checkout extension, the admin form for sales made on Etsy or in person, or another extension, tells products that something was purchased. Products then prices the lines, takes the stock, and lets every other extension know.</p>
+
+    <h2 id="recording">Recording a purchase</h2>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { recordPurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+
+<span class="hljs-keyword">const</span> [error, purchase] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">recordPurchase</span>({
+  <span class="hljs-attr">ref</span>: <span class="hljs-string">&#x27;order-1042&#x27;</span>,
+  <span class="hljs-attr">lines</span>: [
+    { <span class="hljs-attr">productId</span>: <span class="hljs-string">&#x27;9f2c1e0a44b7d3a1&#x27;</span>, <span class="hljs-attr">quantity</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">options</span>: { <span class="hljs-attr">color</span>: <span class="hljs-string">&#x27;red&#x27;</span>, <span class="hljs-string">&#x27;clear-coat&#x27;</span>: <span class="hljs-string">&#x27;no&#x27;</span> } },
+  ],
+});</code></pre>
+    <ul>
+      <li><code>ref</code> is the caller's own reference for the order. Recording the same one twice is refused, so a retry can never take stock twice, and it is how a purchase is found later.</li>
+      <li>Every line is checked: the product is published, available, in stock and priced, and the options are real and in stock. A failure says which product and why.</li>
+      <li>The price of each line is worked out here from the catalog, never taken from the caller. A purchase records what was charged, with the names and option labels as they were then, so it still reads correctly after the product changes or is deleted.</li>
+      <li>Stock for <strong>every</strong> line is taken in one transaction: all of it or none of it. Two lines for one product share that product's stock. Unlimited stock is never taken.</li>
+    </ul>
+    <p>Then <code>kempo-products:purchase:recorded</code> fires with the purchase. That is how other extensions react: the inventory connector uses it to take the materials out of inventory. Nothing a listener does can undo the purchase.</p>
+
+    <h2 id="reversing">Reversing a purchase</h2>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { reversePurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">reversePurchase</span>(<span class="hljs-string">&#x27;order-1042&#x27;</span>);</code></pre>
+    <p>For a cancelled or refunded order. It puts finite stock back, marks the purchase reversed, and fires <code>kempo-products:purchase:reversed</code>. A purchase can only be reversed once, a product deleted since is skipped, and a reversed reference cannot be recorded again.</p>
+
+    <h2 id="manual">Sales made elsewhere</h2>
+    <p>Under <strong>Products &gt; Purchases</strong> a person can record a sale made on Etsy, in person, or over the phone, and reverse one. It does the same as above, so stock and anything listening stay right, with two differences that only apply to this form:</p>
+    <ul>
+      <li>A product that has no price (a "call for price" item) can be given a price on the line.</li>
+      <li>The product need not be published or marked available. You are recording something that already happened.</li>
+    </ul>
+    <p>Code that records a purchase (for example a checkout) is never given either of these. It gets the catalog's price and the catalog's rules.</p>
+
+    <h2 id="managed">Managed stock</h2>
+    <p>An extension that keeps a product's stock in step with something else, such as inventory, declares that, and people then see the stock and which choices are in stock as read-only, with the extension's name:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { setManagedBy, setStock, setChoiceAvailability } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">setManagedBy</span>(productId, <span class="hljs-string">&#x27;my-extension&#x27;</span>);
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">setStock</span>(productId, <span class="hljs-number">7</span>, { <span class="hljs-attr">actor</span>: <span class="hljs-string">&#x27;my-extension&#x27;</span> });
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">setChoiceAvailability</span>(productId, <span class="hljs-string">&#x27;color&#x27;</span>, <span class="hljs-string">&#x27;red&#x27;</span>, <span class="hljs-literal">false</span>, { <span class="hljs-attr">actor</span>: <span class="hljs-string">&#x27;my-extension&#x27;</span> });</code></pre>
+    <p>Anyone else who tries to change a managed product's stock, through the admin or the SDK, is refused. Pass <code>''</code> to <code>setManagedBy</code> to hand it back to people.</p>
+    <p>Whenever a product's stock changes, <code>kempo-products:product:stock_changed</code> fires with the previous and new stock.</p>
+  
+    <hr />
+    <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>
+  </main>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Nav.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/NavSpacer.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Aside.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/Icon.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/kempo-ui@0.5/dist/components/ThemeSwitcher.js"></script>
+  
+</body>
+</html>

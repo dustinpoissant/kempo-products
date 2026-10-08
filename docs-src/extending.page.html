@@ -1,0 +1,128 @@
+<page pageName="Building on it" title="Building on it - Kempo Products">
+  <content>
+    <p>An extension that adds to the catalog declares the dependency in its <code>kempo-config.json</code>, and subscribes to what it needs:</p>
+    <pre><code class="language-json">{
+  "dependencies": ["kempo-products"],
+  "hooks": { "kempo-products:purchase:recorded": "./hooks/purchase-recorded.js" }
+}</code></pre>
+
+    <h2 id="sdk">Server SDK</h2>
+    <pre><code class="language-js">import { getProducts, createProduct, setStock, recordPurchase } from 'kempo-products/sdk';</code></pre>
+    <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>getProducts({ q, type, status, availability, tag, filters, ids, slugs, owner, inStock, sort, limit, offset })</code></td><td>List and search. Returns <code>{ items, total }</code></td></tr>
+          <tr><td><code>getProduct(idOrSlug)</code></td><td>One product, with its options</td></tr>
+          <tr><td><code>createProduct(data, { owner })</code>, <code>updateProduct(id, data, { owner })</code>, <code>deleteProduct(id, { owner })</code></td><td>Manage products. <code>owner</code> makes them your extension's</td></tr>
+          <tr><td><code>getPrice(productId, selections)</code></td><td>The server's price for <code>{ optionKey: choiceKey }</code>: <code>{ unit, base, lines, currency }</code></td></tr>
+          <tr><td><code>recordPurchase(data, { manual })</code>, <code>reversePurchase(ref)</code>, <code>getPurchase(ref)</code>, <code>getPurchases()</code></td><td>See <a href="./purchases.html">Purchases and stock</a></td></tr>
+          <tr><td><code>setStock(id, stock, { actor })</code>, <code>adjustStock(id, delta, { actor })</code></td><td>Change stock; <code>-1</code> is unlimited. Atomic, and never below zero</td></tr>
+          <tr><td><code>setManagedBy(id, extension)</code></td><td>Declare that your extension keeps this product's stock and choice availability in step with something else</td></tr>
+          <tr><td><code>setChoiceAvailability(id, optionKey, choiceKey, available, { actor })</code></td><td>Mark one choice in or out of stock</td></tr>
+          <tr><td><code>getTypes</code>, <code>registerType(owner, { name })</code>, <code>unregisterTypes(owner)</code></td><td>Product types</td></tr>
+          <tr><td><code>getFields</code>, <code>registerField(owner, definition)</code>, <code>registerFields</code>, <code>unregisterFields(owner)</code></td><td>Fields. <code>definition.productType</code> scopes one to a type</td></tr>
+          <tr><td><code>unregisterProducts(owner, { release })</code></td><td>For uninstall: delete what you own, or hand it back to people</td></tr>
+          <tr><td><code>buildExport({ format })</code>, <code>importFile(text, { onMatch, dryRun })</code></td><td>See <a href="./import-export.html">Import and export</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="register">Shipping a type and its fields</h2>
+    <p>An extension can arrive with a ready-made type, so a "vehicles" extension comes with a Vehicle type already set up. <code>registerType</code> and <code>registerFields</code> are safe to call again on every update:</p>
+    <pre><code class="language-js">// install.js
+import { registerType, registerFields } from 'kempo-products/sdk';
+
+export default async () => {
+  await registerType('my-vehicles', { name: 'Vehicle' });
+  await registerFields('my-vehicles', [
+    { key: 'make', label: 'Make', type: 'text', productType: 'vehicle' },
+    { key: 'year', label: 'Year', type: 'number', productType: 'vehicle' },
+  ]);
+};</code></pre>
+    <pre><code class="language-js">// uninstall.js
+import { unregisterFields, unregisterTypes, unregisterProducts } from 'kempo-products/sdk';
+
+export default async () => {
+  await unregisterProducts('my-vehicles', { release: true });   // or omit release to delete them
+  await unregisterFields('my-vehicles');
+  await unregisterTypes('my-vehicles');
+};</code></pre>
+
+    <h2 id="ownership">Ownership</h2>
+    <p>Types, fields and products can each belong to an extension. The owner alone can delete them or change what defines them, and people can still edit everything else, so an extension's products stay useful in the admin.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th></th><th>Only the owner can</th><th>Anyone with the permission can still</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Product</strong></td><td>change its slug, name and type; delete it</td><td>edit its description, price, options, tags, images, field values and stock</td></tr>
+          <tr><td><strong>Type</strong></td><td>rename it; delete it</td><td>change its description and position</td></tr>
+          <tr><td><strong>Field</strong></td><td>delete it; change its key, kind, requirement or choices</td><td>rename it; change its help text and whether it is listed or filterable</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Ownership only comes from the server SDK: pass your extension's name as <code>owner</code>. The HTTP routes never read an owner from a request, so it cannot be claimed from a browser.</p>
+
+    <h2 id="hooks">Hooks</h2>
+    <p>Declare them in your <code>kempo-config.json</code> <code>hooks</code>. Every payload carries <code>actor</code>: the extension that made the change, or <code>''</code> for a person using the admin.</p>
+    <h3>Guards</h3>
+    <p>Guards run before the work. Edit the payload object in place to change what is saved, or <code>throw { code, msg }</code> to refuse; the caller receives exactly that error. Everything is validated after the guards run, so a guard cannot sneak in a value that would not otherwise be accepted.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-products:product:before_create</code></td><td><code>{ draft, userId }</code> (editable)</td></tr>
+          <tr><td><code>kempo-products:product:before_update</code></td><td><code>{ product, changes, userId }</code> (editable)</td></tr>
+          <tr><td><code>kempo-products:product:before_delete</code></td><td><code>{ product, userId }</code></td></tr>
+          <tr><td><code>kempo-products:type:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-products:field:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Notifications</h3>
+    <p>Notifications run after the change is committed. Nothing they do can undo it.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Event</th><th>Payload</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-products:product:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ product, previous?, userId }</code></td></tr>
+          <tr><td><code>kempo-products:product:stock_changed</code></td><td><code>{ product, previousStock, stock, reason }</code></td></tr>
+          <tr><td><code>kempo-products:purchase:recorded</code></td><td><code>{ purchase }</code></td></tr>
+          <tr><td><code>kempo-products:purchase:reversed</code></td><td><code>{ purchase }</code></td></tr>
+          <tr><td><code>kempo-products:type:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ type, previous? }</code></td></tr>
+          <tr><td><code>kempo-products:field:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ field, previous? }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Handlers run one at a time in the order they were registered, and are awaited, so a slow one holds up the request that triggered it. A notification handler that throws is logged and does not stop the others.</p>
+
+    <h2 id="panels">Adding to the pages</h2>
+    <p>A page cannot define a <code>&lt;location&gt;</code> of its own, so extensions add to products' pages through <strong>fragments</strong>: a file named after a fragment the page includes, in your own package, which kempo picks up without any registration.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Fragment</th><th>Where it appears</th><th>Put it in</th></tr></thead>
+        <tbody>
+          <tr><td><code>products-admin-product-panels</code></td><td>The admin product form, above the Save button</td><td><code>admin/products-admin-product-panels.fragment.html</code></td></tr>
+          <tr><td><code>products-list-extra</code></td><td>Under the public product list</td><td><code>public/products-list-extra.fragment.html</code></td></tr>
+          <tr><td><code>products-detail-extra</code></td><td>Under a public product page</td><td><code>public/products-detail-extra.fragment.html</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A fragment has one winner, chosen by an optional <code>priority</code> on its wrapper, so use one that is specific to your extension. The admin form also tells a panel what is going on:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Event on the form</th><th>When</th><th><code>event.detail</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>draft-change</code></td><td>The form is edited</td><td><code>{ changed, draft }</code></td></tr>
+          <tr><td><code>product-saved</code></td><td>The product has been stored</td><td><code>{ product, created, waitUntil }</code>. A panel with more to save calls <code>waitUntil(promise)</code> and the page waits for it before leaving</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre><code class="language-js">const form = document.querySelector('k-prod-form');
+form.addEventListener('product-saved', event => {
+  event.detail.waitUntil(saveMyOwnThing(event.detail.product.id));
+});</code></pre>
+    <p>On the public pages, <code>&lt;k-prod-card&gt;</code> and <code>&lt;k-prod-detail&gt;</code> have slots (<code>actions</code>, <code>extra</code>) and <code>&lt;k-prod-detail&gt;</code> fires <code>selection-change</code>, which is how a buy button learns which options are chosen. See <a href="./components.html">Components</a>.</p>
+  </content>
+</page>

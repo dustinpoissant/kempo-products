@@ -6,6 +6,8 @@ It works on its own. A dealership can list its cars with no checkout at all, and
 
 > Status: pre-release. See [PLAN.md](PLAN.md) for the design and what is still to come.
 
+**Documentation: <https://dustinpoissant.github.io/kempo-products/>**. It covers building a catalog, putting products on your pages, purchases and stock, import and export, using it with inventory, and building on it. This README is the short version.
+
 ## Install
 
 ```bash
@@ -68,7 +70,7 @@ Both pages are made of Lit components you can use on your own pages, such as a f
 <k-prod-detail slug="1969-camaro"></k-prod-detail>
 ```
 
-`<k-prod-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or a field's value, and can start sorted or searched. **[Putting products on your pages](docs/components.md)** lists every attribute with recipes.
+`<k-prod-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or a field's value, and can start sorted or searched. **[The components guide](https://dustinpoissant.github.io/kempo-products/components.html)** lists every attribute with recipes.
 
 A site can override the pages themselves with its own, and extensions can add to them through two named fragments, `products-list-extra` and `products-detail-extra`.
 
@@ -239,6 +241,8 @@ JSON routes under `/products/api/`. Reads are public (published products only, n
 Money is always a whole number of the smallest unit: `4999` is $49.99. Currencies without cents (yen) and with three decimals (dinar) are handled.
 
 ## Development
+
+The documentation site is built from `docs-src/` into `docs/`, which GitHub Pages serves (set Pages to deploy from the `docs` folder of the default branch). Edit `docs-src`, run `npm run docs:build`, and commit both. A test fails when `docs/` is not what `docs-src/` builds.
 
 ```bash
 npm run link:local          # symlinks the sibling kempo checkouts

@@ -1,0 +1,83 @@
+<page pageName="Reference" title="Reference - Kempo Products">
+  <content>
+    <h2 id="api">HTTP API</h2>
+    <p>JSON routes under <code>/products/api/</code>. Reads are public: they return published products only, with no exact stock count, no owner details, and no prices when <code>prices_visible</code> is off. Everything that changes something needs the permission shown.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Route</th><th>Permission</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET config</code></td><td>none</td><td>The currency, whether prices show, whether images are available, and the allowed values</td></tr>
+          <tr><td><code>GET products</code></td><td>none</td><td>List and search. Parameters are on <a href="./components.html#sdk">the Components page</a></td></tr>
+          <tr><td><code>GET products/&lt;id or slug&gt;</code></td><td>none</td><td>One product, with its options, the fields of its type, and its images</td></tr>
+          <tr><td><code>POST products</code></td><td><code>products:create</code></td><td>Create a product</td></tr>
+          <tr><td><code>PATCH products/&lt;id&gt;</code></td><td><code>products:update</code></td><td>Change a product. Only what is sent changes</td></tr>
+          <tr><td><code>DELETE products/&lt;id&gt;</code></td><td><code>products:delete</code></td><td>Delete a product</td></tr>
+          <tr><td><code>GET price?product=&amp;options=</code></td><td>none</td><td>The server's price for a set of choices. <code>options</code> is JSON: <code>{"color":"gold"}</code></td></tr>
+          <tr><td><code>GET types</code>, <code>GET fields</code></td><td>none</td><td>The types and fields. <code>fields?type=model-car</code> gives what a product of that type shows</td></tr>
+          <tr><td><code>POST</code>, <code>PATCH</code>, <code>DELETE</code> on <code>types</code> and <code>fields</code></td><td><code>products:types:manage</code></td><td>Manage types and fields</td></tr>
+          <tr><td><code>GET purchases</code></td><td><code>products:read</code></td><td>Recorded purchases</td></tr>
+          <tr><td><code>POST purchases</code>, <code>POST purchases/&lt;ref&gt;/reverse</code></td><td><code>products:purchases:record</code></td><td>Record a sale made elsewhere, and reverse one</td></tr>
+          <tr><td><code>GET export?format=csv|json</code></td><td><code>products:read</code></td><td>Download the catalog</td></tr>
+          <tr><td><code>POST import</code></td><td><code>products:create</code> and <code>products:update</code></td><td>Import a file: <code>{ content, onMatch, dryRun }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A person who holds <code>products:read</code> also sees drafts, archived products and exact stock from the read routes. The same calls are available in the browser as <a href="./components.html#sdk">the SDK</a> at <code>/products/sdk.js</code>.</p>
+
+    <h2 id="permissions">Permissions and groups</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Permission</th><th>Allows</th></tr></thead>
+        <tbody>
+          <tr><td><code>products:read</code></td><td>See drafts and archived products, exact stock, and purchases in the admin</td></tr>
+          <tr><td><code>products:create</code>, <code>products:update</code>, <code>products:delete</code></td><td>Manage products</td></tr>
+          <tr><td><code>products:types:manage</code></td><td>Create, edit and delete types and fields</td></tr>
+          <tr><td><code>products:purchases:record</code></td><td>Record a purchase made elsewhere, and reverse one</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Published products need no permission to see. Three groups are provided, each of which also lets its members into the admin:</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Group</th><th>Can</th></tr></thead>
+        <tbody>
+          <tr><td><code>kempo-products:viewer</code></td><td>See everything in the catalog, including drafts, but not change it</td></tr>
+          <tr><td><code>kempo-products:manager</code></td><td>Add, edit and delete products, and record purchases</td></tr>
+          <tr><td><code>kempo-products:admin</code></td><td>Everything a manager can, and set up types and fields</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="settings">Settings</h2>
+    <p>Under <strong>Admin &gt; Settings</strong>.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Setting</th><th>Default</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>currency</code></td><td><code>usd</code></td><td>The three-letter currency code prices are shown in, such as <code>eur</code> or <code>gbp</code></td></tr>
+          <tr><td><code>prices_visible</code></td><td><code>true</code></td><td>Show prices to visitors. Turn off to run a catalog that never shows what things cost</td></tr>
+          <tr><td><code>page_size</code></td><td><code>24</code></td><td>Products per page on the public list</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="money">Money</h2>
+    <p>Money is always a whole number of the currency's smallest unit: <code>4999</code> is $49.99. This is so there is never a rounding error, and it is the same convention kempo-payments uses. The number of decimal places depends on the currency: two for most, none for currencies such as the yen (<code>500</code> is 500 yen), and three for currencies such as the Kuwaiti dinar.</p>
+    <pre><code class="language-js">import { parseMoney, formatMoney, displayMoney } from 'kempo-products/sdk';
+
+parseMoney('49.99');                // [null, 4999]
+parseMoney('-1.00');                // [null, -100]   (an option's adjustment)
+parseMoney('1.999');                // [error, null]  (never rounded silently)
+formatMoney(4999);                  // '49.99'
+displayMoney(4999, 'usd');          // '$49.99'</code></pre>
+
+    <h2 id="development">Development</h2>
+    <pre><code class="language-bash">npm run link:local          # symlinks the sibling kempo checkouts
+docker compose up -d        # a throwaway Postgres on port 5443
+export DATABASE_URL=postgresql://kempo:kempo@localhost:5443/kempo_products_test
+npx drizzle-kit push --force
+npm test</code></pre>
+    <p>The database tests skip themselves when no database is reachable, and refuse to run unless its name ends in <code>_test</code>, because they empty the tables. <strong>A green run with <code>SKIPPED</code> did not test the database.</strong></p>
+    <p>This documentation is built from <code>docs-src/</code> into <code>docs/</code>, which GitHub Pages serves. Edit <code>docs-src</code>, then run <code>npm run docs:build</code>. Never edit <code>docs</code> directly, because the next build replaces it.</p>
+  </content>
+</page>
