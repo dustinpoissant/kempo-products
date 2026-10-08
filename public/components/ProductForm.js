@@ -38,14 +38,24 @@ const blank = () => ({
 /*
   Adds or edits a product, with everything on one page: the basics, price, stock, pictures, the
   fields of the product's type, and options. Pass `product-id` to edit; without it, a new product is
-  made. After saving it goes to `next` (a path on this site), where the list shows a message.
+  made. With `from-url` it takes both from the address instead (?id= and ?next=). After saving it
+  goes to `next` (a path on this site), where the list shows a message.
 
     <k-prod-form product-id="1969-camaro" next="/admin/extension/kempo-products/"></k-prod-form>
+
+  Extensions add to the form in two ways, neither of which needs this file to know about them:
+
+    slot "panels"      anything placed in it appears above the Save button
+    `draft-change`     fired as the form is edited, with { changed, draft }
+    `product-saved`    fired once the product is stored, with { product, created, waitUntil }. A
+                       panel that has more to save (the product's materials, say) calls
+                       waitUntil(promise) and the page waits for it before leaving.
 */
 export default class ProductForm extends ShadowComponent {
   static properties = {
     productId: { type: String, attribute: 'product-id' },
     next: { type: String },
+    fromUrl: { type: Boolean, attribute: 'from-url' },
     loading: { state: true },
     saving: { state: true },
     config: { state: true },
@@ -62,6 +72,7 @@ export default class ProductForm extends ShadowComponent {
     super();
     this.productId = '';
     this.next = '/admin/extension/kempo-products/';
+    this.fromUrl = false;
     this.loading = true;
     this.saving = false;
     this.config = null;
@@ -82,6 +93,11 @@ export default class ProductForm extends ShadowComponent {
   connectedCallback(){
     super.connectedCallback();
     window.addEventListener('beforeunload', this.warn);
+    if(this.fromUrl){
+      const params = new URLSearchParams(location.search);
+      this.productId = params.get('id') ?? '';
+      this.next = safeNext(params.get('next'), this.next);
+    }
     this.load();
   }
 
@@ -143,6 +159,7 @@ export default class ProductForm extends ShadowComponent {
 
   set = changes => {
     this.draft = { ...this.draft, ...changes };
+    this.dispatchEvent(new CustomEvent('draft-change', { detail: { changed: Object.keys(changes), draft: this.draft }, bubbles: true, composed: true }));
   };
 
   /* The fields this product's type shows: the default ones plus the type's own. */
@@ -223,6 +240,15 @@ export default class ProductForm extends ShadowComponent {
       Toast.error(error.msg || 'Failed to save the product');
       return;
     }
+    const waits = [];
+    this.dispatchEvent(new CustomEvent('product-saved', {
+      detail: { product: saved.product, created: !this.editing, waitUntil: promise => waits.push(promise) },
+      bubbles: true,
+      composed: true,
+    }));
+    this.saving = true;
+    await Promise.allSettled(waits);
+    this.saving = false;
     flash(`${this.editing ? 'Saved' : 'Added'} ${saved.product.name}`);
     this.go(this.next);
   };
@@ -314,6 +340,7 @@ export default class ProductForm extends ShadowComponent {
         ${this.fields.map(field => html`<k-prod-field-input .field=${field} .value=${draft.fields[field.key]} @change=${this.handleField}></k-prod-field-input>`)}` : ''}
       <h4 class="mt">Options</h4>
       <k-prod-options-editor .value=${draft.options} decimals=${decimals} managed=${managed} @change=${event => this.set({ options: event.detail.value })}></k-prod-options-editor>
+      <slot name="panels"></slot>
       <div class="d-f mt" style="gap: var(--spacer_h); flex-wrap: wrap;">
         <button type="submit" class="btn success" id="saveProduct" ?disabled=${this.saving}>${this.saving ? 'Saving…' : this.editing ? 'Save' : 'Create product'}</button>
         <button type="button" class="btn" id="cancelProduct" ?disabled=${this.saving} @click=${this.cancel}>Cancel</button>

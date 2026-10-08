@@ -11,6 +11,13 @@ locked: true
     <h1 class="flex mb0">New Product</h1>
   </div>
 
-  <k-prod-form></k-prod-form>
+  <!--
+    An extension adds a panel to this form by supplying a fragment with this name in its own admin/
+    directory (products-admin-product-panels.fragment.html). It lands above the Save button and
+    hears `product-saved` on the form to save whatever else it holds.
+  -->
+  <k-prod-form from-url>
+    <div slot="panels"><fragment name="products-admin-product-panels"></fragment></div>
+  </k-prod-form>
 </content>
 </page>
