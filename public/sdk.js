@@ -93,3 +93,12 @@ export const displayMoney = (minor, currency = 'usd', decimals = 2, locale = und
     return formatMoney(minor, decimals);
   }
 };
+
+/*
+  Import and export. exportUrl('csv' | 'json') is a download link: CSV is a spreadsheet, JSON is
+  everything including types and fields. importProducts({ content, onMatch, dryRun }) takes the text
+  of a file; onMatch is 'skip' or 'update' for a slug that already exists, and dryRun reports what
+  would happen without changing anything. Resolves to { created, updated, skipped, errors, notes }.
+*/
+export const exportUrl = format => `${BASE}/export?format=${format === 'json' ? 'json' : 'csv'}`;
+export const importProducts = data => req('POST', `${BASE}/import`, data);

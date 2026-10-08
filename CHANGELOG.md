@@ -30,6 +30,11 @@ A product catalog for kempo that works on its own, with no checkout and no inven
 - Guard and notification hooks for products, types, fields, stock and purchases.
 - The admin product form has a `panels` slot and fires `draft-change` and `product-saved`, so another extension's panel can sit in it and save with it.
 
+### Import and export
+
+- Export the catalog as a spreadsheet (`.csv`) or everything (`.json`, including types and fields). Import either, matching products by slug so a file imported twice never duplicates, with a preview of what will happen and a per-row report of what could not be read. In a spreadsheet an empty cell leaves what a product has unchanged.
+- Spreadsheet cells that would be read as formulas are written as text.
+
 ### Admin
 
 - Products, Types, Fields and Purchases pages, built from kempo-ui components. Permissions `products:*` and groups `kempo-products:viewer`, `manager` and `admin`.

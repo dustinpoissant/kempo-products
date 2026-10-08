@@ -72,6 +72,27 @@ A site can override the pages themselves with its own, and extensions can add to
 
 A product's slug cannot be `api`, `components`, `vendor`, `sdk`, `index`, `admin`, `new` or `edit`, because those are this extension's own addresses.
 
+## Import and export
+
+**Export** on the products page downloads the catalog as a spreadsheet (`.csv`) or as everything (`.json`). **Import** reads either back, which is also how you move a catalog in from another shop's spreadsheet.
+
+A spreadsheet has one row per product. Only `name` is required:
+
+| Column | Holds |
+|---|---|
+| `slug` | The product's address. Made from the name when empty, so importing the same file twice never duplicates |
+| `name`, `description`, `tags` | Text; tags are comma separated |
+| `type` | A type's name or key. The type must exist already |
+| `status`, `availability` | As in the admin (`published`, `sold`, ...) |
+| `price`, `price_label` | A decimal such as `49.99`; the label shows when there is no price |
+| `stock` | A whole number, or empty for unlimited |
+| `options` | The product's options as JSON (what Export writes) |
+| `field.<key>` | One column per custom field, e.g. `field.scale` |
+
+An **empty cell leaves what a product already has unchanged** (and uses the default for a new one), so a file with just `slug` and `price` columns updates prices and nothing else. Choose **Update it from the file** to change products that are already there; the default leaves them alone. A row that cannot be read is reported with its line number and the rest carry on, and the dialog shows what will happen before anything is changed.
+
+The JSON export also carries the types and fields, and importing it creates any the site lacks. Images are not exported, because a media id means nothing on another site. Names that a spreadsheet would run as a formula (starting with `=`, `+`, `-` or `@`) are written with a leading apostrophe so they open as text, and the apostrophe is removed again on import.
+
 ## Recording purchases
 
 This extension does not take orders. Whoever does, whether that is `kempo-commerce`, the admin form (for sales made on Etsy or in person), or another extension, calls `recordPurchase`:
@@ -124,6 +145,7 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `getTypes`, `registerType(owner, { name })`, `unregisterTypes(owner)` | Product types |
 | `getFields`, `registerField(owner, definition)`, `registerFields`, `unregisterFields(owner)` | Fields; `definition.productType` scopes one to a type |
 | `unregisterProducts(owner, { release })` | For uninstall: delete what you own, or hand it back to people |
+| `buildExport({ format })`, `importFile(text, { onMatch, dryRun })` | Export the catalog as a `{ filename, contentType, body }`; import the text of a `.csv` or `.json` |
 
 An extension can ship its own type and fields, so a "vehicles" extension arrives with a ready-made Vehicle type:
 
@@ -210,6 +232,7 @@ JSON routes under `/products/api/`. Reads are public (published products only, n
 | `GET price?product=&options=` | The server's price for a set of choices |
 | `GET types`, `GET fields`, and `POST`/`PATCH`/`DELETE` on them | Types and fields |
 | `GET purchases`, `POST purchases`, `POST purchases/<ref>/reverse` | Purchases |
+| `GET export?format=csv\|json`, `POST import` | Download the catalog; import a file (`{ content, onMatch, dryRun }`) |
 
 Money is always a whole number of the smallest unit: `4999` is $49.99. Currencies without cents (yen) and with three decimals (dinar) are handled.
 

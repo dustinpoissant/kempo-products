@@ -33,6 +33,10 @@ locked: true
       <kc-tc-filters></kc-tc-filters>
       <kc-tc-field-sort-hide></kc-tc-field-sort-hide>
       <div class="flex"></div>
+      <k-permission has="products:create">
+        <button id="importBtn" class="btn m0"><k-icon name="arrow" direction="up"></k-icon> Import</button>
+      </k-permission>
+      <button id="exportBtn" class="btn m0"><k-icon name="download"></k-icon> Export</button>
       <k-permission has="products:purchases:record">
         <a href="/admin/extension/kempo-products/purchases" class="btn"><k-icon name="repeat"></k-icon> Purchases</a>
       </k-permission>
@@ -66,6 +70,7 @@ locked: true
     import Toast from '/kempo-ui/components/Toast.js';
     import Dialog from '/kempo-ui/components/Dialog.js';
     import { showFlash } from '/products/components/ProductForm.js';
+    import { openExportDialog, openImportDialog } from '/products/components/ImportExport.js';
 
     await window.customElements.whenDefined('k-table');
     const $table = document.getElementById('productsTable');
@@ -154,6 +159,9 @@ locked: true
       if(action === 'edit') location.href = `/admin/extension/kempo-products/edit?id=${encodeURIComponent(record.id)}`;
       if(action === 'view') window.open(`/products/${encodeURIComponent(record.slug)}/`, '_blank');
     });
+
+    document.getElementById('importBtn')?.addEventListener('click', () => openImportDialog({ onDone: load }));
+    document.getElementById('exportBtn')?.addEventListener('click', () => openExportDialog());
 
     await load();
     showFlash();

@@ -69,6 +69,11 @@ export default class ProductDetail extends ShadowComponent {
     this.loading = false;
     if(configError || error){
       this.error = (error ?? configError).code === 404 ? 'This product could not be found.' : (error ?? configError).msg;
+      /* The page itself answers 200 (the product is looked up in the browser), so tell crawlers not to index a missing one. */
+      const robots = document.createElement('meta');
+      robots.name = 'robots';
+      robots.content = 'noindex';
+      document.head.append(robots);
       return;
     }
     this.config = config;

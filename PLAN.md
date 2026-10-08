@@ -1,6 +1,6 @@
 # kempo-products: plan
 
-Status: **phases 1 to 5 are built and tested** (section 13); import and export is not. This file began as the design and has been brought in line with what was built; where they differed, the built behaviour is described. Decisions are marked **Agreed** (settled with the maintainer) or **Proposed** (a recommendation made while building, awaiting review).
+Status: **all six phases are built and tested** (section 13). This file began as the design and has been brought in line with what was built; where they differed, the built behaviour is described. Decisions are marked **Agreed** (settled with the maintainer) or **Proposed** (a recommendation made while building, awaiting review).
 
 ## 1. Purpose
 
@@ -183,7 +183,7 @@ Settings: `currency` (string, `usd`), `prices_visible` (boolean, true), `page_si
 3. **Options and pricing (built):** option editor, `getPrice`, URL-parameter selection.
 4. **Stock and purchases (built):** the stock functions, `recordPurchase`, `reversePurchase`, the admin form.
 5. **Media (built):** optional kempo-media images.
-6. **Import and export (not built):** CSV and kempo's export format, as inventory.
+6. **Import and export (built):** a CSV spreadsheet and a JSON export that carries types and fields, matched by slug, with a dry run.
 
 ## 14. Tests
 
@@ -205,7 +205,6 @@ Resolved (each was a recommendation in the design; all are built that way and aw
 
 Not built, and worth deciding next:
 
-- **Import and export** (CSV, and kempo's export format as inventory has), which also gives a way to move a WooCommerce or Etsy catalog in.
 - **Server-rendered product pages**, so crawlers that do not run scripts see the content. The client-rendered pages already carry JSON-LD.
 - **Per-choice stock counts**, if "Gold" should have its own quantity instead of only an in/out switch.
 - **Variants as a SKU matrix** (the later variants extension), which the options here are meant to sit under.

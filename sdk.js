@@ -65,6 +65,7 @@ export {
   getPurchases,
 } from './server/utils/purchases.js';
 
+export { buildExport, parseImport, applyImport, importFile } from './server/utils/importExport.js';
 export { computePrice, normalizeOptions, checkSelections } from './server/utils/pricing.js';
 export { parseMoney, formatMoney, displayMoney, decimalsFor } from './server/utils/money.js';
 export { unavailableReason, isPurchasable, UNLIMITED } from './server/utils/stock.js';
