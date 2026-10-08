@@ -11,7 +11,8 @@ import '/kempo-ui/components/Spinner.js';
     <k-prod-images .value=${product.images} .assets=${imagesMap}></k-prod-images>
 
   `value` is the list of media ids and `assets` a map of id -> { path, thumbnail, name } to show.
-  Fires `change` with { value }.
+  Fires `change` with { value, assets }: the new list of ids, and every description it knows, so the
+  parent can keep showing pictures just uploaded.
 */
 export default class ImagesField extends ShadowComponent {
   static properties = {
@@ -34,7 +35,7 @@ export default class ImagesField extends ShadowComponent {
   */
   commit = value => {
     this.value = value;
-    this.dispatchEvent(new CustomEvent('change', { detail: { value }, bubbles: true }));
+    this.dispatchEvent(new CustomEvent('change', { detail: { value, assets: this.assets }, bubbles: true }));
   };
 
   /*

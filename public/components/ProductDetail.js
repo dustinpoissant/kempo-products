@@ -74,7 +74,46 @@ export default class ProductDetail extends ShadowComponent {
     this.config = config;
     this.data = data;
     document.title = `${data.product.name} - ${document.title.split(' - ').at(-1) || ''}`.replace(/ - $/, '');
+    this.describePage();
     this.readSelections();
+  };
+
+  /*
+    What a search engine reads: a meta description and schema.org Product data, so the product can
+    show up with its picture, price and whether it is in stock. A product with no price, or on a
+    site that hides prices, says nothing about an offer.
+  */
+  describePage = () => {
+    const { product } = this.data;
+    const image = this.data.images[product.images[0]];
+    const absolute = path => path ? new URL(path, location.origin).href : undefined;
+    const description = (product.description || product.name).replace(/\s+/g, ' ').slice(0, 300);
+    let meta = document.head.querySelector('meta[name="description"]');
+    if(!meta){
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.append(meta);
+    }
+    meta.content = description;
+
+    const data = { '@context': 'https://schema.org', '@type': 'Product', name: product.name, description, image: absolute(image?.path), url: location.origin + location.pathname };
+    if(this.config.showPrices && product.price !== null){
+      const available = product.availability === 'available' && product.inStock;
+      data.offers = {
+        '@type': 'Offer',
+        price: formatMoney(product.price, this.config.decimals),
+        priceCurrency: this.config.currency.toUpperCase(),
+        availability: `https://schema.org/${product.availability === 'sold' ? 'SoldOut' : product.availability === 'pending' ? 'LimitedAvailability' : available ? 'InStock' : 'OutOfStock'}`,
+      };
+    }
+    let script = document.head.querySelector('script#products-jsonld');
+    if(!script){
+      script = document.createElement('script');
+      script.id = 'products-jsonld';
+      script.type = 'application/ld+json';
+      document.head.append(script);
+    }
+    script.textContent = JSON.stringify(data);
   };
 
   /*

@@ -334,7 +334,7 @@ export default class ProductForm extends ShadowComponent {
       </div>
       ${config.media ? html`<div class="mb">
         <label class="d-b mbq">Images</label>
-        <k-prod-images .value=${draft.images} .assets=${this.assets} @change=${event => { this.set({ images: event.detail.value }); }}></k-prod-images>
+        <k-prod-images .value=${draft.images} .assets=${this.assets} @change=${event => { this.assets = { ...this.assets, ...event.detail.assets }; this.set({ images: event.detail.value }); }}></k-prod-images>
       </div>` : ''}
       ${this.fields.length ? html`<h4 class="mt">${draft.type ? this.types.find(type => type.key === draft.type)?.name ?? 'Details' : 'Details'}</h4>
         ${this.fields.map(field => html`<k-prod-field-input .field=${field} .value=${draft.fields[field.key]} @change=${this.handleField}></k-prod-field-input>`)}` : ''}

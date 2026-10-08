@@ -1,6 +1,6 @@
 # kempo-products: plan
 
-Status: **design, nothing built.** Each decision is marked **Agreed** (settled with the maintainer), **Proposed** (a recommendation not yet confirmed) or **Unverified** (depends on a kempo behaviour not yet checked in code). Resolve the Open questions at the end before building.
+Status: **phases 1 to 5 are built and tested** (section 13); import and export is not. This file began as the design and has been brought in line with what was built; where they differed, the built behaviour is described. Decisions are marked **Agreed** (settled with the maintainer) or **Proposed** (a recommendation made while building, awaiting review).
 
 ## 1. Purpose
 
@@ -44,7 +44,7 @@ Money is integer minor units, as in kempo-payments. Text is trimmed on write. Id
 | `id` | text primary key |
 | `slug` | unique, used in the public URL; reserved words are refused (section 6) |
 | `name` | required |
-| `typeId` | the product type; `''` for untyped |
+| `type` | the key of the product type; `''` for untyped |
 | `description` | long text |
 | `status` | `draft`, `published` or `archived`. Only `published` is public |
 | `availability` | `available`, `pending`, `sold`. A manual status for things like a dealership's "sale pending" |
@@ -66,7 +66,7 @@ A product is **purchasable** when it is `published`, `availability` is `availabl
 
 ### `kempoProductField`
 
-`id`, `key`, `label`, `type`, `typeId` (`''` for every product, otherwise one type), `required`, `listed`, `filterable`, `options`, `owner`, `position`, `created`. Unique on `(typeId, key)`. This is a copy of the pattern in kempo-inventory's category-scoped fields; extracting a shared package waits for a third consumer. **Agreed.** Field types for v1: `text`, `longtext`, `number`, `boolean`, `date`, `select`, `color`, and `media` when kempo-media is present.
+`id`, `key`, `label`, `type` (the kind of value), `productType` (`''` for every product, otherwise one type's key), `required`, `listed`, `filterable`, `options`, `owner`, `position`, `created`. Unique on `(productType, key)`. This is a copy of the pattern in kempo-inventory's category-scoped fields; extracting a shared package waits for a third consumer. **Agreed.** Field types for v1: `text`, `longtext`, `number`, `boolean`, `date`, `select`, `color`, and `media` when kempo-media is present.
 
 ### `kempoProductOption`
 
@@ -104,7 +104,8 @@ Admin pages live in `admin/` and are served at `/admin/extension/kempo-products/
 
 - `public/index.page.html` is the list with search and filters, `public/[slug]/index.page.html` the detail page, `public/api/**` the JSON API, `public/components/` the web components. The site owner can override the pages with fragments and templates, as kempo-blog's header and comments are fragments.
 - **Reserved slugs:** a product slug cannot be `api`, `components` or any other top-level name in `public/`, or the product would be unreachable. **Proposed.**
-- The detail page carries a named `<location>` for extension content (a future contact form, a stock badge). It is a location only; no form is built here.
+- Extensions add to the pages through two named fragments, `products-list-extra` and `products-detail-extra`, and the detail component has `actions` and `extra` slots for a buy button. No form is built here. (A page cannot define a `<location>` of its own, so fragments are the page-level mechanism.)
+- The detail page writes a meta description and schema.org `Product` JSON-LD (with an offer when prices are shown). The pages are otherwise client-rendered; server-rendering them for crawlers that do not run scripts is future work.
 
 ### Choosing options is a URL parameter (Agreed)
 
@@ -146,7 +147,7 @@ Hook names are `kempo-products:<resource>:<event>`. Guards (`product:before_crea
 
 Notifications can't refuse a purchase. A handler that fails is logged and the purchase stands; the connector reconciles by recalculating (see its plan).
 
-**Unverified:** kempo's `triggerHook` awaits handlers in registration order. The guard wrapper that turns a thrown `{ code, msg }` into a refusal is kempo-inventory's own (`server/utils/hooks.js`); products needs its own copy.
+kempo's `triggerHook` awaits handlers in registration order (verified). The guard wrapper that turns a thrown `{ code, msg }` into a refusal is kempo-inventory's own, copied into `server/utils/hooks.js`. A notification handler that throws is now logged by kempo core (it used to vanish).
 
 ## 9. The inventory connector
 
@@ -171,18 +172,18 @@ Settings: `currency` (string, `usd`), `prices_visible` (boolean, true), `page_si
 ## 12. Platform dependencies
 
 - kempo >= 4.3.0 and kempo-server >= 3.4.0, as in the peer dependencies.
-- The connector pushing a panel into this extension's admin product page uses the same `*.global.html` location mechanism that `admin-nav-extensions` uses. **Unverified** that a named location inside a product page is supported; check before phase 1 admin work, and add the location (e.g. `products-admin-product-panels`) either way.
+- **Verified:** a page cannot define a `<location>`, but another extension can supply a *fragment* the page includes, from its own `admin/` directory. The product form therefore has a `panels` slot, filled by a `products-admin-product-panels` fragment, and fires `draft-change` and `product-saved` (with `waitUntil`) so a panel can read the form and save with it. That is how the connector's "Made from" panel works.
 - Tracked elsewhere: installing missing dependencies when installing a dependent extension. The connector needs it for a good experience; until then it lists both packages as npm `dependencies`.
 
 ## 13. Build phases
 
 0. **Scaffold.** Done.
-1. **Core catalog:** schema, types, fields, products, ownership, SDK, guard and notification hooks, admin CRUD, permissions and groups, settings, lifecycle scripts. Pure-logic unit tests.
-2. **Public pages:** list, detail, search, filters, the location, overridable markup.
-3. **Options and pricing:** option editor, `getPrice`, URL-parameter selection.
-4. **Stock and purchases:** the stock functions, `recordPurchase`, `reversePurchase`, the admin form.
-5. **Media:** optional kempo-media images.
-6. **Import and export:** CSV and kempo's export format, as inventory.
+1. **Core catalog (built):** schema, types, fields, products, ownership, SDK, guard and notification hooks, admin CRUD, permissions and groups, settings, lifecycle scripts. Pure-logic unit tests.
+2. **Public pages (built):** list, detail, search, filters, extension fragments, JSON-LD.
+3. **Options and pricing (built):** option editor, `getPrice`, URL-parameter selection.
+4. **Stock and purchases (built):** the stock functions, `recordPurchase`, `reversePurchase`, the admin form.
+5. **Media (built):** optional kempo-media images.
+6. **Import and export (not built):** CSV and kempo's export format, as inventory.
 
 ## 14. Tests
 
@@ -192,10 +193,20 @@ kempo-testing-framework, as the sibling extensions. Pure logic is unit tested wi
 
 `package.json` is `private: true` at `0.0.0` until the first release; remove `private` then. Publishing follows the sibling extensions: npm trusted publishing from CI, a patch bump on push, and a choice of bump only on a manual run.
 
-## 16. Open questions
+## 16. Decisions made while building, and what is left
 
-1. **Is one `managedBy` column right?** It covers both stock and option availability for a product. The alternative is one per concern. Recommendation: one.
-2. **Priceless purchases.** A product with no price can't be purchased through `recordPurchase`. Etsy-style manual records for a "call for price" item would need a price on the line. Recommendation: let a manual record supply the unit price, and have commerce never do so.
-3. **Default stock.** `-1` (unlimited) for new products, so a catalog with no inventory interest never shows "out of stock". Recommendation: yes.
-4. **Quantity on a line with options.** Stock is per product, not per choice. A choice can only be marked unavailable (by the connector or by hand). Recommendation: keep it that way until a real case needs per-choice counts.
-5. **Reserved slugs.** The list is derived from the contents of `public/`; confirm.
+Resolved (each was a recommendation in the design; all are built that way and awaiting your review):
+
+1. **One `managedBy` column** covers both stock and choice availability.
+2. **Priceless purchases:** a manual record (the admin Purchases form) may supply a line's `unitPrice` for a product that has none. `recordPurchase` called from code (commerce) never may.
+3. **Default stock is unlimited** (`-1`).
+4. **Stock is per product, not per choice.** A choice can only be marked in or out of stock.
+5. **Reserved slugs** are `api`, `components`, `vendor`, `sdk`, `sdk.js`, `index`, `admin`, `new`, `edit`, and a test keeps them in step with `public/`.
+
+Not built, and worth deciding next:
+
+- **Import and export** (CSV, and kempo's export format as inventory has), which also gives a way to move a WooCommerce or Etsy catalog in.
+- **Server-rendered product pages**, so crawlers that do not run scripts see the content. The client-rendered pages already carry JSON-LD.
+- **Per-choice stock counts**, if "Gold" should have its own quantity instead of only an in/out switch.
+- **Variants as a SKU matrix** (the later variants extension), which the options here are meant to sit under.
+- **Sorting and filtering by custom field values** other than choice lists, such as a price range or "year from 2018".
