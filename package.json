@@ -30,6 +30,7 @@
   "files": [
     "admin",
     "public",
+    "docs",
     "server",
     "install.js",
     "update.js",

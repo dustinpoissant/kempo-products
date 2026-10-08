@@ -91,10 +91,10 @@ const SORTS = {
 export const SORT_KEYS = Object.keys(SORTS);
 
 /*
-  `ids` fetches exactly those products, `owner` keeps one owner's ('' for the ones people manage),
+  `ids` and `slugs` fetch exactly those products, `owner` keeps one owner's ('' for the ones people manage),
   `filters` is { fieldKey: 'exact value' } over a type's fields, and `inStock` drops sold-out ones.
 */
-export const getProducts = async ({ q, type, status, availability, tag, filters = {}, ids, owner, inStock = false, sort = 'newest', limit = 50, offset = 0 } = {}) => {
+export const getProducts = async ({ q, type, status, availability, tag, filters = {}, ids, slugs, owner, inStock = false, sort = 'newest', limit = 50, offset = 0 } = {}) => {
   try {
     const conditions = [];
     if(q){
@@ -120,6 +120,10 @@ export const getProducts = async ({ q, type, status, availability, tag, filters 
     if(Array.isArray(ids)){
       if(!ids.length) return [null, { items: [], total: 0 }];
       conditions.push(inArray(kempoProduct.id, ids));
+    }
+    if(Array.isArray(slugs)){
+      if(!slugs.length) return [null, { items: [], total: 0 }];
+      conditions.push(inArray(kempoProduct.slug, slugs.map(slug => String(slug).trim().toLowerCase())));
     }
     if(owner !== undefined) conditions.push(eq(kempoProduct.owner, String(owner ?? '')));
     if(inStock) conditions.push(sql`${kempoProduct.stock} <> 0`);

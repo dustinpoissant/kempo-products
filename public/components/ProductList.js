@@ -7,21 +7,50 @@ import '/products/components/ProductCard.js';
 
 const SORT_LABELS = { newest: 'Newest', oldest: 'Oldest', name: 'Name', 'price-asc': 'Price: low to high', 'price-desc': 'Price: high to low' };
 
+const split = text => String(text ?? '').split(',').map(part => part.trim()).filter(Boolean);
+
 /*
-  The public product list: search, filters, sorting and paging. What is searched and filtered is in
-  the address, so a filtered list can be bookmarked or shared and survives a refresh:
+  A list of products, as a page of its own or a few picked ones on your home page. Every attribute
+  is optional; see docs/components.md for examples.
+
+  What the list is limited to (visitors cannot change these):
+    type            only products of this type (a type's key, e.g. "model-car")
+    tag             only products with every one of these tags, comma separated
+    slugs           only these products, by slug, comma separated; shown in that order
+    availability    only these, comma separated: available, pending, sold
+    in-stock        only products that are not out of stock
+    filters         only products whose fields match, as JSON: filters='{"scale":"1:18"}'
+
+  Where it starts (visitors can change these unless the controls are hidden):
+    search          the text in the search box
+    sort            newest (default), oldest, name, price-asc, price-desc
+
+  How it looks:
+    limit           show at most this many, with no paging
+    page-size       products per page (the site's page_size setting when not given)
+    hide-controls   no search box, filters or sorting
+    no-url          do not read or write the address. Use it for a list that is part of another
+                    page, so it neither picks up ?q= from the address nor adds its own
+
+  On a page of its own the list keeps what is searched and filtered in the address, so a filtered
+  list can be bookmarked or shared and survives a refresh:
 
     /products/?q=camaro&type=model-car&sort=price-asc&page=2&f.scale=1:18
-
-  Set `type` to pin the list to one product type, or `page-size` to change how many show per page.
-
-    <k-prod-list></k-prod-list>
-    <k-prod-list type="model-car" page-size="12"></k-prod-list>
 */
 export default class ProductList extends ShadowComponent {
   static properties = {
     type: { type: String, reflect: true },
+    tag: { type: String },
+    slugs: { type: String },
+    availability: { type: String },
+    inStock: { type: Boolean, attribute: 'in-stock' },
+    filters: { type: String },
+    search: { type: String },
+    sort: { type: String },
+    limit: { type: Number },
     pageSize: { type: Number, attribute: 'page-size' },
+    hideControls: { type: Boolean, attribute: 'hide-controls' },
+    noUrl: { type: Boolean, attribute: 'no-url' },
     config: { state: true },
     types: { state: true },
     fields: { state: true },
@@ -36,7 +65,17 @@ export default class ProductList extends ShadowComponent {
   constructor(){
     super();
     this.type = '';
+    this.tag = '';
+    this.slugs = '';
+    this.availability = '';
+    this.inStock = false;
+    this.filters = '';
+    this.search = '';
+    this.sort = '';
+    this.limit = 0;
     this.pageSize = 0;
+    this.hideControls = false;
+    this.noUrl = false;
     this.config = null;
     this.types = [];
     this.fields = [];
@@ -54,7 +93,7 @@ export default class ProductList extends ShadowComponent {
   */
   connectedCallback(){
     super.connectedCallback();
-    window.addEventListener('popstate', this.restore);
+    if(!this.noUrl) window.addEventListener('popstate', this.restore);
     this.start();
   }
 
@@ -79,15 +118,30 @@ export default class ProductList extends ShadowComponent {
     this.restore();
   };
 
-  /* Reads the address into the query and loads. */
+  /* The `filters` attribute as an object. A mistake in it is reported in the console and ignored. */
+  get fixedFilters(){
+    if(!this.filters) return {};
+    try {
+      const parsed = JSON.parse(this.filters);
+      if(parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+    } catch { /* reported below */ }
+    console.warn('<k-prod-list>: the filters attribute must be a JSON object such as {"scale":"1:18"}');
+    return {};
+  }
+
+  get defaultSort(){
+    return this.sort || 'newest';
+  }
+
+  /* Reads the address into the query (unless the list ignores it) and loads. */
   restore = () => {
-    const params = new URLSearchParams(location.search);
+    const params = this.noUrl ? new URLSearchParams() : new URLSearchParams(location.search);
     const filters = {};
     for(const [name, value] of params) if(name.startsWith('f.') && value) filters[name.slice(2)] = value;
     this.query = {
-      q: params.get('q') ?? '',
+      q: params.get('q') ?? this.search,
       type: this.type || params.get('type') || '',
-      sort: params.get('sort') || 'newest',
+      sort: params.get('sort') || this.defaultSort,
       page: Math.max(parseInt(params.get('page')) || 1, 1),
       filters,
     };
@@ -96,29 +150,45 @@ export default class ProductList extends ShadowComponent {
 
   /* Writes the query into the address (without adding a history entry for every keystroke). */
   remember = () => {
+    if(this.noUrl) return;
     const { q, type, sort, page, filters } = this.query;
     const params = new URLSearchParams();
     if(q) params.set('q', q);
     if(type && !this.type) params.set('type', type);
-    if(sort !== 'newest') params.set('sort', sort);
+    if(sort !== this.defaultSort) params.set('sort', sort);
     if(page > 1) params.set('page', String(page));
     for(const [key, value] of Object.entries(filters)) if(value) params.set(`f.${key}`, value);
     history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}`);
   };
 
+  get size(){
+    return this.limit || this.pageSize || this.config.pageSize;
+  }
+
   load = async () => {
     this.loading = true;
-    const size = this.pageSize || this.config.pageSize;
     const { q, type, sort, page, filters } = this.query;
+    const slugs = split(this.slugs).map(slug => slug.toLowerCase());
     const [error, data] = await getProducts({
-      q, type: type || undefined, status: 'published', sort, filters, limit: size, offset: (page - 1) * size,
+      q,
+      type: type || undefined,
+      status: 'published',
+      tag: split(this.tag),
+      slugs: slugs.length ? slugs.join(',') : undefined,
+      availability: this.availability || undefined,
+      inStock: this.inStock || undefined,
+      sort,
+      filters: { ...this.fixedFilters, ...filters },
+      limit: this.size,
+      offset: this.limit ? 0 : (page - 1) * this.size,
     });
     this.loading = false;
     if(error){
       this.error = error.msg;
       return;
     }
-    this.products = data.items;
+    /* Picked by slug and not sorted on purpose (no sort attribute, none chosen): show them in the order they were listed. */
+    this.products = slugs.length && !this.sort && sort === 'newest' ? [...data.items].sort((a, b) => slugs.indexOf(a.slug) - slugs.indexOf(b.slug)) : data.items;
     this.images = data.images;
     this.total = data.total;
   };
@@ -129,10 +199,11 @@ export default class ProductList extends ShadowComponent {
     this.load();
   };
 
-  /* The select fields that apply to the chosen type (or to every product when no type is chosen). */
+  /* The select fields that apply to the chosen type (or to every product when no type is chosen), except those the list is already fixed to. */
   get filterFields(){
     const { type } = this.query;
-    return this.fields.filter(field => !field.productType || (type && field.productType === type));
+    const fixed = this.fixedFilters;
+    return this.fields.filter(field => !(field.key in fixed) && (!field.productType || (type && field.productType === type)));
   }
 
   /*
@@ -152,8 +223,7 @@ export default class ProductList extends ShadowComponent {
 
   handlePage = event => {
     const { currentPage, itemsPerPage } = event.detail;
-    const size = this.pageSize || this.config.pageSize;
-    if(itemsPerPage !== size) return;
+    if(itemsPerPage !== this.size) return;
     if(currentPage === this.query.page) return;
     this.query = { ...this.query, page: currentPage };
     this.remember();
@@ -197,14 +267,14 @@ export default class ProductList extends ShadowComponent {
   render(){
     if(this.error) return html`<p class="tc-muted">${this.error}</p>`;
     if(!this.config) return html`<k-spinner></k-spinner>`;
-    const size = this.pageSize || this.config.pageSize;
+    const size = this.size;
     return html`<div>
-      ${this.renderControls()}
+      ${this.hideControls ? '' : this.renderControls()}
       ${this.loading ? html`<k-spinner></k-spinner>` : this.products.length ? html`
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--spacer);">
           ${this.products.map(product => html`<k-prod-card .product=${product} .images=${this.images} .config=${this.config}></k-prod-card>`)}
         </div>
-        ${this.total > size ? html`<k-pagination style="margin-top: var(--spacer)" controls="simple" .page=${this.query.page} .totalItems=${this.total} .itemsPerPage=${size} @page-change=${this.handlePage}></k-pagination>` : ''}
+        ${!this.limit && this.total > size ? html`<k-pagination style="margin-top: var(--spacer)" controls="simple" .page=${this.query.page} .totalItems=${this.total} .itemsPerPage=${size} @page-change=${this.handlePage}></k-pagination>` : ''}
       ` : html`<p class="tc-muted">No products found.</p>`}
     </div>`;
   }

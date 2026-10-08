@@ -21,7 +21,7 @@ A product catalog for kempo that works on its own, with no checkout and no inven
 
 - `/products/` with search, filters, sorting and paging, all kept in the address.
 - `/products/<slug>/` with pictures, the options a buyer chooses (kept in the address, `?color=red`), a server-priced total, and the product's details. Sold-out and invalid choices in the address are ignored.
-- The pages are Lit components (`k-prod-list`, `k-prod-card`, `k-prod-detail`) usable on any page.
+- The pages are Lit components (`k-prod-list`, `k-prod-card`, `k-prod-detail`) usable on any page. `<k-prod-list>` can be limited to a type, tag, hand-picked slugs, availability, what is in stock or a field value, can start sorted or searched, and can show a few products with `limit`, `hide-controls` and `no-url`; see `docs/components.md`.
 
 ### Purchases and extension points
 

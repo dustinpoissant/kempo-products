@@ -58,15 +58,17 @@ If [kempo-media](https://github.com/dustinpoissant/kempo-media) is installed and
 
 `/products/` is the list, with search, a type filter, filters for any filterable field, sorting and paging. What is searched and filtered is in the address (`?q=camaro&type=model-car&sort=price-asc&f.scale=1:18`), so a filtered list can be shared. `/products/<slug>/` is a product.
 
-Both pages are made of Lit components you can use on your own pages:
+Both pages are made of Lit components you can use on your own pages, such as a few featured products on the home page:
 
 ```html
 <script type="module" src="/products/components/ProductList.js"></script>
-<k-prod-list type="model-car" page-size="12"></k-prod-list>
+<k-prod-list tag="featured" limit="4" hide-controls no-url></k-prod-list>
 
 <script type="module" src="/products/components/ProductDetail.js"></script>
 <k-prod-detail slug="1969-camaro"></k-prod-detail>
 ```
+
+`<k-prod-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or a field's value, and can start sorted or searched. **[Putting products on your pages](docs/components.md)** lists every attribute with recipes.
 
 A site can override the pages themselves with its own, and extensions can add to them through two named fragments, `products-list-extra` and `products-detail-extra`.
 

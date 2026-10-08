@@ -5,7 +5,8 @@ import { parseTagParam } from '../../../server/utils/tags.js';
 
 export default async (request, response) => {
   const access = await readAccess(request);
-  const { q, type, status, availability, tag, filters, sort, inStock, owner, limit, offset } = request.query;
+  const { q, type, status, availability, tag, filters, slugs, sort, inStock, owner, limit, offset } = request.query;
+  const list = value => typeof value === 'string' && value.trim() ? value.split(',').map(part => part.trim()).filter(Boolean) : undefined;
 
   let parsedFilters = {};
   if(filters){
@@ -24,7 +25,8 @@ export default async (request, response) => {
     q,
     type,
     status: access.canManage ? status : 'published',
-    availability,
+    availability: list(availability),
+    slugs: list(slugs),
     tag: parseTagParam(tag),
     filters: parsedFilters,
     sort,

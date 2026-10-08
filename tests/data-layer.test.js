@@ -170,6 +170,9 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
       assert.deepEqual(ok(await getProducts({ type: '' })).items.map(p => p.name), ['Hidden']);
       assert.equal(ok(await getProducts({ limit: 1 })).items.length, 1);
       assert.equal(ok(await getProducts({ ids: [] })).total, 0);
+      assert.deepEqual(ok(await getProducts({ slugs: ['red-car', 'BLUE-CAR', 'nope'], sort: 'name' })).items.map(p => p.name), ['Blue car', 'Red car']);
+      assert.equal(ok(await getProducts({ slugs: [] })).total, 0);
+      assert.deepEqual(ok(await getProducts({ slugs: ['red-car'], status: 'published', inStock: true })).items.map(p => p.name), ['Red car']);
     });
 
     test('an owned product keeps its name, slug and type; everything else stays editable', async () => {
