@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -171,7 +178,8 @@
     <p>Every attribute is optional. With none, it is the full catalog with a search box, filters and paging, which is what <code>/products/</code> shows.</p>
 
     <div class="mb">
-      <img src="./media/public-list.png" alt="The full catalog list: a search box, type and sort drop-downs, and a grid of product cards." class="full b r" />
+      <img src="./media/public-list-light.png" alt="The full catalog list: a search box, type and sort drop-downs, and a grid of product cards." class="img-light full b r" />
+      <img src="./media/public-list-dark.png" alt="The full catalog list: a search box, type and sort drop-downs, and a grid of product cards." class="img-dark full b r" />
       <small class="d-b tc-muted">A <code>&lt;k-prod-list&gt;</code> with no attributes: search, filters, sorting and a grid of products.</small>
     </div>
 

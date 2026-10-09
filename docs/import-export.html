@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -166,7 +173,8 @@
     </ul>
 
     <div class="mb">
-      <img src="./media/admin-import.png" alt="The Import products dialog with a file chosen and a summary: 1 to add, 0 to update, 1 already there and left alone, 2 that could not be read, with the two problem rows listed." class="full b r" />
+      <img src="./media/admin-import-light.png" alt="The Import products dialog with a file chosen and a summary: 1 to add, 0 to update, 1 already there and left alone, 2 that could not be read, with the two problem rows listed." class="img-light full b r" />
+      <img src="./media/admin-import-dark.png" alt="The Import products dialog with a file chosen and a summary: 1 to add, 0 to update, 1 already there and left alone, 2 that could not be read, with the two problem rows listed." class="img-dark full b r" />
       <small class="d-b tc-muted">The check before importing. Nothing has changed yet: this says one product would be added, one is already there, and two rows have problems (a missing name, and a type that does not exist).</small>
     </div>
 

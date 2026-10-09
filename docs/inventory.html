@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -146,7 +153,8 @@
     <h2 id="made-from" class="mt">Telling it what a product is made from</h2>
     <p>Open a product and use the <strong>Made from</strong> tab, which the connector adds after Details, Description, Media and Options. Each row is an inventory item, how much of it one unit uses, and, optionally, which choice of an option it is for.</p>
     <div class="mb">
-      <img src="./media/admin-made-from.png" alt="The Made from tab on the 1969 Camaro's product form. Four materials are listed: TPU filament (12), Blue paint (20, only with Color: Blue), Red paint (20, only with Color: Red) and Black resin (175)." class="full b r" />
+      <img src="./media/admin-made-from-light.png" alt="The Made from tab on the 1969 Camaro's product form. Four materials are listed: TPU filament (12), Blue paint (20, only with Color: Blue), Red paint (20, only with Color: Red) and Black resin (175)." class="img-light full b r" />
+      <img src="./media/admin-made-from-dark.png" alt="The Made from tab on the 1969 Camaro's product form. Four materials are listed: TPU filament (12), Blue paint (20, only with Color: Blue), Red paint (20, only with Color: Red) and Black resin (175)." class="img-dark full b r" />
       <small class="d-b tc-muted">The Made from tab. This car always uses 175 of resin and 12 of TPU, and 20 of red or blue paint depending on the colour chosen. Each row shows how much of that material is in stock.</small>
     </div>
     <p>Inventory counts whole numbers with no unit, so keep stock in grams and millilitres: <code>175</code>, not <code>0.175</code> kilograms.</p>
@@ -155,7 +163,8 @@
     <h3 class="mt">Selling a piece you already made</h3>
     <p>Open the item in the inventory admin and choose <strong>Make product from this item</strong>. The new product form opens with the name filled in and the item already listed as its material, one for one, so the product's stock is the item's quantity. Fill in the price and the rest, and save.</p>
     <div class="mb">
-      <img src="./media/admin-inventory-item.png" alt="An inventory item's page, with a Products panel under the form listing the products that use it and a Make product from this item button." class="full b r" />
+      <img src="./media/admin-inventory-item-light.png" alt="An inventory item's page, with a Products panel under the form listing the products that use it and a Make product from this item button." class="img-light full b r" />
+      <img src="./media/admin-inventory-item-dark.png" alt="An inventory item's page, with a Products panel under the form listing the products that use it and a Make product from this item button." class="img-dark full b r" />
       <small class="d-b tc-muted">The panel the connector adds to every inventory item's page. It also lists the products already made from the item.</small>
     </div>
 
@@ -173,7 +182,8 @@
     <h2 id="problems" class="mt">When it goes wrong</h2>
     <p>Normally nothing does, because a product refuses to sell more than it thinks it can make. But if stock was changed behind the system's back, for example directly in the database, the materials for a purchase may not be there. The purchase stands, because it already happened. The connector records a <strong>problem</strong> with the order reference on the <strong>Product Stock</strong> admin page, and recalculates the affected products so they show what is really left. <strong>Recalculate everything</strong> on that page is the repair tool.</p>
     <div class="mb">
-      <img src="./media/admin-product-stock.png" alt="The Product Stock admin page: a Recalculate everything button and a table of linked products with how many can be made and what each is made from." class="full b r" />
+      <img src="./media/admin-product-stock-light.png" alt="The Product Stock admin page: a Recalculate everything button and a table of linked products with how many can be made and what each is made from." class="img-light full b r" />
+      <img src="./media/admin-product-stock-dark.png" alt="The Product Stock admin page: a Recalculate everything button and a table of linked products with how many can be made and what each is made from." class="img-dark full b r" />
       <small class="d-b tc-muted">The Product Stock page lists everything that is linked and how many of each can be made. Anything that needs attention appears above the table.</small>
     </div>
     <p>An inventory item that products are made from cannot be deleted until it is removed from them.</p>

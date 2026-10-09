@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -172,7 +179,8 @@
       <li>The product need not be published or marked available. You are recording something that already happened.</li>
     </ul>
     <div class="mb">
-      <img src="./media/admin-purchases.png" alt="The Purchases admin page: a Record a purchase form with a reference, a product and quantity, above a table of recorded purchases with Reverse buttons." class="full b r" />
+      <img src="./media/admin-purchases-light.png" alt="The Purchases admin page: a Record a purchase form with a reference, a product and quantity, above a table of recorded purchases with Reverse buttons." class="img-light full b r" />
+      <img src="./media/admin-purchases-dark.png" alt="The Purchases admin page: a Record a purchase form with a reference, a product and quantity, above a table of recorded purchases with Reverse buttons." class="img-dark full b r" />
       <small class="d-b tc-muted">Recording a sale made elsewhere, and the purchases recorded so far. A reversed purchase (the last row) cannot be reversed again.</small>
     </div>
     <p>Code that records a purchase (for example a checkout) is never given either of these. It gets the catalog's price and the catalog's rules.</p>

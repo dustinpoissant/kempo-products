@@ -254,7 +254,7 @@ Money is always a whole number of the smallest unit: `4999` is $49.99. Currencie
 
 ## Development
 
-The documentation site is built from `docs-src/` into `docs/`, which GitHub Pages serves (set Pages to deploy from the `docs` folder of the default branch). Edit `docs-src`, run `npm run docs:build`, and commit both.
+The documentation site is built from `docs-src/` into `docs/`, which GitHub Pages serves (set Pages to deploy from the `docs` folder of the default branch). Edit `docs-src`, run `npm run docs:build`, and commit both. Screenshots come in pairs: write `<img src="./media/name.png" ...>` in a page, and put `name-light.png` and `name-dark.png` in `docs-src/media`. The build turns the tag into both images and the site shows the one matching the visitor's theme.
 
 ```bash
 npm run link:local          # symlinks the sibling kempo checkouts

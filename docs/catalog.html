@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -161,7 +168,8 @@
       </table>
     </div>
     <div class="mb">
-      <img src="./media/admin-new-field.png" alt="The New field dialog on the Fields page, filling in a Year field: a number that applies to the Model car type, with help text, shown in the list and filterable by visitors." class="full b r" />
+      <img src="./media/admin-new-field-light.png" alt="The New field dialog on the Fields page, filling in a Year field: a number that applies to the Model car type, with help text, shown in the list and filterable by visitors." class="img-light full b r" />
+      <img src="./media/admin-new-field-dark.png" alt="The New field dialog on the Fields page, filling in a Year field: a number that applies to the Model car type, with help text, shown in the list and filterable by visitors." class="img-dark full b r" />
       <small class="d-b tc-muted">Adding a field. This "Year" is a number that only model cars have.</small>
     </div>
     <p>Tick <strong>Visitors can filter by this</strong> on a choice-list field and it becomes a drop-down on the public list. A field can be changed to another kind only where nothing can be lost: a choice list can become text, and short text can become long text.</p>
@@ -170,12 +178,14 @@
     <p>A product's <strong>status</strong> is <code>draft</code>, <code>published</code> or <code>archived</code>. Only published products are public. Its <strong>availability</strong> is <code>available</code>, <code>pending</code> or <code>sold</code>, for things like a dealership's "sale pending". Neither needs a count.</p>
     <p>A product's <strong>address</strong> (its slug) is made from its name, and is the last part of its page: <code>/products/1969-camaro/</code>. You can change it. A few words are reserved because they are this extension's own addresses: <code>api</code>, <code>components</code>, <code>vendor</code>, <code>sdk</code>, <code>index</code>, <code>admin</code>, <code>new</code> and <code>edit</code>.</p>
     <div class="mb">
-      <img src="./media/admin-product-form.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, stock and tags." class="full b r" />
+      <img src="./media/admin-product-form-light.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, stock and tags." class="img-light full b r" />
+      <img src="./media/admin-product-form-dark.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, stock and tags." class="img-dark full b r" />
       <small class="d-b tc-muted">The product form is split into tabs. Here the stock box is read-only, because another extension keeps it up to date.</small>
     </div>
     <p>The <strong>Description</strong> tab is the same full rich text editor pages use: headings, lists, links, tables and pictures. It is stored as HTML, and the public page sanitizes it when showing it, so scripts, event handlers and <code>javascript:</code> links never run. Search engines get its plain text as the meta description.</p>
     <div class="mb">
-      <img src="./media/admin-description.png" alt="The Description tab of the product form with a rich text editor: a toolbar of formatting buttons above the description text." class="full b r" />
+      <img src="./media/admin-description-light.png" alt="The Description tab of the product form with a rich text editor: a toolbar of formatting buttons above the description text." class="img-light full b r" />
+      <img src="./media/admin-description-dark.png" alt="The Description tab of the product form with a rich text editor: a toolbar of formatting buttons above the description text." class="img-dark full b r" />
       <small class="d-b tc-muted">The Description tab.</small>
     </div>
     <p><strong>Tags</strong> are short labels such as <code>featured</code> or <code>sale</code>. They are searchable, and the <a href="./components.html">components</a> can show only the products with a tag, which is the simplest way to curate a home page.</p>
@@ -203,7 +213,8 @@
     <p>You set one base price and adjust from it, instead of typing a full price for every combination. Adjustments from several options add up, and a price never goes below zero.</p>
     <p>An option can instead be set to <strong>replace the base price</strong>, so each of its choices is a full price. That is how most shops price sizes. Only one option per product can do this, and adjustments from the others still apply on top.</p>
     <div class="mb">
-      <img src="./media/admin-options.png" alt="The options editor with two options: Clear coat (Yes at 0.00, No at -2.50) and Color (Red 0.00, Blue 0.00 and unticked as out of stock, Gold +2.50)." class="full b r" />
+      <img src="./media/admin-options-light.png" alt="The options editor with two options: Clear coat (Yes at 0.00, No at -2.50) and Color (Red 0.00, Blue 0.00 and unticked as out of stock, Gold +2.50)." class="img-light full b r" />
+      <img src="./media/admin-options-dark.png" alt="The options editor with two options: Clear coat (Yes at 0.00, No at -2.50) and Color (Red 0.00, Blue 0.00 and unticked as out of stock, Gold +2.50)." class="img-dark full b r" />
       <small class="d-b tc-muted">The options editor. Prices are typed as an adjustment: <code>-2.50</code> takes two and a half off, and <code>+2.50</code> adds it. Untick "In stock" when a choice is sold out.</small>
     </div>
     <p>A choice can be marked sold out, and it is then shown as unavailable and cannot be bought.</p>
@@ -211,7 +222,8 @@
     <h3 class="mt">Choosing options is in the address</h3>
     <p>When a visitor chooses an option, it is written into the address: <code>/products/1969-camaro/?color=red&amp;clear-coat=no</code>. A refresh or a shared link brings the same choices back. The name is the option's key and the value is the choice's key. A choice that does not exist, or is sold out, is ignored.</p>
     <div class="mb">
-      <img src="./media/public-detail.png" alt="A product page for the 1969 Camaro at /products/1969-camaro/?color=gold&amp;clear-coat=no, with its picture, the price, a clear coat drop-down set to No (-2.50), a colour drop-down set to Gold (+2.50), and the description and details." class="full b r" />
+      <img src="./media/public-detail-light.png" alt="A product page for the 1969 Camaro at /products/1969-camaro/?color=gold&amp;clear-coat=no, with its picture, the price, a clear coat drop-down set to No (-2.50), a colour drop-down set to Gold (+2.50), and the description and details." class="img-light full b r" />
+      <img src="./media/public-detail-dark.png" alt="A product page for the 1969 Camaro at /products/1969-camaro/?color=gold&amp;clear-coat=no, with its picture, the price, a clear coat drop-down set to No (-2.50), a colour drop-down set to Gold (+2.50), and the description and details." class="img-dark full b r" />
       <small class="d-b tc-muted">A product page opened from <code>?color=gold&amp;clear-coat=no</code>: both choices are already selected, and the price is the server's: 54.99 minus 2.50 plus 2.50.</small>
     </div>
     <p>The price on the page is asked of the server every time the choices change, so it is always the number that would be charged. <strong>Never trust a price from a browser.</strong> Anything that charges money should ask for it with <code>getPrice</code>.</p>

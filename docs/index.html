@@ -17,6 +17,13 @@
   </script>
   <style>
     [id] { scroll-margin-top: 5rem; }
+    .img-dark { display: none; }
+    [theme="dark"] .img-dark { display: block; }
+    [theme="dark"] .img-light { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([theme="light"]) .img-dark { display: block; }
+      :root:not([theme="light"]) .img-light { display: none; }
+    }
   </style>
   
 
@@ -198,11 +205,13 @@
     <h3 class="mt">3. Add a product</h3>
     <p>Give it a name, set it to <strong>Published</strong>, and save. It is now public at <code>/products/</code>.</p>
     <div class="mb">
-      <img src="./media/admin-products.png" alt="The Products admin page: a searchable table of products with buttons to import, export, record purchases, manage types and fields, and add a new product." class="full b r" />
+      <img src="./media/admin-products-light.png" alt="The Products admin page: a searchable table of products with buttons to import, export, record purchases, manage types and fields, and add a new product." class="img-light full b r" />
+      <img src="./media/admin-products-dark.png" alt="The Products admin page: a searchable table of products with buttons to import, export, record purchases, manage types and fields, and add a new product." class="img-dark full b r" />
       <small class="d-b tc-muted">The Products page in the admin. Everything about the catalog is managed from here.</small>
     </div>
     <div class="mb">
-      <img src="./media/public-list.png" alt="The public products page: a search box, type and sort controls, and a grid of product cards with a picture, name and price." class="full b r" />
+      <img src="./media/public-list-light.png" alt="The public products page: a search box, type and sort controls, and a grid of product cards with a picture, name and price." class="img-light full b r" />
+      <img src="./media/public-list-dark.png" alt="The public products page: a search box, type and sort controls, and a grid of product cards with a picture, name and price." class="img-dark full b r" />
       <small class="d-b tc-muted">What visitors see at <code>/products/</code>, with no setup.</small>
     </div>
     <h3 class="mt">4. Show some on your home page</h3>
