@@ -54,7 +54,7 @@ The price on the page is asked of the server every time the choices change, so i
 
 ## Images
 
-If [kempo-media](https://github.com/dustinpoissant/kempo-media) is installed and enabled, the product form lets you upload pictures; the first is the primary one shown in lists. Without it the field is simply not shown and pages show no picture.
+If [kempo-media](https://github.com/dustinpoissant/kempo-media) is installed and enabled, the product form lets you upload pictures; the first is the primary one shown in lists. Lists and cards load the small thumbnail (kempo-media gets it from kempo-thumbs) and use the full image only while the thumbnail is still being made. Without it the field is simply not shown and pages show no picture.
 
 ## The public pages
 

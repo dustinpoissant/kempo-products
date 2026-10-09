@@ -60,7 +60,7 @@ export default class ProductCard extends ShadowComponent {
     return html`<article class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 100%;">
       <a href=${this.link} class="no-link" style="display: block; position: relative; aspect-ratio: 4 / 3; background: var(--c_bg__alt, var(--c_bg)); overflow: hidden;" aria-label=${product.name}>
         ${image
-          ? html`<img src=${image.path} alt=${image.alt || product.name} loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">`
+          ? html`<img src=${image.thumbnail ?? image.path} alt=${image.alt || product.name} loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">`
           : html`<span style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2rem;" class="tc-muted"><k-icon name="image"></k-icon></span>`}
         ${badge ? html`<span class="bg-inv" style="position: absolute; top: var(--spacer_h); left: var(--spacer_h); padding: 0 var(--spacer_h); border-radius: var(--radius); font-size: 0.8rem;">${badge}</span>` : ''}
       </a>

@@ -14,7 +14,7 @@ A product catalog for kempo that works on its own, with no checkout and no inven
 - **Product types and fields** an owner builds in the admin with no code: a field applies to every product or to one type, in kinds short text, long text, number, yes/no, date, colour, rating, choice list and images. Fields can be filterable on the public list.
 - **Options with relative prices.** A choice adds to or takes from the base price (`-1.00` for no clear coat), or, per option, replaces it. One replacing option per product. The server computes every price; nothing trusts a browser.
 - **Stock** as a number, or unlimited by default, so a catalog that never counts never shows "out of stock".
-- Optional images through kempo-media, hidden when it is not installed.
+- Optional images through kempo-media, hidden when it is not installed. Lists and cards load the small thumbnail the API supplies (kempo-media's, made by kempo-thumbs) and fall back to the full image while one is not ready; the detail page shows the full image, with thumbnails in its gallery strip.
 - Ownership: types, fields and products can belong to an extension, which alone can delete them or change what defines them.
 
 ### Public pages
