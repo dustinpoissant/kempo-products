@@ -1,5 +1,6 @@
 import ShadowComponent from '/kempo-ui/components/ShadowComponent.js';
-import { html } from '/kempo-ui/lit-all.min.js';
+import { html, unsafeHTML } from '/kempo-ui/lit-all.min.js';
+import sanitizeHtml from '/kempo-ui/utils/sanitizeHtml.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
 import { getConfig, getProduct, getPrice, displayMoney, formatMoney } from '/products/sdk.js';
@@ -92,7 +93,7 @@ export default class ProductDetail extends ShadowComponent {
     const { product } = this.data;
     const image = this.data.images[product.images[0]];
     const absolute = path => path ? new URL(path, location.origin).href : undefined;
-    const description = (product.description || product.name).replace(/\s+/g, ' ').slice(0, 300);
+    const description = (new DOMParser().parseFromString(sanitizeHtml(product.description).replace(/<\/(p|h[1-6]|li|div|tr|td|th|blockquote)>|<br\s*\/?>/gi, '$& '), 'text/html').body.textContent || product.name).replace(/\s+/g, ' ').trim().slice(0, 300);
     let meta = document.head.querySelector('meta[name="description"]');
     if(!meta){
       meta = document.createElement('meta');
@@ -272,7 +273,9 @@ export default class ProductDetail extends ShadowComponent {
         ${status ? html`<p><strong>${status}</strong></p>` : ''}
         ${product.options.map(option => this.renderOption(option))}
         <slot name="actions"></slot>
-        ${product.description ? html`<div style="white-space: pre-line;" class="mb">${product.description}</div>` : ''}
+        ${product.description ? (/<[a-z][\s\S]*>/i.test(product.description)
+          ? html`<div class="mb">${unsafeHTML(sanitizeHtml(product.description))}</div>`
+          : html`<div style="white-space: pre-line;" class="mb">${product.description}</div>`) : ''}
         ${this.renderDetails()}
         ${product.tags.length ? html`<p class="tc-muted small">${product.tags.join(' · ')}</p>` : ''}
         <slot name="extra"></slot>

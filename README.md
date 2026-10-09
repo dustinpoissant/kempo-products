@@ -205,7 +205,19 @@ Declare them in your `kempo-config.json` `hooks`. Every payload carries `actor`:
 
 ### Adding to the admin form
 
-The product form has a `panels` slot above its Save button. An extension supplies a panel by shipping a fragment named `products-admin-product-panels` in its own `admin/` directory (`admin/products-admin-product-panels.fragment.html`). The form fires `draft-change` as it is edited and `product-saved` when the product is stored; a panel with more to save calls `event.detail.waitUntil(promise)` and the page waits.
+The product form is split into tabs: **Details**, **Description** (a full rich text editor, the same as pages use), **Media** and **Options**. An extension adds its own tab by shipping a global content file in its `admin/` directory (`admin/product-tab.global.html`) that pushes a `<k-prod-tab>` into the `products-admin-product-tabs` location the form pages carry:
+
+```html
+<content id="my-extension-product-tab" name="Shipping tab" owner="my-extension" enabled="true" locked="true" location="products-admin-product-tabs" priority="10">
+<k-prod-tab name="shipping" label="Shipping">
+  <my-shipping-fields></my-shipping-fields>
+</k-prod-tab>
+</content>
+```
+
+Tabs from several extensions all appear, after the built-in ones, ordered by `priority`. The form fires `draft-change` as it is edited and `product-saved` when the product is stored; a tab with more to save calls `event.detail.waitUntil(promise)` and the page waits. Your elements find the form with `this.closest('k-prod-form')`.
+
+The description is stored as HTML. The public product page sanitizes it when showing it (scripts, event handlers and `javascript:` links are removed) and the meta description and structured data use its plain text.
 
 ## Permissions, groups and settings
 

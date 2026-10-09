@@ -104,7 +104,7 @@
         <a href="./extending.html#register" class="d-b">Types and fields</a>
         <a href="./extending.html#ownership" class="d-b">Ownership</a>
         <a href="./extending.html#hooks" class="d-b">Hooks</a>
-        <a href="./extending.html#panels" class="d-b">Adding to the pages</a>
+        <a href="./extending.html#tabs" class="d-b">Adding to the pages</a>
       </div>
       <h5><a href="./reference.html">Reference</a></h5>
       <div class="ml mb -mt">
@@ -237,33 +237,43 @@
     </div>
     <p>Handlers run one at a time in the order they were registered, and are awaited, so a slow one holds up the request that triggered it. A notification handler that throws is logged and does not stop the others.</p>
 
-    <h2 id="panels" class="mt">Adding to the pages</h2>
-    <p>A page cannot define a <code>&lt;location&gt;</code> of its own, so extensions add to products' pages through <strong>fragments</strong>: a file named after a fragment the page includes, in your own package, which kempo picks up without any registration.</p>
-    <div class="table-wrapper mb">
-      <table>
-        <thead><tr><th>Fragment</th><th>Where it appears</th><th>Put it in</th></tr></thead>
-        <tbody>
-          <tr><td><code>products-admin-product-panels</code></td><td>The admin product form, above the Save button</td><td><code>admin/products-admin-product-panels.fragment.html</code></td></tr>
-          <tr><td><code>products-list-extra</code></td><td>Under the public product list</td><td><code>public/products-list-extra.fragment.html</code></td></tr>
-          <tr><td><code>products-detail-extra</code></td><td>Under a public product page</td><td><code>public/products-detail-extra.fragment.html</code></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p>A fragment has one winner, chosen by an optional <code>priority</code> on its wrapper, so use one that is specific to your extension. The admin form also tells a panel what is going on:</p>
+    <h2 id="tabs" class="mt">Adding to the pages</h2>
+    <h3>A tab on the product form</h3>
+    <p>The admin product form is split into tabs: <strong>Details</strong>, <strong>Description</strong>, <strong>Media</strong> and <strong>Options</strong>. Any extension can add its own, such as a shipping, SEO or tax tab. Ship a global content file in your package's <code>admin/</code> directory that pushes a <code>&lt;k-prod-tab&gt;</code> into the <code>products-admin-product-tabs</code> location. Kempo picks it up without any registration, and it disappears when your extension is disabled.</p>
+    <pre><code class="hljs xml"><span class="hljs-comment">&lt;!-- admin/product-tab.global.html --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;my-extension-product-tab&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;Shipping tab&quot;</span> <span class="hljs-attr">owner</span>=<span class="hljs-string">&quot;my-extension&quot;</span> <span class="hljs-attr">enabled</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">locked</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-admin-product-tabs&quot;</span> <span class="hljs-attr">priority</span>=<span class="hljs-string">&quot;10&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-tab</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;shipping&quot;</span> <span class="hljs-attr">label</span>=<span class="hljs-string">&quot;Shipping&quot;</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/my-extension/components/ShippingFields.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">my-shipping-fields</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">my-shipping-fields</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-tab</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span></code></pre>
+    <p>Tabs from several extensions all appear, after the built-in ones, ordered by <code>priority</code>. Your element finds the form with <code>this.closest('k-prod-form')</code> and listens to what is going on:</p>
     <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Event on the form</th><th>When</th><th><code>event.detail</code></th></tr></thead>
         <tbody>
           <tr><td><code>draft-change</code></td><td>The form is edited</td><td><code>{ changed, draft }</code></td></tr>
-          <tr><td><code>product-saved</code></td><td>The product has been stored</td><td><code>{ product, created, waitUntil }</code>. A panel with more to save calls <code>waitUntil(promise)</code> and the page waits for it before leaving</td></tr>
+          <tr><td><code>product-saved</code></td><td>The product has been stored</td><td><code>{ product, created, waitUntil }</code>. A tab with more to save calls <code>waitUntil(promise)</code> and the page waits for it before leaving</td></tr>
         </tbody>
       </table>
     </div>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">const</span> form = <span class="hljs-variable language_">document</span>.<span class="hljs-title function_">querySelector</span>(<span class="hljs-string">&#x27;k-prod-form&#x27;</span>);
+    <pre><code class="hljs javascript"><span class="hljs-keyword">const</span> form = <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">closest</span>(<span class="hljs-string">&#x27;k-prod-form&#x27;</span>);
 form.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;product-saved&#x27;</span>, <span class="hljs-function"><span class="hljs-params">event</span> =&gt;</span> {
   event.<span class="hljs-property">detail</span>.<span class="hljs-title function_">waitUntil</span>(<span class="hljs-title function_">saveMyOwnThing</span>(event.<span class="hljs-property">detail</span>.<span class="hljs-property">product</span>.<span class="hljs-property">id</span>));
 });</code></pre>
-    <p>On the public pages, <code>&lt;k-prod-card&gt;</code> and <code>&lt;k-prod-detail&gt;</code> have slots (<code>actions</code>, <code>extra</code>) and <code>&lt;k-prod-detail&gt;</code> fires <code>selection-change</code>, which is how a buy button learns which options are chosen. See <a href="./components.html">Components</a>.</p>
+
+    <h3 class="mt">Under the public pages</h3>
+    <p>The public pages are extended with <strong>fragments</strong>: a file named after a fragment the page includes, in your own package, which kempo also picks up without registration.</p>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Fragment</th><th>Where it appears</th><th>Put it in</th></tr></thead>
+        <tbody>
+          <tr><td><code>products-list-extra</code></td><td>Under the public product list</td><td><code>public/products-list-extra.fragment.html</code></td></tr>
+          <tr><td><code>products-detail-extra</code></td><td>Under a public product page</td><td><code>public/products-detail-extra.fragment.html</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A fragment has one winner, chosen by an optional <code>priority</code> on its wrapper, so use one that is specific to your extension.</p>
   
     <hr />
     <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>

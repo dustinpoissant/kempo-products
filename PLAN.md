@@ -172,7 +172,7 @@ Settings: `currency` (string, `usd`), `prices_visible` (boolean, true), `page_si
 ## 12. Platform dependencies
 
 - kempo >= 4.3.0 and kempo-server >= 3.4.0, as in the peer dependencies.
-- **Verified:** a page cannot define a `<location>`, but another extension can supply a *fragment* the page includes, from its own `admin/` directory. The product form therefore has a `panels` slot, filled by a `products-admin-product-panels` fragment, and fires `draft-change` and `product-saved` (with `waitUntil`) so a panel can read the form and save with it. That is how the connector's "Made from" panel works.
+- **Verified:** the admin product pages carry a `<location name="products-admin-product-tabs">` inside the form, and another extension pushes a `<k-prod-tab>` into it from an `admin/*.global.html`. The form turns each into a tab after the built-in ones (Details, Description, Media, Options), and fires `draft-change` and `product-saved` (with `waitUntil`) so a tab can read the form and save with it. That is how the connector's "Made from" tab works, and how shipping, SEO or tax extensions can add theirs.
 - Tracked elsewhere: installing missing dependencies when installing a dependent extension. The connector needs it for a good experience; until then it lists both packages as npm `dependencies`.
 
 ## 13. Build phases

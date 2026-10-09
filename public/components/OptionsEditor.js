@@ -70,7 +70,7 @@ export default class OptionsEditor extends ShadowComponent {
   */
   renderChoice(option, index, choice, choiceIndex){
     const replacing = option.priceType === 'replace';
-    return html`<div class="d-f mbh" style="align-items: center; gap: var(--spacer_h); flex-wrap: nowrap;">
+    return html`<div class="d-f b r pq mbh" style="align-items: center; gap: var(--spacer_h); flex-wrap: nowrap;">
       <input type="text" class="flex" style="width: auto; min-width: 0; margin: 0;" placeholder="Choice, e.g. Red" aria-label="Choice name"
         .value=${choice.label} @input=${event => this.patchChoice(index, choiceIndex, { label: event.target.value })}>
       <k-prod-money style="width: 8rem;" ?signed=${!replacing} decimals=${this.decimals} .value=${choice.price} placeholder=${replacing ? 'Price' : '+/- 0.00'}
@@ -80,7 +80,7 @@ export default class OptionsEditor extends ShadowComponent {
         <input type="checkbox" .checked=${choice.available} ?disabled=${Boolean(this.managed)}
           @change=${event => this.patchChoice(index, choiceIndex, { available: event.target.checked })}> In stock
       </label>
-      <button type="button" class="no-btn tc-danger" style="cursor: pointer;" title="Remove this choice" aria-label="Remove this choice"
+      <button type="button" class="no-btn tc-danger" style="cursor: pointer;" title="Remove this choice" aria-label="Remove choice"
         ?disabled=${option.choices.length < 2} @click=${() => this.removeChoice(index, choiceIndex)}><k-icon name="delete"></k-icon></button>
     </div>`;
   }
@@ -97,11 +97,14 @@ export default class OptionsEditor extends ShadowComponent {
         <label class="checkbox" style="margin: 0; white-space: nowrap;">
           <input type="checkbox" .checked=${option.required} @change=${event => this.patchOption(index, { required: event.target.checked })}> Required
         </label>
-        <button type="button" class="no-btn tc-danger" style="cursor: pointer;" title="Remove this option" aria-label="Remove this option"
+        <button type="button" class="no-btn tc-danger" style="cursor: pointer;" title="Remove this whole option, with all its choices" aria-label="Remove option"
           @click=${() => this.removeOption(index)}><k-icon name="delete"></k-icon></button>
       </div>
-      ${option.choices.map((choice, choiceIndex) => this.renderChoice(option, index, choice, choiceIndex))}
-      <button type="button" class="btn mbh" @click=${() => this.addChoice(index)}><k-icon name="add"></k-icon> Add choice</button>
+      <div class="ml">
+        <small class="d-b tc-muted mbq">Choices</small>
+        ${option.choices.map((choice, choiceIndex) => this.renderChoice(option, index, choice, choiceIndex))}
+        <button type="button" class="btn" @click=${() => this.addChoice(index)}><k-icon name="add"></k-icon> Add choice</button>
+      </div>
     </div>`;
   }
 

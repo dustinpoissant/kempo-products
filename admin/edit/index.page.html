@@ -13,10 +13,10 @@ locked: true
 
   <!--
     ?id= is the product; ?next= (a path on this site) is where to go after saving or cancelling.
-    Extensions add a panel with a fragment named products-admin-product-panels; see the new page.
+    Extensions add a tab with a global content file; see the new page.
   -->
   <k-prod-form from-url>
-    <div slot="panels"><fragment name="products-admin-product-panels"></fragment></div>
+    <location name="products-admin-product-tabs"></location>
   </k-prod-form>
 </content>
 </page>

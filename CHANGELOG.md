@@ -28,7 +28,9 @@ A product catalog for kempo that works on its own, with no checkout and no inven
 - `recordPurchase` prices lines from the catalog, takes the stock of every line in one transaction, is idempotent by `ref`, and fires `kempo-products:purchase:recorded`. `reversePurchase` puts stock back once. A person recording a sale made elsewhere can price a product that has none.
 - `setManagedBy`, `setStock` and `setChoiceAvailability` let an extension keep stock and choice availability in step with something else; people see them read-only.
 - Guard and notification hooks for products, types, fields, stock and purchases.
-- The admin product form has a `panels` slot and fires `draft-change` and `product-saved`, so another extension's panel can sit in it and save with it.
+- The admin product form is split into tabs (Details, Description, Media, Options). Another extension adds a tab by pushing a `<k-prod-tab>` into the `products-admin-product-tabs` location from an `admin/*.global.html`, and the form fires `draft-change` and `product-saved` so the tab can save with it.
+- The description is edited with the full rich text editor and shown (sanitized) on the product page; plain-text descriptions keep their line breaks.
+- In the options editor each choice sits in its own box under its option, so removing an option and removing a choice are no longer easy to confuse.
 
 ### Import and export
 
