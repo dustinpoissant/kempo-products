@@ -1,7 +1,6 @@
 {
   "name": "kempo-products",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "A product catalog for kempo cms: browse, filter and inquire about products, with no checkout required",
   "license": "MIT",
   "author": "Dustin Poissant",
