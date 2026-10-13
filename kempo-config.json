@@ -3,6 +3,22 @@
   "git": "https://github.com/dustinpoissant/kempo-products",
   "public-scope": "products",
   "schema": "./server/db/schema.js",
+  "widgets": [
+    {
+      "key": "catalog",
+      "title": "Products",
+      "description": "How many products there are, how many purchases were recorded, and the latest products.",
+      "icon": "label",
+      "element": "k-prod-widget",
+      "module": "/products/components/ProductsWidget.js",
+      "defaultWidth": 2,
+      "defaultHeight": 2,
+      "minWidth": 1,
+      "minHeight": 2,
+      "permission": "products:read",
+      "priority": 101
+    }
+  ],
   "permissions": [
     {
       "name": "products:read",

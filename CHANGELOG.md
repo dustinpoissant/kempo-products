@@ -4,6 +4,10 @@ All notable changes to `kempo-products` are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Dashboard widget.** A **Products** widget on the kempo admin dashboard showing catalog size, recorded purchases and the latest products, with a **New product** button, declared in `widgets` in `kempo-config.json`. Needs a kempo with the dashboard; ignored on older versions.
+
 First release.
 
 A product catalog for kempo that works on its own, with no checkout and no inventory.

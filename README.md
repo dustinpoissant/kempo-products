@@ -264,3 +264,7 @@ DATABASE_URL=postgresql://kempo:kempo@localhost:5443/kempo_products_test npm tes
 ```
 
 The database tests skip themselves when no database is reachable, and refuse to run unless its name ends in `_test`, because they empty the tables. **A green run with `SKIPPED` did not test the database.**
+
+## Dashboard widget
+
+Adds a **Products** widget to the kempo admin dashboard showing catalog size, recorded purchases and the latest products, with a **New product** button. It is declared in `widgets` in `kempo-config.json` and registered when the extension is installed or updated; people only see it if they hold its permission, and can hide, reorder or resize it from the dashboard's Customize dialog. Needs a kempo with the dashboard (see kempo's `docs/dashboard.md`); on an older kempo the entry is ignored.
