@@ -39,7 +39,7 @@ test('settings are declared with a name, a value, a type and a description', () 
 });
 
 test('the public scope matches between the config and the package', () => {
-  assert.equal(config['public-scope'], pkg.kempo['public-scope']);
+  assert.equal('kempo' in pkg, false, 'package.json has a kempo field; it lives in kempo-config.json only');
   assert.equal(config['public-scope'], 'products');
 });
 
