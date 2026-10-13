@@ -23,7 +23,16 @@ import install from '../install.js';
   with DATABASE_URL set to a database whose name ends in _test.
 */
 const url = process.env.DATABASE_URL ?? '';
-const reachable = /_test$/.test(url.split('?')[0]) && await db.execute(sql`select 1`).then(() => true).catch(() => false);
+/*
+  The unit tier (KEMPO_DB=pglite) is an in-memory database that is always a throwaway. Otherwise the
+  database must be one whose name ends in _test, since these suites empty its tables.
+*/
+const unitTier = process.env.KEMPO_DB === 'pglite';
+const reachable = (unitTier || /_test$/.test(url.split('?')[0])) && await db.execute(sql`select 1`).then(() => true).catch(() => false);
+
+if(!reachable && process.env.KEMPO_TEST_TIER === 'integration'){
+  throw new Error('The integration tier needs DATABASE_URL pointing at a throwaway Postgres named *_test with the schema applied (npx drizzle-kit push --force).');
+}
 
 const purge = async () => {
   for(const table of [kempoProductPurchase, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]){
@@ -43,7 +52,7 @@ const refused = ([error, value], code) => {
   return error;
 };
 
-after(() => db.$client.end());
+after(() => unitTier ? db.$client.close() : db.$client.end());
 
 describe('data layer', { skip: reachable ? false : 'no throwaway database (set DATABASE_URL to one ending in _test)' }, () => {
   before(async () => {
