@@ -4,6 +4,9 @@ import { pgTable, text, timestamp, integer, boolean, jsonb, index, uniqueIndex }
   A product has only the columns every catalog needs. Everything else lives in `data`, keyed by the
   `key` of a kempoProductField row, so fields can be added and removed without touching the schema.
   Money is an integer in the currency's smallest unit; `price` is null when a product has none.
+
+  The three `credit*` columns belong to the optional kempo-credits integration (server/utils/credits.js)
+  and mean nothing when it is not installed and enabled.
 */
 export const kempoProduct = pgTable('kempoProduct', {
   id: text('id').primaryKey(),
@@ -15,6 +18,9 @@ export const kempoProduct = pgTable('kempoProduct', {
   availability: text('availability').notNull().default('available'), // available | pending | sold
   price: integer('price'),
   priceLabel: text('priceLabel').notNull().default(''), // shown when there is no price, e.g. "Call for price"
+  creditsGranted: integer('creditsGranted').notNull().default(0), // kempo-credits: credits the buyer is given, per unit bought
+  creditsOnly: boolean('creditsOnly').notNull().default(false), // kempo-credits: buying it gives credits and nothing else
+  creditPercent: integer('creditPercent').notNull().default(0), // kempo-credits: how much of the price may be paid in credits, 0-100
   stock: integer('stock').notNull().default(-1), // -1 = unlimited
   managedBy: text('managedBy').notNull().default(''), // '' = people; otherwise the extension that maintains stock and choice availability
   images: jsonb('images').notNull().default([]), // kempo-media ids, in order; empty without kempo-media

@@ -7,6 +7,7 @@ import { computePrice } from './pricing.js';
 import { unavailableReason, UNLIMITED } from './stock.js';
 import { EVENTS, notify } from './hooks.js';
 import { getCurrency } from './settings.js';
+import { creditsEnabled, grantPurchaseCredits, takeBackPurchaseCredits } from './credits.js';
 
 const newId = () => crypto.randomBytes(8).toString('hex');
 
@@ -74,6 +75,7 @@ export const recordPurchase = async ({ ref, lines: input, userId = '' } = {}, { 
   if(lookupError) return [lookupError, null];
   const products = new Map(found.items.map(product => [product.id, product]));
 
+  const withCredits = await creditsEnabled();
   const snapshot = [];
   for(const line of lines){
     const product = products.get(line.productId);
@@ -97,6 +99,8 @@ export const recordPurchase = async ({ ref, lines: input, userId = '' } = {}, { 
     snapshot.push({
       productId: product.id, slug: product.slug, name: product.name, quantity: line.quantity,
       unitPrice, selections, optionLines,
+      /* What each one gave, kept so a later change to the product cannot change what was owed. */
+      ...(withCredits && product.creditsGranted ? { creditsGranted: product.creditsGranted } : {}),
     });
   }
 
@@ -120,12 +124,22 @@ export const recordPurchase = async ({ ref, lines: input, userId = '' } = {}, { 
     });
     await notify(EVENTS.purchaseRecorded, { purchase, userId, actor: '' });
     await notifyStock(totals, products, -1, 'purchase');
+    await settleCredits(grantPurchaseCredits, purchase, 'give');
     return [null, purchase];
   } catch(error) {
     if(error instanceof Refusal) return [error.error, null];
     if(isUniqueViolation(error)) return [{ code: 409, msg: 'A purchase with that ref is already recorded' }, null];
     return [{ code: 500, msg: 'Failed to record the purchase' }, null];
   }
+};
+
+/*
+  The credits a purchase carries are given after it is committed, and a failure never undoes the
+  sale: it is logged, and `grantPurchaseCredits(purchase)` is safe to call again later.
+*/
+const settleCredits = async (action, purchase, verb) => {
+  const [error] = await action(purchase);
+  if(error) console.error(`[kempo-products] Could not ${verb} the credits for purchase ${purchase.ref}: ${error.msg}`);
 };
 
 /* Tells listeners the stock of each finite-stock product changed. `direction` is -1 for a sale, 1 for a return. */
@@ -189,6 +203,7 @@ export const reversePurchase = async (ref, { actor = '' } = {}) => {
     });
     await notify(EVENTS.purchaseReversed, { purchase, actor });
     await notifyStock(totals, before, 1, 'reversal');
+    await settleCredits(takeBackPurchaseCredits, purchase, 'take back');
     return [null, purchase];
   } catch(error) {
     if(error instanceof Refusal) return [error.error, null];

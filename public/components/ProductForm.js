@@ -34,13 +34,15 @@ export const safeNext = (value, fallback) => (typeof value === 'string' && /^\/(
 
 const blank = () => ({
   name: '', slug: '', type: '', description: '', status: 'draft', availability: 'available', price: null, priceLabel: '',
-  stock: -1, tags: [], images: [], fields: {}, options: [],
+  stock: -1, tags: [], images: [], fields: {}, options: [], creditsGranted: 0, creditsOnly: false, creditPercent: 0,
 });
 
 /*
   Adds or edits a product, on one page split into tabs: Details (the basics, price, stock and the
   fields of the product's type), Description (a full rich text editor), Media (pictures) and
-  Options. Pass `product-id` to edit; without it, a new product is
+  Options, plus Credits when kempo-credits is installed and enabled, where a product says how many
+  credits buying it gives and whether it is nothing but credits. The Details tab then also says how
+  much of the price may be paid in credits. Pass `product-id` to edit; without it, a new product is
   made. With `from-url` it takes both from the address instead (?id= and ?next=). After saving it
   goes to `next` (a path on this site), where the list shows a message.
 
@@ -185,6 +187,11 @@ export default class ProductForm extends ShadowComponent {
     return this.allFields.filter(field => !field.productType || field.productType === this.draft.type);
   }
 
+  /* True while kempo-credits is installed and enabled: the only time credit settings are shown. */
+  get credits(){
+    return Boolean(this.config?.credits?.enabled);
+  }
+
   get editing(){
     return Boolean(this.original);
   }
@@ -247,6 +254,11 @@ export default class ProductForm extends ShadowComponent {
       fields: Object.fromEntries(this.fields.map(field => [field.key, draft.fields[field.key] ?? (field.type === 'boolean' ? false : '')])),
       options: draft.options,
     };
+    if(this.credits){
+      data.creditsGranted = draft.creditsGranted;
+      data.creditsOnly = draft.creditsOnly;
+      data.creditPercent = draft.creditsOnly ? 0 : draft.creditPercent;
+    }
     if(!this.editing && !data.slug.trim()) delete data.slug;
     if(this.owned) for(const property of ['name', 'slug', 'type']) delete data[property];
     if(this.managed) delete data.stock;
@@ -287,6 +299,53 @@ export default class ProductForm extends ShadowComponent {
   /*
     View
   */
+  renderCreditPercent(){
+    const { draft, config } = this;
+    const quote = draft.price && draft.creditPercent > 0 && !draft.creditsOnly
+      ? Math.ceil(Math.floor(draft.price * draft.creditPercent / 100) * config.credits.perUnit / 10 ** config.decimals)
+      : 0;
+    const say = draft.creditsOnly ? 'A credit-only product cannot be paid for with credits.'
+      : draft.creditPercent === 0 ? '0% means this cannot be paid for with credits at all. 100% means it can be bought entirely with credits.'
+      : draft.creditPercent === 100 ? 'It can be bought entirely with credits.'
+      : `Up to ${draft.creditPercent}% of the price can be paid in credits, the rest in money.`;
+    return html`<div class="mb" style="max-width: 28rem;">
+      <label class="d-b mbq" for="creditPercent">Percentage that can be paid in credits</label>
+      <div class="d-f" style="gap: var(--spacer_h); align-items: center;">
+        <input type="number" id="creditPercent" style="width: 7rem;" min="0" max="100" step="1" .value=${String(draft.creditsOnly ? 0 : draft.creditPercent)} ?disabled=${draft.creditsOnly}
+          @input=${event => this.set({ creditPercent: Math.min(100, Math.max(0, Math.trunc(Number(event.target.value)) || 0)) })}>
+        <span>%</span>
+      </div>
+      <p class="tc-muted mbq">${say}${quote ? ` At the current rate that is up to ${new Intl.NumberFormat().format(quote)} credits.` : ''}</p>
+    </div>`;
+  }
+
+  renderCredits(){
+    const { draft, config } = this;
+    const code = config.currency.toUpperCase();
+    return html`<div style="max-width: 36rem;">
+      <p class="tc-muted">Credits are the site's in-app currency, kept by the kempo-credits extension. Buying this product can give the buyer some, and selling credits is just a product that gives them.</p>
+      <div class="mb">
+        <label class="d-b mbq" for="creditsGranted">Credits the buyer gets</label>
+        <input type="number" id="creditsGranted" style="width: 12rem;" min="0" step="1" .value=${String(draft.creditsGranted)}
+          @input=${event => this.set({ creditsGranted: Math.max(0, Math.trunc(Number(event.target.value)) || 0) })}>
+        <p class="tc-muted mbq">For each one bought. 0 gives none.</p>
+      </div>
+      <div class="mb">
+        <label class="checkbox"><input type="checkbox" id="creditsOnly" .checked=${draft.creditsOnly}
+          @change=${event => this.set(event.target.checked ? { creditsOnly: true, creditPercent: 0 } : { creditsOnly: false })}> This is a credit-only item</label>
+        <p class="tc-muted mbq">${draft.creditsOnly
+          ? 'Buying it gives credits and nothing else: this is how people buy credits. It cannot itself be paid for in credits.'
+          : draft.creditsGranted > 0
+            ? 'Otherwise the credits are a gift with the product: the buyer gets the item and these credits too.'
+            : 'Tick this to sell credits themselves, as a pack.'}</p>
+      </div>
+      ${draft.creditsOnly && draft.creditsGranted < 1 ? html`<p class="tc-danger">Give at least 1 credit, or this is not a credit-only item.</p>` : ''}
+      ${draft.creditsOnly && draft.price && draft.creditsGranted > 0
+        ? html`<p class="tc-muted">That is ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(draft.creditsGranted / (draft.price / 10 ** config.decimals))} credits for each ${code} 1.00 spent.</p>`
+        : ''}
+    </div>`;
+  }
+
   render(){
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
@@ -300,6 +359,7 @@ export default class ProductForm extends ShadowComponent {
         <k-tab for="description">Description</k-tab>
         <k-tab for="media">Media</k-tab>
         <k-tab for="options">Options</k-tab>
+        ${this.credits ? html`<k-tab for="credits">Credits</k-tab>` : ''}
         ${this.extraTabs.map(tab => html`<k-tab for=${tab.name}>${tab.label}</k-tab>`)}
         <k-tab-content name="details" class="pt">
           <div class="mb">
@@ -350,6 +410,7 @@ export default class ProductForm extends ShadowComponent {
               <small class="d-b tc-muted">${managed ? `Kept up to date by ${managed}.` : 'Blank is unlimited.'}</small>
             </div>
           </div>
+          ${this.credits ? this.renderCreditPercent() : ''}
           <div class="mb">
             <label class="d-b mbq" for="tags">Tags</label>
             <k-tags id="tags" .value=${draft.tags.join(',')}></k-tags>
@@ -371,6 +432,7 @@ export default class ProductForm extends ShadowComponent {
         <k-tab-content name="options" class="pt">
           <k-prod-options-editor .value=${draft.options} decimals=${decimals} managed=${managed} @change=${event => this.set({ options: event.detail.value })}></k-prod-options-editor>
         </k-tab-content>
+        ${this.credits ? html`<k-tab-content name="credits" class="pt">${this.renderCredits()}</k-tab-content>` : ''}
         ${this.extraTabs.map(tab => html`<k-tab-content name=${tab.name} class="pt"><slot name=${`tab-${tab.name}`}></slot></k-tab-content>`)}
       </k-tabs>
       <div class="d-f" style="gap: var(--spacer_h); flex-wrap: wrap;">

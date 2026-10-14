@@ -31,6 +31,13 @@ const enc = encodeURIComponent;
 export const getConfig = () => req('GET', `${BASE}/config`);
 
 /*
+  The catalog's settings, for the settings page. Needs products:settings:manage. Saving takes an
+  object of { name: value } and refuses names it does not know.
+*/
+export const getSettings = () => req('GET', `${BASE}/settings`);
+export const saveSettings = values => req('PUT', `${BASE}/settings`, values);
+
+/*
   Products. `filters` is an object of field key -> exact value, e.g. { scale: '1:18' }. Visitors
   only ever see published products; people who can manage the catalog can pass `status`.
 */

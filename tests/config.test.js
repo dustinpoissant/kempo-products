@@ -62,6 +62,14 @@ test('every permission and setting is documented in the README', () => {
   for(const setting of config.settings) assert.ok(readme.includes(`\`${setting.name}\``), setting.name);
 });
 
+test('the product routes pass the credit properties through', () => {
+  /* The routes name what they accept, so a property the data layer takes is silently dropped by a route that forgets it. */
+  for(const route of ['public/api/products/POST.js', 'public/api/products/[id]/PATCH.js']){
+    const source = read(route);
+    for(const property of ['creditsGranted', 'creditsOnly', 'creditPercent']) assert.ok(source.includes(property), `${route} drops ${property}`);
+  }
+});
+
 test('the files the package ships exist', () => {
   for(const file of pkg.files) assert.ok(existsSync(new URL(`../${file}`, import.meta.url)), file);
   for(const target of Object.values(pkg.exports)) assert.ok(existsSync(new URL(`../${target}`, import.meta.url)), target);

@@ -12,6 +12,7 @@ import { normalizeStock, UNLIMITED, STATUSES, AVAILABILITIES, unavailableReason 
 import { lockedProductChanges, notYours, stockLocked, ownerLabel } from './ownership.js';
 import { getAssets, checkAssets } from './media.js';
 import { getCurrency } from './settings.js';
+import { normalizeCredits, quoteFor } from './credits.js';
 
 const newId = () => crypto.randomBytes(8).toString('hex');
 
@@ -49,6 +50,9 @@ const shape = (row, options = []) => {
     availability: row.availability,
     price: row.price,
     priceLabel: row.priceLabel,
+    creditsGranted: row.creditsGranted ?? 0,
+    creditsOnly: row.creditsOnly ?? false,
+    creditPercent: row.creditPercent ?? 0,
     stock: row.stock,
     managedBy: row.managedBy,
     images: row.images ?? [],
@@ -253,6 +257,9 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
     price: data.price ?? null,
     priceLabel: data.priceLabel ?? '',
     stock: data.stock ?? UNLIMITED,
+    creditsGranted: data.creditsGranted,
+    creditsOnly: data.creditsOnly,
+    creditPercent: data.creditPercent,
     images: data.images ?? [],
     tags: data.tags ?? [],
     fields: data.fields ?? {},
@@ -271,6 +278,9 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
   if(draft.name === undefined) return [{ code: 400, msg: 'Name is required' }, null];
   const [invalid, values] = await validate(draft, { type, partial: false });
   if(invalid) return [invalid, null];
+  const [creditsInvalid, credits] = await normalizeCredits(draft);
+  if(creditsInvalid) return [creditsInvalid, null];
+  Object.assign(values, credits);
 
   const explicitSlug = String(draft.slug ?? '').trim() !== '';
   const [slugError, baseSlug] = normalizeSlug(draft.slug, values.name);
@@ -310,7 +320,7 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   if(lookupError) return [lookupError, null];
 
   const changes = {};
-  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'stock', 'images', 'tags', 'options']){
+  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'stock', 'images', 'tags', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(data[property] !== undefined) changes[property] = data[property];
   }
   if(data.fields !== undefined) changes.fields = { ...data.fields };
@@ -338,9 +348,12 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
 
   const [invalid, values] = await validate(changes, { type, partial: true });
   if(invalid) return [invalid, null];
+  const [creditsInvalid, credits] = await normalizeCredits(changes, existing);
+  if(creditsInvalid) return [creditsInvalid, null];
+  Object.assign(values, credits);
 
   const updates = {};
-  for(const property of ['name', 'description', 'status', 'availability', 'price', 'priceLabel', 'stock', 'images', 'tags']){
+  for(const property of ['name', 'description', 'status', 'availability', 'price', 'priceLabel', 'stock', 'images', 'tags', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(values[property] !== undefined) updates[property] = values[property];
   }
   if(changes.type !== undefined) updates.type = type;
@@ -531,5 +544,7 @@ export const getPrice = async (id, selections = {}) => {
   if(error) return [error, null];
   const [priceError, result] = computePrice(product, product.options, selections);
   if(priceError) return [priceError, null];
-  return [null, { ...result, currency: await getCurrency(), productId: product.id }];
+  const currency = await getCurrency();
+  const credits = await quoteFor(product, result.unit, currency);
+  return [null, { ...result, currency, productId: product.id, ...(credits ? { credits } : {}) }];
 };

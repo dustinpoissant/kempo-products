@@ -219,6 +219,28 @@ Tabs from several extensions all appear, after the built-in ones, ordered by `pr
 
 The description is stored as HTML. The public product page sanitizes it when showing it (scripts, event handlers and `javascript:` links are removed) and the meta description and structured data use its plain text.
 
+## Credits
+
+When the [kempo-credits](https://github.com/dustinpoissant/kempo-credits) extension is installed and **enabled** on the site, products know about credits. Nothing here shows or does anything without it: the extension is an optional peer, looked up at run time, and a product that never uses credits is unchanged.
+
+A product gets a **Credits** tab in the admin form, and its **Details** tab gets a field under the price:
+
+| | |
+|---|---|
+| **Credits the buyer gets** (`creditsGranted`) | How many credits each one bought gives. 0 gives none. |
+| **This is a credit-only item** (`creditsOnly`) | Buying it gives credits and nothing else: this is how people buy credits, so a *credit pack* is just a product. Without it the credits are a gift with the product: the buyer gets the item and the credits too. A credit-only product must give at least 1 credit, and cannot itself be paid for in credits. |
+| **Percentage that can be paid in credits** (`creditPercent`) | 0 to 100. **0% (the default) means credits cannot be used to pay for it at all; 100% means it can be bought entirely with credits.** Anything between is the share credits may cover, with money paying the rest. Good for rewards points. |
+
+How a purchase works with them:
+
+- `recordPurchase` gives the buyer the credits when it commits, as one grant to kempo-credits (kind `purchase`, referenced to the purchase's `ref`), **once however many times it is retried**. It needs a `userId`; a purchase recorded for nobody gives nothing. A grant that fails never undoes the sale: it is logged, and `grantPurchaseCredits(purchase)` is safe to call again.
+- The credits each line gave are copied onto the purchase, so changing the product later does not change what a buyer was given.
+- `reversePurchase` takes the credits back. What the buyer still holds is taken; what they have already spent becomes an amount they owe, which kempo-credits records and reports (and which blocks further spending until it is covered).
+- `getPrice` (and `GET /products/api/price`) also returns `credits` for a product that accepts them: `{ percent, perUnit, maxCredits, coveredMinor, remainingMinor }`, the most credits that may be used and the money left. **Spending the credits is the caller's job** (kempo-commerce, when it exists) with kempo-credits' `spendCredits`; products only says how much may be.
+- Credits are not worth a fixed amount of money. The `credits_per_unit` setting says how many credits equal one whole unit of the currency (100 means 1 credit is 1 cent). Credits round up and money rounds down, so rounding never gives a discount.
+
+Selling credits for money needs a checkout, which this extension does not have: the buy flow (and tax, payments and refunds) is kempo-commerce's, and a credit pack is a product it sells.
+
 ## Permissions, groups and settings
 
 | Permission | Allows |
@@ -227,14 +249,18 @@ The description is stored as HTML. The public product page sanitizes it when sho
 | `products:create`, `products:update`, `products:delete` | Manage products |
 | `products:types:manage` | Create, edit and delete types and fields |
 | `products:purchases:record` | Record a purchase made elsewhere, and reverse one |
+| `products:settings:manage` | Change the catalog settings on the Product Settings page |
 
-Published products need no permission to see. Three groups are provided: `kempo-products:viewer`, `kempo-products:manager` (manage products and record purchases) and `kempo-products:admin` (also types and fields).
+Published products need no permission to see. Three groups are provided: `kempo-products:viewer`, `kempo-products:manager` (manage products and record purchases) and `kempo-products:admin` (also types, fields and the settings page).
 
 | Setting | Default | Meaning |
 |---|---|---|
 | `currency` | `usd` | The currency code prices are shown in |
 | `prices_visible` | `true` | Show prices to visitors |
 | `page_size` | `24` | Products per page on the public list |
+| `credits_per_unit` | `100` | How many credits equal one whole unit of the currency, used when a product accepts credits as payment. Only used with kempo-credits |
+
+These can be edited in a table at **Settings → Admin Settings**, or on the **Product Settings** page (Admin → Settings → Product Settings, at `/admin/extension/kempo-products/settings/`), which groups them into sections with explanations and checks every value before saving.
 
 ## API
 
@@ -242,7 +268,8 @@ JSON routes under `/products/api/`. Reads are public (published products only, n
 
 | Route | Purpose |
 |---|---|
-| `GET config` | Currency, whether prices are shown, whether images are available, and the allowed values |
+| `GET config` | Currency, whether prices are shown, whether images are available, whether kempo-credits is in use, and the allowed values |
+| `GET settings`, `PUT settings` | Read and save the catalog settings (`products:settings:manage`); a name that is not declared or a value that is not acceptable saves nothing |
 | `GET products`, `GET products/<id or slug>` | List (`q`, `type`, `status`, `availability`, `tag`, `filters`, `sort`, `inStock`, `limit`, `offset`) and read |
 | `POST products`, `PATCH products/<id>`, `DELETE products/<id>` | Manage products |
 | `GET price?product=&options=` | The server's price for a set of choices |

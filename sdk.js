@@ -17,6 +17,13 @@
     import { recordPurchase } from 'kempo-products/sdk';
     const [error, purchase] = await recordPurchase({ ref: 'order-1042', lines: [{ productId, quantity: 1, options: { color: 'red' } }] });
 
+  When kempo-credits is installed and enabled, a product can give credits (`creditsGranted`, or
+  `creditsOnly` for a credit pack) and accept credits as payment for part of its price
+  (`creditPercent`). recordPurchase gives the buyer the credits once it commits, and
+  reversePurchase takes back what they still hold. `getPrice` then also returns `credits`: the most
+  credits that may be used and the money left, worked out from the `credits_per_unit` setting.
+  Spending them is the caller's job, with kempo-credits' own `spendCredits`.
+
   An extension that keeps stock in step with something else (inventory, a supplier feed) calls
   setManagedBy(productId, 'my-extension') and then setStock / setChoiceAvailability with
   { actor: 'my-extension' }. People see those read-only from then on.
@@ -64,6 +71,9 @@ export {
   getPurchase,
   getPurchases,
 } from './server/utils/purchases.js';
+
+export { creditsEnabled, creditQuote, grantPurchaseCredits } from './server/utils/credits.js';
+export { getCreditsPerUnit } from './server/utils/settings.js';
 
 export { buildExport, parseImport, applyImport, importFile } from './server/utils/importExport.js';
 export { computePrice, normalizeOptions, checkSelections } from './server/utils/pricing.js';

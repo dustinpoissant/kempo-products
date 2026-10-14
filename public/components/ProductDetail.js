@@ -209,6 +209,25 @@ export default class ProductDetail extends ShadowComponent {
     return `${adjusts ? 'From ' : ''}${this.money(product.price)}`;
   }
 
+  /*
+    What credits mean for this product, when kempo-credits is in use: credits it gives, and how much
+    of the price credits can pay. The amount comes with the server's price, so it follows the
+    options the buyer picks.
+  */
+  get creditLines(){
+    if(!this.config.credits?.enabled) return [];
+    const { product } = this.data;
+    const number = new Intl.NumberFormat();
+    const lines = [];
+    if(product.creditsOnly) lines.push(`Gives ${number.format(product.creditsGranted)} credits`);
+    else if(product.creditsGranted > 0) lines.push(`Includes ${number.format(product.creditsGranted)} credits`);
+    if(this.config.showPrices && product.creditPercent > 0){
+      const credits = this.price?.credits ? ` (${number.format(this.price.credits.maxCredits)} credits)` : '';
+      lines.push(product.creditPercent === 100 ? `Can be paid for entirely with credits${credits}` : `Up to ${product.creditPercent}% can be paid with credits${credits}`);
+    }
+    return lines;
+  }
+
   choiceLabel(option, choice){
     const price = this.config.showPrices && choice.price !== 0
       ? ` (${option.priceType === 'replace' ? this.money(choice.price) : `${choice.price < 0 ? '−' : '+'}${formatMoney(Math.abs(choice.price), this.config.decimals)}`})`
@@ -270,6 +289,7 @@ export default class ProductDetail extends ShadowComponent {
         ${type ? html`<div class="tc-muted small">${type.name}</div>` : ''}
         <h1>${product.name}</h1>
         <div class="large mb" aria-live="polite">${this.priceLine}${this.pricing ? html` <k-spinner size="xs"></k-spinner>` : ''}</div>
+        ${this.creditLines.map(line => html`<p class="tc-muted mbq">${line}</p>`)}
         ${status ? html`<p><strong>${status}</strong></p>` : ''}
         ${product.options.map(option => this.renderOption(option))}
         <slot name="actions"></slot>

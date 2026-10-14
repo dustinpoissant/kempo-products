@@ -6,6 +6,8 @@ All notable changes to `kempo-products` are documented in this file.
 
 ### Added
 
+- **Credits, when kempo-credits is installed and enabled.** A **Credits** tab on the product form and a **Percentage that can be paid in credits** field under the price. A product gives credits when bought (`creditsGranted`), may be a **credit-only item** (`creditsOnly`, which is how credit packs are sold: a pack is a product), and says how much of its price credits may pay (`creditPercent`, 0 by default, 100 for entirely). `recordPurchase` grants the credits once, `reversePurchase` takes back what is held and leaves what was spent as an amount owed, and `getPrice` reports the most credits that may be used. The `credits_per_unit` setting says what a credit is worth. kempo-credits is an optional peer, found with `getExtension` and imported on demand; the new columns are added by `install.js` and `update.js`.
+- **A Product Settings page** at `/admin/extension/kempo-products/settings/`, under the Settings group in the admin nav, with the catalog's settings in sections and every value checked before it is saved; `GET`/`PUT /products/api/settings` and the `products:settings:manage` permission (held by `kempo-products:admin`). The table at Admin Settings still edits the same values.
 - **Dashboard widget.** A **Products** widget on the kempo admin dashboard showing catalog size, recorded purchases and the latest products, with a **New product** button, declared in `widgets` in `kempo-config.json`. Needs a kempo with the dashboard; ignored on older versions.
 
 First release.

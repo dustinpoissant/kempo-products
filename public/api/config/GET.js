@@ -1,5 +1,6 @@
 import { readAccess } from '../../../server/utils/access.js';
-import { getCurrency, getPageSize } from '../../../server/utils/settings.js';
+import { getCurrency, getPageSize, getCreditsPerUnit } from '../../../server/utils/settings.js';
+import { creditsEnabled } from '../../../server/utils/credits.js';
 import { mediaAvailable } from '../../../server/utils/media.js';
 import { FIELD_TYPES, OPTIONAL_TYPES, CONVERSIONS } from '../../../server/utils/fieldTypes.js';
 import { STATUSES, AVAILABILITIES } from '../../../server/utils/stock.js';
@@ -11,6 +12,7 @@ export default async (request, response) => {
   const access = await readAccess(request);
   const media = await mediaAvailable();
   const currency = await getCurrency();
+  const credits = await creditsEnabled();
   response.json({
     currency,
     decimals: decimalsFor(currency),
@@ -18,6 +20,7 @@ export default async (request, response) => {
     canManage: access.canManage,
     pageSize: await getPageSize(),
     media,
+    credits: { enabled: credits, perUnit: credits ? await getCreditsPerUnit() : null },
     fieldTypes: FIELD_TYPES.filter(type => !OPTIONAL_TYPES[type] || media),
     conversions: CONVERSIONS,
     statuses: STATUSES,
