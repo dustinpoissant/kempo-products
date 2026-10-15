@@ -309,13 +309,12 @@ export default class ProductForm extends ShadowComponent {
       : draft.creditPercent === 100 ? 'It can be bought entirely with credits.'
       : `Up to ${draft.creditPercent}% of the price can be paid in credits, the rest in money.`;
     return html`<div class="mb" style="max-width: 28rem;">
-      <label class="d-b mbq" for="creditPercent">Percentage that can be paid in credits</label>
+      <label class="d-b mbq" for="creditPercent">Percentage that can be paid in credits<small class="d-b tc-muted">${say}${quote ? ` At the current rate that is up to ${new Intl.NumberFormat().format(quote)} credits.` : ''}</small></label>
       <div class="d-f" style="gap: var(--spacer_h); align-items: center;">
         <input type="number" id="creditPercent" style="width: 7rem;" min="0" max="100" step="1" .value=${String(draft.creditsOnly ? 0 : draft.creditPercent)} ?disabled=${draft.creditsOnly}
           @input=${event => this.set({ creditPercent: Math.min(100, Math.max(0, Math.trunc(Number(event.target.value)) || 0)) })}>
         <span>%</span>
       </div>
-      <p class="tc-muted mbq">${say}${quote ? ` At the current rate that is up to ${new Intl.NumberFormat().format(quote)} credits.` : ''}</p>
     </div>`;
   }
 
@@ -323,25 +322,23 @@ export default class ProductForm extends ShadowComponent {
     const { draft, config } = this;
     const code = config.currency.toUpperCase();
     return html`<div style="max-width: 36rem;">
-      <p class="tc-muted">Credits are the site's in-app currency, kept by the kempo-credits extension. Buying this product can give the buyer some, and selling credits is just a product that gives them.</p>
+      <p class="tc-muted mb">Credits are the site's in-app currency, kept by the kempo-credits extension. Buying this product can give the buyer some, and selling credits is just a product that gives them.</p>
       <div class="mb">
-        <label class="d-b mbq" for="creditsGranted">Credits the buyer gets</label>
+        <label class="d-b mbq" for="creditsGranted">Credits the buyer gets<small class="d-b tc-muted">For each one bought. 0 gives none.</small></label>
         <input type="number" id="creditsGranted" style="width: 12rem;" min="0" step="1" .value=${String(draft.creditsGranted)}
           @input=${event => this.set({ creditsGranted: Math.max(0, Math.trunc(Number(event.target.value)) || 0) })}>
-        <p class="tc-muted mbq">For each one bought. 0 gives none.</p>
       </div>
       <div class="mb">
         <label class="checkbox"><input type="checkbox" id="creditsOnly" .checked=${draft.creditsOnly}
-          @change=${event => this.set(event.target.checked ? { creditsOnly: true, creditPercent: 0 } : { creditsOnly: false })}> This is a credit-only item</label>
-        <p class="tc-muted mbq">${draft.creditsOnly
+          @change=${event => this.set(event.target.checked ? { creditsOnly: true, creditPercent: 0 } : { creditsOnly: false })}> This is a credit-only item<small class="d-b tc-muted">${draft.creditsOnly
           ? 'Buying it gives credits and nothing else: this is how people buy credits. It cannot itself be paid for in credits.'
           : draft.creditsGranted > 0
             ? 'Otherwise the credits are a gift with the product: the buyer gets the item and these credits too.'
-            : 'Tick this to sell credits themselves, as a pack.'}</p>
+            : 'Tick this to sell credits themselves, as a pack.'}</small></label>
       </div>
-      ${draft.creditsOnly && draft.creditsGranted < 1 ? html`<p class="tc-danger">Give at least 1 credit, or this is not a credit-only item.</p>` : ''}
+      ${draft.creditsOnly && draft.creditsGranted < 1 ? html`<p class="tc-danger mb">Give at least 1 credit, or this is not a credit-only item.</p>` : ''}
       ${draft.creditsOnly && draft.price && draft.creditsGranted > 0
-        ? html`<p class="tc-muted">That is ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(draft.creditsGranted / (draft.price / 10 ** config.decimals))} credits for each ${code} 1.00 spent.</p>`
+        ? html`<p class="tc-muted mb">That is ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(draft.creditsGranted / (draft.price / 10 ** config.decimals))} credits for each ${code} 1.00 spent.</p>`
         : ''}
     </div>`;
   }
@@ -366,11 +363,10 @@ export default class ProductForm extends ShadowComponent {
             <label class="d-b mbq" for="name">Name *</label>
             <input type="text" id="name" class="full" .value=${draft.name} ?disabled=${owned} @input=${this.handleName}>
           </div>
-          <div class="d-f mb" style="gap: var(--spacer);">
+          <div class="d-f mb" style="gap: var(--spacer); align-items: flex-end;">
             <div class="flex" style="min-width: 12rem;">
-              <label class="d-b mbq" for="slug">Address</label>
+              <label class="d-b mbq" for="slug">Address<small class="d-b tc-muted">/products/${draft.slug || '…'}/</small></label>
               <input type="text" id="slug" class="full" placeholder="made from the name" autocapitalize="off" .value=${draft.slug} ?disabled=${owned} @input=${this.handleSlug}>
-              <small class="d-b tc-muted">/products/${draft.slug || '…'}/</small>
             </div>
             <div class="flex" style="min-width: 10rem;">
               <label class="d-b mbq" for="type">Type</label>
@@ -380,13 +376,12 @@ export default class ProductForm extends ShadowComponent {
               </select>
             </div>
           </div>
-          <div class="d-f mb" style="gap: var(--spacer);">
+          <div class="d-f mb" style="gap: var(--spacer); align-items: flex-end;">
             <div class="flex" style="min-width: 10rem;">
-              <label class="d-b mbq" for="status">Status</label>
+              <label class="d-b mbq" for="status">Status<small class="d-b tc-muted">Only published products are public.</small></label>
               <select id="status" class="full" @change=${event => this.set({ status: event.target.value })}>
                 ${config.statuses.map(status => html`<option value=${status} ?selected=${draft.status === status}>${status[0].toUpperCase()}${status.slice(1)}</option>`)}
               </select>
-              <small class="d-b tc-muted">Only published products are public.</small>
             </div>
             <div class="flex" style="min-width: 10rem;">
               <label class="d-b mbq" for="availability">Availability</label>
@@ -395,7 +390,7 @@ export default class ProductForm extends ShadowComponent {
               </select>
             </div>
           </div>
-          <div class="d-f mb" style="gap: var(--spacer);">
+          <div class="d-f mb" style="gap: var(--spacer); align-items: flex-end;">
             <div class="flex" style="min-width: 10rem;">
               <label class="d-b mbq">Price (${config.currency.toUpperCase()})</label>
               <k-prod-money decimals=${decimals} .value=${draft.price} placeholder="No price" label="Price" @change=${event => this.set({ price: event.detail.value })}></k-prod-money>
@@ -405,9 +400,8 @@ export default class ProductForm extends ShadowComponent {
               <input type="text" id="priceLabel" class="full" placeholder="Call for price" .value=${draft.priceLabel} @input=${event => this.set({ priceLabel: event.target.value })}>
             </div>
             <div style="width: 9rem;">
-              <label class="d-b mbq" for="stock">Stock</label>
+              <label class="d-b mbq" for="stock">Stock<small class="d-b tc-muted">${managed ? `Kept up to date by ${managed}.` : 'Blank is unlimited.'}</small></label>
               <input type="number" id="stock" class="full" min="0" step="1" placeholder="Unlimited" .value=${draft.stock === -1 ? '' : String(draft.stock)} ?disabled=${Boolean(managed)} @input=${this.handleStock}>
-              <small class="d-b tc-muted">${managed ? `Kept up to date by ${managed}.` : 'Blank is unlimited.'}</small>
             </div>
           </div>
           ${this.credits ? this.renderCreditPercent() : ''}
@@ -415,11 +409,11 @@ export default class ProductForm extends ShadowComponent {
             <label class="d-b mbq" for="tags">Tags</label>
             <k-tags id="tags" .value=${draft.tags.join(',')}></k-tags>
           </div>
-          ${this.fields.length ? html`<h4 class="mt">${draft.type ? this.types.find(type => type.key === draft.type)?.name ?? 'Details' : 'More details'}</h4>
+          ${this.fields.length ? html`<h4 class="mt mb">${draft.type ? this.types.find(type => type.key === draft.type)?.name ?? 'Details' : 'More details'}</h4>
             ${this.fields.map(field => html`<k-prod-field-input .field=${field} .value=${draft.fields[field.key]} @change=${this.handleField}></k-prod-field-input>`)}` : ''}
         </k-tab-content>
         <k-tab-content name="description" class="pt">
-          <p class="tc-muted">Shown on the product's page. Use headings, lists, links and pictures to describe it.</p>
+          <p class="tc-muted mb">Shown on the product's page. Use headings, lists, links and pictures to describe it.</p>
           ${staticHtml`<${editorTag} id="description" class="r b" controls="full" mode="visual" style="height: 28rem;"
             .value=${draft.description}
             @change=${event => this.set({ description: event.target.getValue?.() ?? event.detail?.value ?? '' })}></${editorTag}>`}

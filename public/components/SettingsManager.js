@@ -104,54 +104,48 @@ export default class SettingsManager extends ShadowComponent {
   renderSection(title, description, body){
     return html`<section class="card mb" style="max-width: 44rem; padding-bottom: var(--spacer);">
       <h2 class="mbq">${title}</h2>
-      <p class="tc-muted">${description}</p>
+      <p class="tc-muted mb">${description}</p>
       ${body}
     </section>`;
   }
 
   render(){
     if(this.loading) return html`<k-spinner></k-spinner>`;
-    if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
+    if(this.error) return html`<p class="tc-danger mb">${this.error}</p>`;
     const { draft } = this;
     const code = String(draft.currency || '').toUpperCase();
     const known = CURRENCIES.some(([value]) => value === draft.currency);
     const dirty = Object.keys(this.changes).length > 0;
+    const rate = Number.isInteger(draft.credits_per_unit) && draft.credits_per_unit > 0
+      ? `At ${new Intl.NumberFormat().format(draft.credits_per_unit)}, a ${code} 10.00 product that accepts 100% credits costs ${new Intl.NumberFormat().format(draft.credits_per_unit * 10)} credits. This only sets what spending credits on a product costs. How many credits a pack of them sells for is up to that product.`
+      : 'A whole number, 1 or more.';
 
     return html`<form @submit=${this.save}>
       ${this.renderSection('Prices', 'The currency prices are written in, and whether visitors see them at all.', html`
         <div class="mb">
-          <label class="d-b mbq" for="currency">Currency</label>
+          <label class="d-b mbq" for="currency">Currency<small class="d-b tc-muted">Changing it does not convert existing prices: a price of 1999 is 19.99 in any currency.</small></label>
           <select id="currency" style="min-width: 16rem;" @change=${event => this.set('currency', event.target.value)}>
             ${known ? '' : html`<option value=${draft.currency} selected>${code}</option>`}
             ${CURRENCIES.map(([value, label]) => html`<option value=${value} ?selected=${draft.currency === value}>${value.toUpperCase()} — ${label}</option>`)}
           </select>
-          <p class="tc-muted mbq">Changing it does not convert existing prices: a price of 1999 is 19.99 in any currency.</p>
         </div>
         <div class="mb">
-          <label class="checkbox"><input type="checkbox" id="prices_visible" .checked=${draft.prices_visible} @change=${event => this.set('prices_visible', event.target.checked)}> Show prices to visitors</label>
-          <p class="tc-muted mbq">Turn it off to run a catalog that never shows what things cost. The admin always sees them.</p>
+          <label class="checkbox"><input type="checkbox" id="prices_visible" .checked=${draft.prices_visible} @change=${event => this.set('prices_visible', event.target.checked)}> Show prices to visitors<small class="d-b tc-muted">Turn it off to run a catalog that never shows what things cost. The admin always sees them.</small></label>
         </div>
       `)}
       ${this.renderSection('The public list', 'How the public product list is laid out.', html`
         <div class="mb">
-          <label class="d-b mbq" for="page_size">Products per page</label>
+          <label class="d-b mbq" for="page_size">Products per page<small class="d-b tc-muted">From 1 to 100.</small></label>
           <input type="number" id="page_size" style="width: 8rem;" min="1" max="100" step="1" .value=${String(draft.page_size)} @input=${this.number('page_size')}>
-          <p class="tc-muted mbq">From 1 to 100.</p>
         </div>
       `)}
       ${this.credits ? this.renderSection('Credits', 'Products can give credits when they are bought, and take credits as payment for part of their price. This is what a credit is worth when spent.', html`
         <div class="mb">
-          <label class="d-b mbq" for="credits_per_unit">Credits that equal 1.00 ${code}</label>
+          <label class="d-b mbq" for="credits_per_unit">Credits that equal 1.00 ${code}<small class="d-b tc-muted">${rate}</small></label>
           <input type="number" id="credits_per_unit" style="width: 10rem;" min="1" max="1000000" step="1" .value=${String(draft.credits_per_unit)} @input=${this.number('credits_per_unit')}>
-          <p class="tc-muted mbq">
-            ${Number.isInteger(draft.credits_per_unit) && draft.credits_per_unit > 0
-              ? `At ${new Intl.NumberFormat().format(draft.credits_per_unit)}, a ${code} 10.00 product that accepts 100% credits costs ${new Intl.NumberFormat().format(draft.credits_per_unit * 10)} credits.`
-              : 'A whole number, 1 or more.'}
-            This only sets what spending credits on a product costs. How many credits a pack of them sells for is up to that product.
-          </p>
         </div>
-      `) : html`<p class="tc-muted">Install the kempo-credits extension to let products give credits and accept them as payment.</p>`}
-      <div class="d-f" style="gap: var(--spacer_h);">
+      `) : html`<p class="tc-muted mb">Install the kempo-credits extension to let products give credits and accept them as payment.</p>`}
+      <div class="d-f mb" style="gap: var(--spacer_h);">
         <button type="submit" class="btn success" ?disabled=${this.saving || !dirty}>${this.saving ? 'Saving…' : 'Save settings'}</button>
         <button type="button" class="btn" ?disabled=${this.saving || !dirty} @click=${this.revert}>Discard changes</button>
       </div>
