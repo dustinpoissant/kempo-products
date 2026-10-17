@@ -2,11 +2,11 @@ import { readAccess, forCaller } from '../../../server/utils/access.js';
 import { getProducts, resolveImages } from '../../../server/utils/products.js';
 import { getCurrency, getPageSize } from '../../../server/utils/settings.js';
 import { parseTagParam } from '../../../server/utils/tags.js';
+import { parseListParam as list } from '../../../server/utils/query.js';
 
 export default async (request, response) => {
   const access = await readAccess(request);
   const { q, type, status, availability, tag, category, filters, slugs, ids, sort, inStock, owner, limit, offset } = request.query;
-  const list = value => typeof value === 'string' && value.trim() ? value.split(',').map(part => part.trim()).filter(Boolean) : undefined;
 
   let parsedFilters = {};
   if(filters){
