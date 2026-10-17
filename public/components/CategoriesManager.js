@@ -4,6 +4,7 @@ import Toast from '/kempo-ui/components/Toast.js';
 import Dialog from '/kempo-ui/components/Dialog.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
+import './CategoryActions.js';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '/products/sdk.js';
 
 /*
@@ -11,7 +12,13 @@ import { getCategories, createCategory, updateCategory, deleteCategory } from '/
   A category groups products for browsing: a product is of one type but can be in any number of
   categories, chosen on the product's own form. Deleting one takes it off its products and leaves them.
 
-    <k-products-categories></k-products-categories>
+    <k-products-categories>
+      <template><location name="products-admin-category-actions" /></template>
+    </k-products-categories>
+
+  The optional <template> is what other extensions add to every row (buttons for that category, in the
+  `actions` slot of `<k-products-category-actions>`); one clone is made for each category and kept while
+  the list re-renders.
 */
 export default class CategoriesManager extends ShadowComponent {
   static properties = {
@@ -25,6 +32,7 @@ export default class CategoriesManager extends ShadowComponent {
     this.categories = [];
     this.loading = true;
     this.error = '';
+    this.items = new WeakMap();
   }
 
   /*
@@ -117,6 +125,14 @@ export default class CategoriesManager extends ShadowComponent {
     });
   };
 
+  /* What other extensions put in a category's row: a clone of the one template, made once per category. */
+  itemContent = category => {
+    const template = this.querySelector(':scope > template');
+    if(!template?.content.querySelector('[slot]')) return '';
+    if(!this.items.has(category)) this.items.set(category, document.importNode(template.content, true));
+    return this.items.get(category);
+  };
+
   /*
     View
   */
@@ -135,6 +151,7 @@ export default class CategoriesManager extends ShadowComponent {
           <td style="white-space: nowrap;">
             <button type="button" class="btn" title="Edit" aria-label=${`Edit ${category.name}`} @click=${() => this.edit(category)}><k-icon name="edit"></k-icon></button>
             <button type="button" class="btn" title="Delete" aria-label=${`Delete ${category.name}`} @click=${() => this.remove(category)}><k-icon name="delete"></k-icon></button>
+            <k-products-category-actions .category=${category}>${this.itemContent(category)}</k-products-category-actions>
           </td>
         </tr>`)}</tbody>
       </table></div>` : html`<p class="tc-muted">No categories yet. A category, like "Model cars" or "Paint", groups products for browsing. Add some here, then put products in them on each product's page.</p>`}

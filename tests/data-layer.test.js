@@ -327,6 +327,19 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
       assert.equal(row.quantity, -1);
     });
 
+    test('a minimum price is optional, a whole number, and never above the price', async () => {
+      const car = ok(await createProduct({ name: 'Floored car', price: 2500, minimumPrice: 500, status: 'published' }));
+      assert.equal(car.minimumPrice, 500);
+      assert.equal(ok(await createProduct({ name: 'No floor', price: 100 })).minimumPrice, null);
+      refused(await createProduct({ name: 'Bad floor', price: 100, minimumPrice: 101 }), 400);
+      refused(await createProduct({ name: 'Odd floor', price: 100, minimumPrice: 1.5 }), 400);
+      refused(await createProduct({ name: 'Negative floor', price: 100, minimumPrice: -1 }), 400);
+      assert.equal(ok(await updateProduct(car.id, { minimumPrice: 300 })).minimumPrice, 300);
+      refused(await updateProduct(car.id, { minimumPrice: 9999 }), 400);
+      refused(await updateProduct(car.id, { price: 200 }), 400);
+      assert.equal(ok(await updateProduct(car.id, { minimumPrice: null })).minimumPrice, null);
+    });
+
     test('the ledger survives the product being deleted, and can be read for one product', async () => {
       const item = await stocked('Short lived', 2);
       ok(await addLedgerEntry({ ref: 'o-gone', lines: [{ productId: item.id, change: -1 }] }));

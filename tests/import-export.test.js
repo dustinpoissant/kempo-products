@@ -63,7 +63,7 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     assert.equal(filename, 'products.csv');
     assert.match(contentType, /text\/csv/);
     const [header, ...rows] = parseCsv(body);
-    assert.deepEqual(header.slice(0, 12), ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'quantity', 'tags', 'categories', 'description', 'options']);
+    assert.deepEqual(header.slice(0, 13), ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'minimum_price', 'quantity', 'tags', 'categories', 'description', 'options']);
     assert.ok(header.includes('field.scale') && header.includes('field.engineSize'));
     assert.equal(rows.length, 2);
     const red = rows.find(row => row[0] === 'red-car');

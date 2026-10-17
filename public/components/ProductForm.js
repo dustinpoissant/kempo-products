@@ -33,7 +33,7 @@ export const showFlash = () => {
 export const safeNext = (value, fallback) => (typeof value === 'string' && /^\/(?!\/|\\)/.test(value) ? value : fallback);
 
 const blank = () => ({
-  name: '', slug: '', type: '', description: '', status: 'draft', availability: 'available', price: null, priceLabel: '',
+  name: '', slug: '', type: '', description: '', status: 'draft', availability: 'available', price: null, minimumPrice: null, priceLabel: '',
   quantity: -1, tags: [], categories: [], images: [], fields: {}, options: [], creditsGranted: 0, creditsOnly: false, creditPercent: 0,
 });
 
@@ -56,7 +56,11 @@ const blank = () => ({
     </k-products-form>
 
   The admin pages put a <location name="products-admin-product-tabs"> inside the form, so an
-  extension only ships an admin/*.global.html that pushes its <k-products-tab> there. What it holds
+  extension only ships an admin/*.global.html that pushes its <k-products-tab> there. Buttons go in the same
+  way: the pages also put a <location name="products-admin-product-actions"> inside the form, and an element
+  with slot="actions" appears beside Save and Cancel. It finds the form with closest('k-products-form') and
+  reads `productId` (empty until the product exists) and `original` (the product as it was loaded), and
+  hears `product-saved` to learn the id of a new one. What a tab holds
   can listen to two events on the form:
 
     `draft-change`     fired as the form is edited, with { changed, draft }
@@ -255,6 +259,7 @@ export default class ProductForm extends ShadowComponent {
       status: draft.status,
       availability: draft.availability,
       price: draft.price,
+      minimumPrice: draft.minimumPrice,
       priceLabel: draft.priceLabel,
       quantity: draft.quantity,
       tags: this.readTags(),
@@ -424,6 +429,10 @@ export default class ProductForm extends ShadowComponent {
               <input type="number" id="quantity" class="full" min="0" step="1" placeholder="Unlimited" .value=${draft.quantity === -1 ? '' : String(draft.quantity)} ?disabled=${Boolean(managed)} @input=${this.handleQuantity}>
             </div>
           </div>
+          <div class="mb" style="max-width: 20rem;">
+            <label class="d-b mbq">Lowest price after discounts (${config.currency.toUpperCase()})<small class="d-b tc-muted">Sales and codes never take the price below this. Blank has no limit.</small></label>
+            <k-products-money decimals=${decimals} .value=${draft.minimumPrice} placeholder="No minimum" label="Lowest price after discounts" @change=${event => this.set({ minimumPrice: event.detail.value })}></k-products-money>
+          </div>
           ${this.credits ? this.renderCreditPercent() : ''}
           <div class="mb">
             <label class="d-b mbq" for="tags">Tags</label>
@@ -453,6 +462,7 @@ export default class ProductForm extends ShadowComponent {
       <div class="d-f" style="gap: var(--spacer_h); flex-wrap: wrap;">
         <button type="submit" class="btn success" id="saveProduct" ?disabled=${this.saving}>${this.saving ? 'Saving…' : this.editing ? 'Save' : 'Create product'}</button>
         <button type="button" class="btn" id="cancelProduct" ?disabled=${this.saving} @click=${this.cancel}>Cancel</button>
+        <slot name="actions"></slot>
       </div>
     </form>`;
   }

@@ -22,7 +22,7 @@ import { STATUSES, AVAILABILITIES, UNLIMITED } from './quantity.js';
   same file twice updates or skips instead of duplicating. In a CSV an empty cell leaves what the
   product has unchanged and uses the default for a new one.
 */
-const BASE_COLUMNS = ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'quantity', 'tags', 'categories', 'description', 'options'];
+const BASE_COLUMNS = ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'minimum_price', 'quantity', 'tags', 'categories', 'description', 'options'];
 
 export const FORMATS = ['csv', 'json'];
 
@@ -71,7 +71,7 @@ export const buildExport = async ({ format = 'csv' } = {}) => {
       fields: fields.map(({ key, label, type, productType, description, required, listed, filterable, options }) => ({ key, label, type, productType, description, required, listed, filterable, options })),
       products: products.map(product => ({
         slug: product.slug, name: product.name, type: product.type, description: product.description, status: product.status,
-        availability: product.availability, price: product.price, priceLabel: product.priceLabel, quantity: product.quantity,
+        availability: product.availability, price: product.price, minimumPrice: product.minimumPrice, priceLabel: product.priceLabel, quantity: product.quantity,
         tags: product.tags, categories: product.categories, fields: product.fields, options: product.options.map(stripOption),
       })),
     }, null, 2);
@@ -84,6 +84,7 @@ export const buildExport = async ({ format = 'csv' } = {}) => {
     rows.push([
       product.slug, product.name, product.type, product.status, product.availability,
       product.price === null ? '' : formatMoney(product.price, currency), product.priceLabel,
+      product.minimumPrice === null ? '' : formatMoney(product.minimumPrice, currency),
       product.quantity === UNLIMITED ? '' : product.quantity, product.tags.join(', '), product.categories.join(', '), product.description,
       product.options.length ? JSON.stringify(product.options.map(stripOption)) : '',
       ...keys.map(key => cell(product.fields[key])),
@@ -120,6 +121,12 @@ const fromRecord = (record, line, { currency, fieldKeys }) => {
     if(priceError || minor < 0) return { error: fail(line, `price "${price}" is not an amount such as 49.99`, name) };
     data.price = minor;
   }
+  const minimum = (record.minimum_price ?? '').trim();
+  if(minimum){
+    const [minimumError, minimumMinor] = parseMoney(minimum, currency);
+    if(minimumError || minimumMinor < 0) return { error: fail(line, `minimum_price "${minimum}" is not an amount such as 5.00`, name) };
+    data.minimumPrice = minimumMinor;
+  }
   if((record.price_label ?? '').trim()) data.priceLabel = record.price_label.trim();
   const quantity = (record.quantity ?? '').trim().toLowerCase();
   if(quantity) data.quantity = quantity === 'unlimited' ? UNLIMITED : quantity;
@@ -149,7 +156,7 @@ const fromJson = (product, line) => {
   const name = String(product?.name ?? '').trim();
   if(!name) return { error: fail(line, 'name is required') };
   const data = { name };
-  for(const property of ['description', 'status', 'availability', 'price', 'priceLabel', 'quantity', 'tags', 'fields', 'options']){
+  for(const property of ['description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'tags', 'fields', 'options']){
     if(product[property] !== undefined) data[property] = product[property];
   }
   const slug = String(product.slug ?? '').trim().toLowerCase() || slugify(name);

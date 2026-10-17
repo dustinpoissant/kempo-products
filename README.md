@@ -93,6 +93,7 @@ A spreadsheet has one row per product. Only `name` is required:
 | `type` | A type's name or key. The type must exist already |
 | `status`, `availability` | As in the admin (`published`, `sold`, ...) |
 | `price`, `price_label` | A decimal such as `49.99`; the label shows when there is no price |
+| `minimum_price` | A decimal such as `5.00`: the lowest price discounts may take the product to. Blank means no floor |
 | `quantity` | A whole number, or empty for unlimited |
 | `options` | The product's options as JSON (what Export writes) |
 | `field.<key>` | One column per custom field, e.g. `field.scale` |
@@ -282,6 +283,20 @@ The product form is split into tabs: **Details**, **Description** (a full rich t
 
 Tabs from several extensions all appear, after the built-in ones, ordered by `priority`. The form fires `draft-change` as it is edited and `product-saved` when the product is stored; a tab with more to save calls `event.detail.waitUntil(promise)` and the page waits. Your elements find the form with `this.closest('k-products-form')`.
 
+#### Buttons
+
+The same way, two more places take buttons (slots, not injection):
+
+- **The product edit and new pages** have a `products-admin-product-actions` location inside the form. An element with `slot="actions"` appears beside **Save** and **Cancel**. It finds the form with `this.closest('k-products-form')` and reads `productId` (empty until the product exists, so on the new page wait for `product-saved`) and `original` (the product as it was loaded).
+- **The category list** has one `<template>` holding a `products-admin-category-actions` location. The list clones it into a small `<k-products-category-actions>` item in every row, once per category. Your element carries `slot="actions"` and finds its category with `this.closest('k-products-category-actions').category` (`{ key, name, description, total, count }`).
+
+Load your module from the `products-admin-scripts` location, which sits outside every template so it runs once:
+
+```html
+<content id="my-extension-admin-scripts" name="Buttons script" owner="my-extension" enabled="true" locked="true" location="products-admin-scripts"><script type="module" src="/my-extension/components/Buttons.js"></script></content>
+<content id="my-extension-product-button" name="Product button" owner="my-extension" enabled="true" locked="true" location="products-admin-product-actions"><my-product-button slot="actions"></my-product-button></content>
+```
+
 The description is stored as HTML. The public product page sanitizes it when showing it (scripts, event handlers and `javascript:` links are removed) and the meta description and structured data use its plain text.
 
 ## Credits
@@ -334,7 +349,7 @@ JSON routes under `/products/api/`. Reads are public (published products only, n
 |---|---|
 | `GET config` | Currency, whether prices are shown, whether images are available, whether kempo-credits is in use, and the allowed values |
 | `GET settings`, `PUT settings` | Read and save the catalog settings (`products:settings:manage`); a name that is not declared or a value that is not acceptable saves nothing |
-| `GET products`, `GET products/<id or slug>` | List (`q`, `type`, `status`, `availability`, `tag`, `filters`, `sort`, `inStock`, `limit`, `offset`) and read |
+| `GET products`, `GET products/<id or slug>` | List (`q`, `type`, `status`, `availability`, `tag`, `filters`, `ids`, `sort`, `inStock`, `limit`, `offset`) and read |
 | `POST products`, `PATCH products/<id>`, `DELETE products/<id>` | Manage products |
 | `GET price?product=&options=` | The server's price for a set of choices |
 | `GET types`, `GET fields`, and `POST`/`PATCH`/`DELETE` on them | Types and fields |

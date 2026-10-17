@@ -18,6 +18,7 @@ export const kempoProduct = pgTable('kempoProduct', {
   status: text('status').notNull().default('draft'), // draft | published | archived
   availability: text('availability').notNull().default('available'), // available | pending | sold
   price: integer('price'),
+  minimumPrice: integer('minimumPrice'), // the lowest discounts may take the unit price to; null = no floor (discounts stop at 0)
   priceLabel: text('priceLabel').notNull().default(''), // shown when there is no price, e.g. "Call for price"
   creditsGranted: integer('creditsGranted').notNull().default(0), // kempo-credits: credits the buyer is given, per unit bought
   creditsOnly: boolean('creditsOnly').notNull().default(false), // kempo-credits: buying it gives credits and nothing else

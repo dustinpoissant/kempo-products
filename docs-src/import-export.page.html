@@ -41,6 +41,7 @@
           <tr><td><code>type</code></td><td>A type's name or key. The type must exist already</td></tr>
           <tr><td><code>status</code>, <code>availability</code></td><td>As in the admin: <code>published</code>, <code>sold</code> and so on</td></tr>
           <tr><td><code>price</code>, <code>price_label</code></td><td>A decimal such as <code>49.99</code>. The label shows when there is no price</td></tr>
+          <tr><td><code>minimum_price</code></td><td>A decimal such as <code>5.00</code>: the lowest price discounts may take the product to. Blank means no floor</td></tr>
           <tr><td><code>quantity</code></td><td>A whole number, or empty for unlimited</td></tr>
           <tr><td><code>options</code></td><td>The product's options as JSON, which is what Export writes</td></tr>
           <tr><td><code>field.&lt;key&gt;</code></td><td>One column per custom field, for example <code>field.scale</code></td></tr>

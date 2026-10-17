@@ -51,6 +51,7 @@ const shape = (row, options = []) => {
     status: row.status,
     availability: row.availability,
     price: row.price,
+    minimumPrice: row.minimumPrice ?? null,
     priceLabel: row.priceLabel,
     creditsGranted: row.creditsGranted ?? 0,
     creditsOnly: row.creditsOnly ?? false,
@@ -207,6 +208,15 @@ const validate = async (input, { type, partial }) => {
       values.price = price;
     }
   }
+  if(input.minimumPrice !== undefined){
+    if(input.minimumPrice === null || input.minimumPrice === ''){
+      values.minimumPrice = null;
+    } else {
+      const minimum = Number(input.minimumPrice);
+      if(!Number.isSafeInteger(minimum) || minimum < 0) return [{ code: 400, msg: 'The minimum price must be a whole number of the smallest currency unit, or empty for none' }, null];
+      values.minimumPrice = minimum;
+    }
+  }
   if(input.priceLabel !== undefined){
     const label = String(input.priceLabel ?? '').trim();
     if(label.length > MAX_PRICE_LABEL) return [{ code: 400, msg: `The price label must be ${MAX_PRICE_LABEL} characters or fewer` }, null];
@@ -281,6 +291,7 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
     status: data.status ?? 'draft',
     availability: data.availability ?? 'available',
     price: data.price ?? null,
+    minimumPrice: data.minimumPrice ?? null,
     priceLabel: data.priceLabel ?? '',
     quantity: data.quantity ?? UNLIMITED,
     creditsGranted: data.creditsGranted,
@@ -312,6 +323,10 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
   const explicitSlug = String(draft.slug ?? '').trim() !== '';
   const [slugError, baseSlug] = normalizeSlug(draft.slug, values.name);
   if(slugError) return [slugError, null];
+
+  if(values.minimumPrice != null && values.price != null && values.minimumPrice > values.price){
+    return [{ code: 400, msg: 'The minimum price cannot be above the price' }, null];
+  }
 
   const { options = [], fields = {}, ...columns } = values;
   const now = new Date();
@@ -350,7 +365,7 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   if(lookupError) return [lookupError, null];
 
   const changes = {};
-  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(data[property] !== undefined) changes[property] = data[property];
   }
   if(data.fields !== undefined) changes.fields = { ...data.fields };
@@ -382,8 +397,14 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   if(creditsInvalid) return [creditsInvalid, null];
   Object.assign(values, credits);
 
+  const nextPrice = values.price !== undefined ? values.price : existing.price;
+  const nextMinimum = values.minimumPrice !== undefined ? values.minimumPrice : existing.minimumPrice;
+  if(nextMinimum != null && nextPrice != null && nextMinimum > nextPrice){
+    return [{ code: 400, msg: 'The minimum price cannot be above the price' }, null];
+  }
+
   const updates = {};
-  for(const property of ['name', 'description', 'status', 'availability', 'price', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(values[property] !== undefined) updates[property] = values[property];
   }
   if(changes.type !== undefined) updates.type = type;

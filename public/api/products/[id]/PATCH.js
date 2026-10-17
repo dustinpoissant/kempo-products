@@ -7,7 +7,7 @@ export default async (request, response) => {
 
   const body = request.body || {};
   const data = { userId: auth.userId };
-  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'fields', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'fields', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(body[property] !== undefined) data[property] = body[property];
   }
   const [error, product] = await updateProduct(request.params.id, data);

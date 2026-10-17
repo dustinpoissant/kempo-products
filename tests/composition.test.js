@@ -147,3 +147,61 @@ test('what an extension is likely to want to replace is a slot with real default
   assert.match(card, /<slot name="price">\$\{this\.priceText \? [\s\S]*?\}<\/slot>/, 'the card\'s price shows by default');
   assert.match(detail, /<slot name="price"><div class="large mb" aria-live="polite">\$\{this\.priceLine\}[\s\S]*?<\/slot>/, 'the page\'s price line shows by default');
 });
+
+/*
+  The admin pages take buttons the same way: the product form has an `actions` slot, and each category's row
+  clones one template into a small item element that has one.
+*/
+const adminDir = path.join(root, 'admin');
+const renderAdmin = (dir, dirs, page) => renderExternalPage(path.join(adminDir, page), dir, dir, {}, {}, 10, dirs, [publicDir, ...dirs]);
+
+const DISCOUNTS = {
+  'admin-buttons.global.html': [
+    '<content location="products-admin-scripts"><script type="module" src="/discounts/Buttons.js"></script></content>',
+    '<content location="products-admin-product-actions"><k-discounts-product-button slot="actions"></k-discounts-product-button></content>',
+    '<content location="products-admin-category-actions"><k-discounts-category-button slot="actions"></k-discounts-category-button></content>',
+  ].join('\n'),
+};
+
+test('the product edit and new pages put an extension\'s button straight into the form, with its script outside', async () => {
+  await withSite({ 'kempo-discounts': DISCOUNTS }, async (dir, dirs) => {
+    for(const page of ['edit/index.page.html', 'new/index.page.html']){
+      const html = (await renderAdmin(dir, dirs, page)).split(/>\s+</).join('><');
+      assert.match(html, /<k-discounts-product-button slot="actions"><\/k-discounts-product-button><\/k-products-form>/, `${page}: a direct child of the form`);
+      assert.equal(html.split('/discounts/Buttons.js').length - 1, 1, `${page}: the script loads once`);
+      assert.ok(html.indexOf('/discounts/Buttons.js') > html.indexOf('</k-products-form>'), `${page}: outside the form`);
+      assert.doesNotMatch(html, /<location/, `${page}: every location is filled or removed`);
+    }
+  });
+});
+
+test('the category page carries one template for the rows, filled by an extension, with its script outside it', async () => {
+  await withSite({ 'kempo-discounts': DISCOUNTS }, async (dir, dirs) => {
+    const html = (await renderAdmin(dir, dirs, 'categories/index.page.html')).split(/>\s+</).join('><');
+    assert.equal(html.match(/<template>/g)?.length, 1, 'exactly one template');
+    assert.match(html, /<template><k-discounts-category-button slot="actions"><\/k-discounts-category-button><\/template>/);
+    assert.ok(html.indexOf('/discounts/Buttons.js') > html.indexOf('</template>'), 'the script is after the template');
+    assert.doesNotMatch(html, /<location/);
+  });
+});
+
+test('with nothing contributing the admin pages have no extra buttons', async () => {
+  await withSite({}, async (dir, dirs) => {
+    const html = (await renderAdmin(dir, dirs, 'edit/index.page.html')).split(/>\s+</).join('><');
+    assert.doesNotMatch(html, /slot="actions"|<location/);
+    const categories = (await renderAdmin(dir, dirs, 'categories/index.page.html')).split(/>\s+</).join('><');
+    assert.match(categories, /<template><\/template>/, 'an empty template adds nothing to a row');
+  });
+});
+
+test('the form declares an actions slot, and the category list fills a per-row item the same way the product list fills a card', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const form = await readFile(path.join(publicDir, 'components/ProductForm.js'), 'utf8');
+  assert.ok(form.includes('<slot name="actions"></slot>'));
+  const item = await readFile(path.join(publicDir, 'components/CategoryActions.js'), 'utf8');
+  assert.ok(item.includes('<slot name="actions"></slot>') && item.includes("'k-products-category-actions'"));
+  assert.doesNotMatch(item, /importNode|template/, 'the item knows nothing about templates');
+  const list = await readFile(path.join(publicDir, 'components/CategoriesManager.js'), 'utf8');
+  assert.ok(list.includes('document.importNode(template.content, true)') && list.includes('new WeakMap()'));
+  assert.ok(list.includes('<k-products-category-actions .category=${category}>${this.itemContent(category)}</k-products-category-actions>'));
+});

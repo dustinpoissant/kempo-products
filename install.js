@@ -28,6 +28,7 @@ export const COLUMNS = [
   sql`ALTER TABLE "kempoProduct" ADD COLUMN IF NOT EXISTS "creditsOnly" boolean NOT NULL DEFAULT false`,
   sql`ALTER TABLE "kempoProduct" ADD COLUMN IF NOT EXISTS "creditPercent" integer NOT NULL DEFAULT 0`,
   sql`ALTER TABLE "kempoProduct" ADD COLUMN IF NOT EXISTS "categories" jsonb NOT NULL DEFAULT '[]'::jsonb`,
+  sql`ALTER TABLE "kempoProduct" ADD COLUMN IF NOT EXISTS "minimumPrice" integer`,
 ];
 
 /*
