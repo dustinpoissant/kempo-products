@@ -15,7 +15,6 @@ import { getCreditsPerUnit } from './settings.js';
 */
 
 const NAME = 'kempo-credits';
-const OWNER = 'kempo-products';
 
 export const MAX_CREDITS = 1000000000;
 
@@ -23,14 +22,6 @@ export const MAX_CREDITS = 1000000000;
 export const creditsEnabled = async () => {
   const [error, extension] = await getExtension({ name: NAME });
   return !error && extension?.enabled === true;
-};
-
-const loadCredits = async () => {
-  try {
-    return await import('kempo-credits/sdk');
-  } catch {
-    return null;
-  }
 };
 
 const wholeNumber = (value, label, min, max) => {
@@ -105,50 +96,4 @@ export const creditQuote = ({ percent, unitPrice, currency, perUnit }) => {
 export const quoteFor = async (product, unitPrice, currency) => {
   if(!product.creditPercent || !(await creditsEnabled())) return null;
   return creditQuote({ percent: product.creditPercent, unitPrice, currency, perUnit: await getCreditsPerUnit() });
-};
-
-const totalCredits = purchase => (purchase.lines ?? []).reduce((sum, line) => sum + (Number(line.creditsGranted) || 0) * (Number(line.quantity) || 0), 0);
-
-/*
-  Gives the buyer the credits a recorded purchase carries. Idempotent on the purchase's ref, so it
-  is safe to call again for a purchase whose grant failed (kempo-credits was down, say). A purchase
-  with no user, or with nothing that grants credits, does nothing.
-*/
-export const grantPurchaseCredits = async purchase => {
-  const amount = totalCredits(purchase);
-  if(!amount || !purchase.userId) return [null, { granted: 0 }];
-
-  const credits = await loadCredits();
-  if(!credits) return [{ code: 501, msg: 'kempo-credits is not installed' }, null];
-
-  const [error, result] = await credits.grantCredits({
-    userId: purchase.userId,
-    amount,
-    kind: 'purchase',
-    reason: 'product-purchase',
-    reference: { owner: OWNER, ref: purchase.ref },
-    idempotencyKey: `products:purchase:${purchase.ref}`,
-  });
-  if(error) return [error, null];
-  return [null, { granted: amount, duplicate: Boolean(result.duplicate) }];
-};
-
-/*
-  Takes back the credits a purchase gave when the purchase is reversed. What the buyer still holds
-  is taken; what they have already spent becomes a shortfall that kempo-credits records and reports.
-  A purchase that gave nothing has nothing to take back.
-*/
-export const takeBackPurchaseCredits = async purchase => {
-  if(!totalCredits(purchase) || !purchase.userId) return [null, { taken: 0 }];
-
-  const credits = await loadCredits();
-  if(!credits) return [{ code: 501, msg: 'kempo-credits is not installed' }, null];
-
-  const [error, result] = await credits.clawBackGrant({
-    reference: { owner: OWNER, ref: purchase.ref },
-    reason: 'purchase-reversed',
-    idempotencyKey: `products:reverse:${purchase.ref}`,
-  });
-  if(error && error.code !== 404) return [error, null];
-  return [null, result ?? { taken: 0 }];
 };

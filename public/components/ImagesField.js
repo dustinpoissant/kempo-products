@@ -8,7 +8,7 @@ import '/kempo-ui/components/Spinner.js';
   A product's pictures, uploaded to kempo-media. The first is the primary one shown in lists. Only
   used when kempo-media is installed; the form leaves it out otherwise.
 
-    <k-prod-images .value=${product.images} .assets=${imagesMap}></k-prod-images>
+    <k-products-images .value=${product.images} .assets=${imagesMap}></k-products-images>
 
   `value` is the list of media ids and `assets` a map of id -> { path, thumbnail, name } to show.
   Fires `change` with { value, assets }: the new list of ids, and every description it knows, so the
@@ -95,4 +95,4 @@ export default class ImagesField extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-images', ImagesField);
+customElements.define('k-products-images', ImagesField);

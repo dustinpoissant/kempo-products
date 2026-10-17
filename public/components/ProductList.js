@@ -1,8 +1,8 @@
 import ShadowComponent from '/kempo-ui/components/ShadowComponent.js';
-import { html } from '/kempo-ui/lit-all.min.js';
+import { html, repeat } from '/kempo-ui/lit-all.min.js';
 import '/kempo-ui/components/Pagination.js';
 import '/kempo-ui/components/Spinner.js';
-import { getConfig, getProducts, getTypes, getFields } from '/products/sdk.js';
+import { getConfig, getProducts, getTypes, getCategories, getFields } from '/products/sdk.js';
 import '/products/components/ProductCard.js';
 
 const SORT_LABELS = { newest: 'Newest', oldest: 'Oldest', name: 'Name', 'price-asc': 'Price: low to high', 'price-desc': 'Price: high to low' };
@@ -16,6 +16,7 @@ const split = text => String(text ?? '').split(',').map(part => part.trim()).fil
   What the list is limited to (visitors cannot change these):
     type            only products of this type (a type's key, e.g. "model-car")
     tag             only products with every one of these tags, comma separated
+    category        only products in every one of these categories (their keys), comma separated
     slugs           only these products, by slug, comma separated; shown in that order
     availability    only these, comma separated: available, pending, sold
     in-stock        only products that are not out of stock
@@ -24,6 +25,13 @@ const split = text => String(text ?? '').split(',').map(part => part.trim()).fil
   Where it starts (visitors can change these unless the controls are hidden):
     search          the text in the search box
     sort            newest (default), oldest, name, price-asc, price-desc
+
+  What other extensions put in each card comes from one <template>: the list's own child
+  (`<k-products-list><template>…</template></k-products-list>`), or else the page's
+  `<template data-products-card>`, which is what the `products-card-template` fragment provides. Its
+  content is cloned into every card as the card's light children. Each contribution names the slot it fills
+  with `slot="…"` (price, actions), and the card's own <slot> shows it, in place of the slot's default
+  content (see docs/extending.html). A page with neither shows plain cards.
 
   How it looks:
     limit           show at most this many, with no paging
@@ -41,6 +49,7 @@ export default class ProductList extends ShadowComponent {
   static properties = {
     type: { type: String, reflect: true },
     tag: { type: String },
+    category: { type: String },
     slugs: { type: String },
     availability: { type: String },
     inStock: { type: Boolean, attribute: 'in-stock' },
@@ -53,6 +62,7 @@ export default class ProductList extends ShadowComponent {
     noUrl: { type: Boolean, attribute: 'no-url' },
     config: { state: true },
     types: { state: true },
+    categories: { state: true },
     fields: { state: true },
     products: { state: true },
     images: { state: true },
@@ -66,6 +76,7 @@ export default class ProductList extends ShadowComponent {
     super();
     this.type = '';
     this.tag = '';
+    this.category = '';
     this.slugs = '';
     this.availability = '';
     this.inStock = false;
@@ -78,13 +89,15 @@ export default class ProductList extends ShadowComponent {
     this.noUrl = false;
     this.config = null;
     this.types = [];
+    this.categories = [];
     this.fields = [];
     this.products = [];
     this.images = {};
     this.total = 0;
     this.loading = true;
     this.error = '';
-    this.query = { q: '', type: '', sort: 'newest', page: 1, filters: {} };
+    this.query = { q: '', type: '', category: '', sort: 'newest', page: 1, filters: {} };
+    this.cards = new WeakMap();
     this.searchTimer = null;
   }
 
@@ -106,14 +119,15 @@ export default class ProductList extends ShadowComponent {
     Utility functions
   */
   start = async () => {
-    const [[configError, config], [typesError, types], [fieldsError, fields]] = await Promise.all([getConfig(), getTypes(), getFields()]);
-    if(configError || typesError || fieldsError){
-      this.error = (configError || typesError || fieldsError).msg;
+    const [[configError, config], [typesError, types], [categoriesError, categories], [fieldsError, fields]] = await Promise.all([getConfig(), getTypes(), getCategories(), getFields()]);
+    if(configError || typesError || categoriesError || fieldsError){
+      this.error = (configError || typesError || categoriesError || fieldsError).msg;
       this.loading = false;
       return;
     }
     this.config = config;
     this.types = types.types;
+    this.categories = categories.categories.filter(category => category.count > 0);
     this.fields = fields.fields.filter(field => field.filterable && field.type === 'select');
     this.restore();
   };
@@ -125,9 +139,25 @@ export default class ProductList extends ShadowComponent {
       const parsed = JSON.parse(this.filters);
       if(parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
     } catch { /* reported below */ }
-    console.warn('<k-prod-list>: the filters attribute must be a JSON object such as {"scale":"1:18"}');
+    console.warn('<k-products-list>: the filters attribute must be a JSON object such as {"scale":"1:18"}');
     return {};
   }
+
+  /* The one template every card is cloned from: the list's own, else the page's. */
+  get cardTemplate(){
+    return this.querySelector(':scope > template') ?? document.querySelector('template[data-products-card]');
+  }
+
+  /*
+    What goes in a card's slots: a clone of the template, made once for each product so the components in
+    it keep their state while the list re-renders. Nothing when the template adds nothing.
+  */
+  slottedFor = product => {
+    const template = this.cardTemplate;
+    if(!template?.content.querySelector('[slot]')) return '';
+    if(!this.cards.has(product)) this.cards.set(product, document.importNode(template.content, true));
+    return this.cards.get(product);
+  };
 
   get defaultSort(){
     return this.sort || 'newest';
@@ -141,6 +171,7 @@ export default class ProductList extends ShadowComponent {
     this.query = {
       q: params.get('q') ?? this.search,
       type: this.type || params.get('type') || '',
+      category: this.category ? '' : params.get('category') || '',
       sort: params.get('sort') || this.defaultSort,
       page: Math.max(parseInt(params.get('page')) || 1, 1),
       filters,
@@ -151,10 +182,11 @@ export default class ProductList extends ShadowComponent {
   /* Writes the query into the address (without adding a history entry for every keystroke). */
   remember = () => {
     if(this.noUrl) return;
-    const { q, type, sort, page, filters } = this.query;
+    const { q, type, category, sort, page, filters } = this.query;
     const params = new URLSearchParams();
     if(q) params.set('q', q);
     if(type && !this.type) params.set('type', type);
+    if(category) params.set('category', category);
     if(sort !== this.defaultSort) params.set('sort', sort);
     if(page > 1) params.set('page', String(page));
     for(const [key, value] of Object.entries(filters)) if(value) params.set(`f.${key}`, value);
@@ -167,13 +199,14 @@ export default class ProductList extends ShadowComponent {
 
   load = async () => {
     this.loading = true;
-    const { q, type, sort, page, filters } = this.query;
+    const { q, type, category, sort, page, filters } = this.query;
     const slugs = split(this.slugs).map(slug => slug.toLowerCase());
     const [error, data] = await getProducts({
       q,
       type: type || undefined,
       status: 'published',
       tag: split(this.tag),
+      category: [...split(this.category), ...(category ? [category] : [])],
       slugs: slugs.length ? slugs.join(',') : undefined,
       availability: this.availability || undefined,
       inStock: this.inStock || undefined,
@@ -235,7 +268,7 @@ export default class ProductList extends ShadowComponent {
     View
   */
   renderControls(){
-    const { q, type, sort, filters } = this.query;
+    const { q, type, category, sort, filters } = this.query;
     return html`<div class="d-f mb" style="gap: var(--spacer_h); align-items: flex-end;">
       <div class="flex" style="min-width: 12rem;">
         <label class="d-b mbq" for="q">Search</label>
@@ -246,6 +279,13 @@ export default class ProductList extends ShadowComponent {
         <select id="type" @change=${event => this.change({ type: event.target.value, filters: {} })}>
           <option value="">All</option>
           ${this.types.map(candidate => html`<option value=${candidate.key} ?selected=${candidate.key === type}>${candidate.name}</option>`)}
+        </select>
+      </div>` : ''}
+      ${!this.category && this.categories.length ? html`<div>
+        <label class="d-b mbq" for="category">Category</label>
+        <select id="category" @change=${event => this.change({ category: event.target.value })}>
+          <option value="">All</option>
+          ${this.categories.map(candidate => html`<option value=${candidate.key} ?selected=${candidate.key === category}>${candidate.name}</option>`)}
         </select>
       </div>` : ''}
       ${this.filterFields.map(field => html`<div>
@@ -272,7 +312,7 @@ export default class ProductList extends ShadowComponent {
       ${this.hideControls ? '' : this.renderControls()}
       ${this.loading ? html`<k-spinner></k-spinner>` : this.products.length ? html`
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: var(--spacer);">
-          ${this.products.map(product => html`<k-prod-card .product=${product} .images=${this.images} .config=${this.config}></k-prod-card>`)}
+          ${repeat(this.products, product => product.id, product => html`<k-products-card .product=${product} .images=${this.images} .config=${this.config}>${this.slottedFor(product)}</k-products-card>`)}
         </div>
         ${!this.limit && this.total > size ? html`<k-pagination style="margin-top: var(--spacer)" controls="simple" .page=${this.query.page} .totalItems=${this.total} .itemsPerPage=${size} @page-change=${this.handlePage}></k-pagination>` : ''}
       ` : html`<p class="tc-muted">No products found.</p>`}
@@ -280,4 +320,4 @@ export default class ProductList extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-list', ProductList);
+customElements.define('k-products-list', ProductList);

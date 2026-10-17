@@ -3,7 +3,7 @@ import { pricesVisible } from './settings.js';
 
 /*
   Who is looking. The catalog is public: anyone can read published products. People holding
-  `products:read` can also see drafts and archived products, and the exact stock count.
+  `products:read` can also see drafts and archived products, and the exact quantity count.
 
   Resolves to { userId, canManage, showPrices }.
 */
@@ -28,7 +28,7 @@ export const readAccess = async request => {
   at all is `visibleTo`, which callers check first.
 */
 export const forCaller = (product, access) => {
-  const { stock, managedBy, owner, ...visible } = product;
+  const { quantity, managedBy, owner, ...visible } = product;
   const shaped = access.canManage ? product : visible;
   if(access.showPrices) return shaped;
   return {

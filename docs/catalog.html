@@ -70,27 +70,27 @@
         <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
         <a href="./catalog.html#products" class="d-b">Products</a>
         <a href="./catalog.html#price" class="d-b">Price</a>
-        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#quantity" class="d-b">Quantity</a>
         <a href="./catalog.html#options" class="d-b">Options and prices</a>
         <a href="./catalog.html#images" class="d-b">Images</a>
       </div>
       <h5><a href="./components.html">Components</a></h5>
       <div class="ml mb -mt">
         <a href="./components.html#home-page" class="d-b">Products on your home page</a>
-        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#k-products-list" class="d-b">&lt;k-products-list&gt;</a>
         <a href="./components.html#recipes" class="d-b">Recipes</a>
         <a href="./components.html#address" class="d-b">The address</a>
-        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
-        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#k-products-card" class="d-b">&lt;k-products-card&gt;</a>
+        <a href="./components.html#k-products-detail" class="d-b">&lt;k-products-detail&gt;</a>
         <a href="./components.html#sdk" class="d-b">Browser SDK</a>
         <a href="./components.html#styling" class="d-b">Styling</a>
       </div>
-      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <h5><a href="./ledger.html">The ledger</a></h5>
       <div class="ml mb -mt">
-        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
-        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
-        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
-        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+        <a href="./ledger.html#entries" class="d-b">Adding an entry</a>
+        <a href="./ledger.html#undoing" class="d-b">Putting back what an entry took</a>
+        <a href="./ledger.html#admin" class="d-b">In the admin</a>
+        <a href="./ledger.html#managed" class="d-b">Managed quantity</a>
       </div>
       <h5><a href="./import-export.html">Import and export</a></h5>
       <div class="ml mb -mt">
@@ -150,7 +150,7 @@
     <p>Everything on this page is done in the admin, under <strong>Products</strong>, with no code.</p>
 
     <h2 id="types-and-fields" class="mt">Types and fields</h2>
-    <p>A product has only what every catalog needs: a name, an address, a description, a status, a price, stock, pictures and tags. Everything else is up to you.</p>
+    <p>A product has only what every catalog needs: a name, an address, a description, a status, a price, quantity, pictures and tags. Everything else is up to you.</p>
     <p>Under <strong>Products &gt; Types</strong> make a type, such as "Vehicle" or "Model car". Under <strong>Products &gt; Fields</strong> give it fields: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". A field applies to every product or to one type, and a product only shows the fields of its type.</p>
     <div class="table-wrapper mb">
       <table>
@@ -174,13 +174,18 @@
     </div>
     <p>Tick <strong>Visitors can filter by this</strong> on a choice-list field and it becomes a drop-down on the public list. A field can be changed to another kind only where nothing can be lost: a choice list can become text, and short text can become long text.</p>
 
+    <h2 id="categories" class="mt">Categories</h2>
+    <p>A product is of one type, which decides its fields, and can be in <strong>any number of categories</strong>, which are how shoppers browse. Add them under <strong>Admin &rarr; Products &rarr; Product Categories</strong>, then tick them on a product's <strong>Details</strong> tab, when you create or edit it.</p>
+    <p>A category has a name, a description and a <strong>key</strong> made from its name (<code>model-cars</code>). The key never changes, because it is in addresses like <code>/products/?category=model-cars</code>. Deleting a category takes it off its products and leaves them.</p>
+    <p><code>/categories/</code> lists the categories that have published products in them, with how many, and each links to the product list narrowed to it. <code>&lt;k-products-list category="model-cars"&gt;</code> shows one anywhere on your site.</p>
+
     <h2 id="products" class="mt">Products</h2>
     <p>A product's <strong>status</strong> is <code>draft</code>, <code>published</code> or <code>archived</code>. Only published products are public. Its <strong>availability</strong> is <code>available</code>, <code>pending</code> or <code>sold</code>, for things like a dealership's "sale pending". Neither needs a count.</p>
     <p>A product's <strong>address</strong> (its slug) is made from its name, and is the last part of its page: <code>/products/1969-camaro/</code>. You can change it. A few words are reserved because they are this extension's own addresses: <code>api</code>, <code>components</code>, <code>vendor</code>, <code>sdk</code>, <code>index</code>, <code>admin</code>, <code>new</code> and <code>edit</code>.</p>
     <div class="mb">
-      <img src="./media/admin-product-form-light.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, stock and tags." class="img-light full b r" />
-      <img src="./media/admin-product-form-dark.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, stock and tags." class="img-dark full b r" />
-      <small class="d-b tc-muted">The product form is split into tabs. Here the stock box is read-only, because another extension keeps it up to date.</small>
+      <img src="./media/admin-product-form-light.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, quantity and tags." class="img-light full b r" />
+      <img src="./media/admin-product-form-dark.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, quantity and tags." class="img-dark full b r" />
+      <small class="d-b tc-muted">The product form is split into tabs. Here the quantity box is read-only, because another extension keeps it up to date.</small>
     </div>
     <p>The <strong>Description</strong> tab is the same full rich text editor pages use: headings, lists, links, tables and pictures. It is stored as HTML, and the public page sanitizes it when showing it, so scripts, event handlers and <code>javascript:</code> links never run. Search engines get its plain text as the meta description.</p>
     <div class="mb">
@@ -194,9 +199,9 @@
     <p>A price is optional. A product with no price shows its <strong>price label</strong> instead, such as "Call for price". Turn off the <code>prices_visible</code> setting to run a catalog that never shows what things cost.</p>
     <p>Prices are stored as whole numbers of the smallest unit (<code>4999</code> is $49.99), so there is never a rounding error. The <a href="./reference.html#money">reference</a> covers currencies without cents.</p>
 
-    <h2 id="stock" class="mt">Stock</h2>
-    <p>Stock is a number, or blank for <strong>unlimited</strong>, which is the default. A catalog that never counts anything never shows "out of stock". When a product is bought its stock goes down, and at zero it shows as out of stock.</p>
-    <p>If another extension keeps a product's stock in step with something else (the <a href="./inventory.html">inventory connector</a> does), the stock box is read-only and says who is maintaining it, so an edit cannot be silently overwritten.</p>
+    <h2 id="quantity" class="mt">Quantity</h2>
+    <p>Quantity is a number, or blank for <strong>unlimited</strong>, which is the default. A catalog that never counts anything never shows "out of stock". When a product is bought its quantity goes down, and at zero it shows as out of stock.</p>
+    <p>If another extension keeps a product's quantity in step with something else (the <a href="./inventory.html">inventory connector</a> does), the quantity box is read-only and says who is maintaining it, so an edit cannot be silently overwritten.</p>
 
     <h2 id="options" class="mt">Options and prices</h2>
     <p>Options are the choices a buyer makes: colour, clear coat, size. Each choice carries a price, and <strong>by default that price is relative to the product's base price</strong>:</p>

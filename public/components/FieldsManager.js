@@ -16,7 +16,7 @@ const LABELS = {
   "Scale" only appears on model cars. Fields are what a type is made of, so a site owner builds
   "Vehicle" or "Model car" here without writing any code.
 
-    <k-prod-fields></k-prod-fields>
+    <k-products-fields></k-products-fields>
 */
 export default class FieldsManager extends ShadowComponent {
   static properties = {
@@ -205,4 +205,4 @@ export default class FieldsManager extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-fields', FieldsManager);
+customElements.define('k-products-fields', FieldsManager);

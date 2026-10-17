@@ -8,7 +8,7 @@ import { getSettings, saveSettings } from '/products/sdk.js';
   The catalog's settings with a form for each section, instead of the one flat table at
   /admin/settings (which stays, and edits the same values).
 
-    <k-prod-settings></k-prod-settings>
+    <k-products-settings></k-products-settings>
 
   Needs products:settings:manage. Only what changed is saved, and nothing is saved unless every
   value is acceptable.
@@ -153,4 +153,4 @@ export default class SettingsManager extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-settings', SettingsManager);
+customElements.define('k-products-settings', SettingsManager);

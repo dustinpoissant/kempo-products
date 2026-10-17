@@ -2,14 +2,15 @@
   "docs": "https://github.com/dustinpoissant/kempo-products#readme",
   "git": "https://github.com/dustinpoissant/kempo-products",
   "public-scope": "products",
+  "public-scopes": { "categories": "public-categories" },
   "schema": "./server/db/schema.js",
   "widgets": [
     {
       "key": "catalog",
       "title": "Products",
-      "description": "How many products there are, how many purchases were recorded, and the latest products.",
-      "icon": "label",
-      "element": "k-prod-widget",
+      "description": "How many products there are, and the latest products.",
+      "iconSrc": "/products/icons/products.svg",
+      "element": "k-products-widget",
       "module": "/products/components/ProductsWidget.js",
       "defaultWidth": 2,
       "defaultHeight": 2,
@@ -22,7 +23,7 @@
   "permissions": [
     {
       "name": "products:read",
-      "description": "See draft and archived products, stock levels and purchases in the admin"
+      "description": "See draft and archived products, quantity levels and the ledger in the admin"
     },
     {
       "name": "products:create",
@@ -30,7 +31,7 @@
     },
     {
       "name": "products:update",
-      "description": "Edit products, including their price, options and stock"
+      "description": "Edit products, including their price, options and quantity"
     },
     {
       "name": "products:delete",
@@ -41,8 +42,12 @@
       "description": "Create, edit and delete product types and the custom fields they have"
     },
     {
-      "name": "products:purchases:record",
-      "description": "Record a purchase made elsewhere, and reverse one"
+      "name": "products:categories:manage",
+      "description": "Create, edit and delete product categories. Putting a product in a category only needs permission to edit it"
+    },
+    {
+      "name": "products:ledger:add",
+      "description": "Add an entry to the ledger: add stock to products, or take it away"
     },
     {
       "name": "products:settings:manage",
@@ -86,14 +91,14 @@
     },
     {
       "name": "kempo-products:manager",
-      "description": "Can add, edit and delete products and record purchases",
+      "description": "Can add, edit and delete products and add entries to the ledger",
       "permissions": [
         "system:admin:access",
         "products:read",
         "products:create",
         "products:update",
         "products:delete",
-        "products:purchases:record"
+        "products:ledger:add"
       ]
     },
     {
@@ -105,8 +110,9 @@
         "products:create",
         "products:update",
         "products:delete",
-        "products:purchases:record",
+        "products:ledger:add",
         "products:types:manage",
+        "products:categories:manage",
         "products:settings:manage"
       ]
     }

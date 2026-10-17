@@ -70,27 +70,27 @@
         <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
         <a href="./catalog.html#products" class="d-b">Products</a>
         <a href="./catalog.html#price" class="d-b">Price</a>
-        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#quantity" class="d-b">Quantity</a>
         <a href="./catalog.html#options" class="d-b">Options and prices</a>
         <a href="./catalog.html#images" class="d-b">Images</a>
       </div>
       <h5><a href="./components.html">Components</a></h5>
       <div class="ml mb -mt">
         <a href="./components.html#home-page" class="d-b">Products on your home page</a>
-        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#k-products-list" class="d-b">&lt;k-products-list&gt;</a>
         <a href="./components.html#recipes" class="d-b">Recipes</a>
         <a href="./components.html#address" class="d-b">The address</a>
-        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
-        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#k-products-card" class="d-b">&lt;k-products-card&gt;</a>
+        <a href="./components.html#k-products-detail" class="d-b">&lt;k-products-detail&gt;</a>
         <a href="./components.html#sdk" class="d-b">Browser SDK</a>
         <a href="./components.html#styling" class="d-b">Styling</a>
       </div>
-      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <h5><a href="./ledger.html">The ledger</a></h5>
       <div class="ml mb -mt">
-        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
-        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
-        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
-        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+        <a href="./ledger.html#entries" class="d-b">Adding an entry</a>
+        <a href="./ledger.html#undoing" class="d-b">Putting back what an entry took</a>
+        <a href="./ledger.html#admin" class="d-b">In the admin</a>
+        <a href="./ledger.html#managed" class="d-b">Managed quantity</a>
       </div>
       <h5><a href="./import-export.html">Import and export</a></h5>
       <div class="ml mb -mt">
@@ -150,11 +150,11 @@
     <p>An extension that adds to the catalog declares the dependency in its <code>kempo-config.json</code>, and subscribes to what it needs:</p>
     <pre><code class="hljs json"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;dependencies&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;kempo-products&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;hooks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;kempo-products:purchase:recorded&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/purchase-recorded.js&quot;</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-attr">&quot;hooks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;kempo-products:ledger:added&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;./hooks/ledger-added.js&quot;</span> <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre>
 
     <h2 id="sdk" class="mt">Server SDK</h2>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getProducts, createProduct, setStock, recordPurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;</code></pre>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { getProducts, createProduct, setQuantity, addLedgerEntry } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;</code></pre>
     <p>Every function resolves to <code>[error, result]</code>, where <code>error</code> is <code>{ code, msg }</code> or <code>null</code>.</p>
     <div class="table-wrapper mb">
       <table>
@@ -164,9 +164,9 @@
           <tr><td><code>getProduct(idOrSlug)</code></td><td>One product, with its options</td></tr>
           <tr><td><code>createProduct(data, { owner })</code>, <code>updateProduct(id, data, { owner })</code>, <code>deleteProduct(id, { owner })</code></td><td>Manage products. <code>owner</code> makes them your extension's</td></tr>
           <tr><td><code>getPrice(productId, selections)</code></td><td>The server's price for <code>{ optionKey: choiceKey }</code>: <code>{ unit, base, lines, currency }</code></td></tr>
-          <tr><td><code>recordPurchase(data, { manual })</code>, <code>reversePurchase(ref)</code>, <code>getPurchase(ref)</code>, <code>getPurchases()</code></td><td>See <a href="./purchases.html">Purchases and stock</a></td></tr>
-          <tr><td><code>setStock(id, stock, { actor })</code>, <code>adjustStock(id, delta, { actor })</code></td><td>Change stock; <code>-1</code> is unlimited. Atomic, and never below zero</td></tr>
-          <tr><td><code>setManagedBy(id, extension)</code></td><td>Declare that your extension keeps this product's stock and choice availability in step with something else</td></tr>
+          <tr><td><code>addLedgerEntry({ ref, lines, note, reason, undoes, actor })</code>, <code>getLedger({ productId })</code>, <code>getLedgerEntry(ref)</code></td><td>Change quantity and record it; see <a href="./ledger.html">The ledger</a></td></tr>
+          <tr><td><code>setQuantity(id, quantity, { actor })</code>, <code>adjustQuantity(id, delta, { actor })</code></td><td>Change quantity; <code>-1</code> is unlimited. Atomic, and never below zero</td></tr>
+          <tr><td><code>setManagedBy(id, extension)</code></td><td>Declare that your extension keeps this product's quantity and choice availability in step with something else</td></tr>
           <tr><td><code>setChoiceAvailability(id, optionKey, choiceKey, available, { actor })</code></td><td>Mark one choice in or out of stock</td></tr>
           <tr><td><code>getTypes</code>, <code>registerType(owner, { name })</code>, <code>unregisterTypes(owner)</code></td><td>Product types</td></tr>
           <tr><td><code>getFields</code>, <code>registerField(owner, definition)</code>, <code>registerFields</code>, <code>unregisterFields(owner)</code></td><td>Fields. <code>definition.productType</code> scopes one to a type</td></tr>
@@ -203,7 +203,7 @@
       <table>
         <thead><tr><th></th><th>Only the owner can</th><th>Anyone with the permission can still</th></tr></thead>
         <tbody>
-          <tr><td><strong>Product</strong></td><td>change its slug, name and type; delete it</td><td>edit its description, price, options, tags, images, field values and stock</td></tr>
+          <tr><td><strong>Product</strong></td><td>change its slug, name and type; delete it</td><td>edit its description, price, options, tags, images, field values and quantity</td></tr>
           <tr><td><strong>Type</strong></td><td>rename it; delete it</td><td>change its description and position</td></tr>
           <tr><td><strong>Field</strong></td><td>delete it; change its key, kind, requirement or choices</td><td>rename it; change its help text and whether it is listed or filterable</td></tr>
         </tbody>
@@ -222,6 +222,7 @@
           <tr><td><code>kempo-products:product:before_create</code></td><td><code>{ draft, userId }</code> (editable)</td></tr>
           <tr><td><code>kempo-products:product:before_update</code></td><td><code>{ product, changes, userId }</code> (editable)</td></tr>
           <tr><td><code>kempo-products:product:before_delete</code></td><td><code>{ product, userId }</code></td></tr>
+          <tr><td><code>kempo-products:ledger:before_add</code></td><td><code>{ ref, lines, products, reason, note, undoes, actor }</code>, refuse only. Answered by the extension that manages some of the products</td></tr>
           <tr><td><code>kempo-products:type:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
           <tr><td><code>kempo-products:field:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
         </tbody>
@@ -234,27 +235,64 @@
         <thead><tr><th>Event</th><th>Payload</th></tr></thead>
         <tbody>
           <tr><td><code>kempo-products:product:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ product, previous?, userId }</code></td></tr>
-          <tr><td><code>kempo-products:product:stock_changed</code></td><td><code>{ product, previousStock, stock, reason }</code></td></tr>
-          <tr><td><code>kempo-products:purchase:recorded</code></td><td><code>{ purchase }</code></td></tr>
-          <tr><td><code>kempo-products:purchase:reversed</code></td><td><code>{ purchase }</code></td></tr>
+          <tr><td><code>kempo-products:product:quantity_changed</code></td><td><code>{ product, previousQuantity, quantity, reason }</code></td></tr>
+          <tr><td><code>kempo-products:ledger:added</code></td><td><code>{ ref, lines, handedOver, reason, note, undoes }</code></td></tr>
+          <tr><td><code>kempo-products:ledger:add_failed</code></td><td><code>{ ref }</code>: an entry a manager agreed to did not happen, so it undoes what it did</td></tr>
           <tr><td><code>kempo-products:type:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ type, previous? }</code></td></tr>
+          <tr><td><code>kempo-products:category:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ category, previous?, products? }</code> (<code>products</code> is the ids it was taken off, on delete)</td></tr>
           <tr><td><code>kempo-products:field:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ field, previous? }</code></td></tr>
         </tbody>
       </table>
     </div>
     <p>Handlers run one at a time in the order they were registered, and are awaited, so a slow one holds up the request that triggered it. A notification handler that throws is logged and does not stop the others.</p>
 
+    <h2 id="actions" class="mt">Adding controls to products</h2>
+    <p>An extension that sells, reserves or compares products puts a control on every product card and every product page <strong>by composition</strong>: plain files, no registration, no editing either page. The pages carry locations, and the extension fills them from a global content file in its <code>public/</code> folder. The control is the extension's own custom element:</p>
+    <pre><code class="hljs xml"><span class="hljs-comment">&lt;!-- public/product-actions.global.html --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-scripts&quot;</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/shop/components/AddToCart.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-card-actions&quot;</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">k-shop-add-to-cart</span> <span class="hljs-attr">slot</span>=<span class="hljs-string">&quot;actions&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-shop-add-to-cart</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-detail-actions&quot;</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">k-shop-add-to-cart</span> <span class="hljs-attr">slot</span>=<span class="hljs-string">&quot;actions&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-shop-add-to-cart</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-card-price&quot;</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">k-sales-price</span> <span class="hljs-attr">slot</span>=<span class="hljs-string">&quot;price&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-sales-price</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-detail-price&quot;</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">k-sales-price</span> <span class="hljs-attr">slot</span>=<span class="hljs-string">&quot;price&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-sales-price</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span></code></pre>
+    <div class="table-wrapper mb">
+      <table>
+        <thead><tr><th>Location</th><th>What goes there</th></tr></thead>
+        <tbody>
+          <tr><td><code>products-scripts</code></td><td>The <code>&lt;script type="module"&gt;</code> that defines your element. It loads on product pages only, outside the card template, so it runs once</td></tr>
+          <tr><td><code>products-card-actions</code></td><td>Your element, in the one card template, for the card's <code>actions</code> slot (under the price). Each card gets its own copy</td></tr>
+          <tr><td><code>products-card-price</code></td><td>An element for the card's <code>price</code> slot: it replaces the price shown</td></tr>
+          <tr><td><code>products-detail-actions</code></td><td>Your element for a product page's <code>actions</code> slot (under the options)</td></tr>
+          <tr><td><code>products-detail-price</code></td><td>An element for a product page's <code>price</code> slot: it replaces the price line</td></tr>
+          <tr><td><code>products-detail-extra</code></td><td>Your element for a product page's <code>extra</code> slot (under the description)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A location is a plain insertion point: the element you put in it names the slot it fills with <code>slot="…"</code>, as any child of a web component does. The <code>price</code> slots have the usual price as their <strong>default content</strong>, so a site that installs nothing shows it unchanged, and an extension that shows it differently (a sale price with the old one struck through, in green) puts its own element there and the default is replaced. Read <code>card.product</code> and <code>card.config</code> (on a product page <code>page.product</code>, <code>page.price</code>, <code>page.config</code> and <code>page.money(minor)</code>) and format with <code>displayMoney</code> from <code>/products/sdk.js</code>. Two extensions that both fill <code>price</code> are both shown, so a price override is something one extension should own.</p>
+    <p>When the browser creates your element it finds where it sits and reads what it needs from there:</p>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// inside a card</span>
+<span class="hljs-keyword">const</span> card = <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">closest</span>(<span class="hljs-string">&#x27;k-products-card&#x27;</span>);
+card.<span class="hljs-title function_">getAttribute</span>(<span class="hljs-string">&#x27;product-id&#x27;</span>);   <span class="hljs-comment">// which product</span>
+card.<span class="hljs-property">product</span>;                      <span class="hljs-comment">// the product the list already loaded: no need to fetch it again</span>
+
+<span class="hljs-comment">// on a product page</span>
+<span class="hljs-keyword">const</span> page = <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">closest</span>(<span class="hljs-string">&#x27;k-products-detail&#x27;</span>);
+page.<span class="hljs-property">product</span>; page.<span class="hljs-property">selections</span>; page.<span class="hljs-property">price</span>; page.<span class="hljs-property">complete</span>;      <span class="hljs-comment">// the options chosen so far, and the price they make</span>
+page.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;selection-change&#x27;</span>, <span class="hljs-variable language_">this</span>.<span class="hljs-property">update</span>);        <span class="hljs-comment">// when they change</span></code></pre>
+    <p>A component that needs more than the product (stock, ratings) fetches it from its own extension's API using <code>product-id</code>. Several extensions can fill the same location at once and stack by <code>priority</code>, highest first; that is the difference from a fragment, which has one winner.</p>
+    <p><code>/products/</code> already has the card template. A page of your own that embeds a <code>&lt;k-products-list&gt;</code> includes it once, with <code>&lt;fragment name="products-card-template" /&gt;</code>; without it the cards show no extension content. A list can carry its own instead, as a child: <code>&lt;k-products-list&gt;&lt;template&gt;&hellip;&lt;/template&gt;&lt;/k-products-list&gt;</code>.</p>
+    <p><strong>Deprecated:</strong> <code>registerProductAction('k-my-element')</code> from <code>/products/components/actions.js</code> still works for extensions that have not moved, but it will be removed in a later major release. Use the locations above.</p>
+
     <h2 id="tabs" class="mt">Adding to the pages</h2>
     <h3>A tab on the product form</h3>
-    <p>The admin product form is split into tabs: <strong>Details</strong>, <strong>Description</strong>, <strong>Media</strong> and <strong>Options</strong>. Any extension can add its own, such as a shipping, SEO or tax tab. Ship a global content file in your package's <code>admin/</code> directory that pushes a <code>&lt;k-prod-tab&gt;</code> into the <code>products-admin-product-tabs</code> location. Kempo picks it up without any registration, and it disappears when your extension is disabled.</p>
+    <p>The admin product form is split into tabs: <strong>Details</strong>, <strong>Description</strong>, <strong>Media</strong> and <strong>Options</strong>. Any extension can add its own, such as a shipping, SEO or tax tab. Ship a global content file in your package's <code>admin/</code> directory that pushes a <code>&lt;k-products-tab&gt;</code> into the <code>products-admin-product-tabs</code> location. Kempo picks it up without any registration, and it disappears when your extension is disabled.</p>
     <pre><code class="hljs xml"><span class="hljs-comment">&lt;!-- admin/product-tab.global.html --&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;my-extension-product-tab&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;Shipping tab&quot;</span> <span class="hljs-attr">owner</span>=<span class="hljs-string">&quot;my-extension&quot;</span> <span class="hljs-attr">enabled</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">locked</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-admin-product-tabs&quot;</span> <span class="hljs-attr">priority</span>=<span class="hljs-string">&quot;10&quot;</span>&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-tab</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;shipping&quot;</span> <span class="hljs-attr">label</span>=<span class="hljs-string">&quot;Shipping&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-tab</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;shipping&quot;</span> <span class="hljs-attr">label</span>=<span class="hljs-string">&quot;Shipping&quot;</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/my-extension/components/ShippingFields.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">my-shipping-fields</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">my-shipping-fields</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-tab</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">k-products-tab</span>&gt;</span>
 <span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span></code></pre>
-    <p>Tabs from several extensions all appear, after the built-in ones, ordered by <code>priority</code>. Your element finds the form with <code>this.closest('k-prod-form')</code> and listens to what is going on:</p>
+    <p>Tabs from several extensions all appear, after the built-in ones, ordered by <code>priority</code>. Your element finds the form with <code>this.closest('k-products-form')</code> and listens to what is going on:</p>
     <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Event on the form</th><th>When</th><th><code>event.detail</code></th></tr></thead>
@@ -264,7 +302,7 @@
         </tbody>
       </table>
     </div>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">const</span> form = <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">closest</span>(<span class="hljs-string">&#x27;k-prod-form&#x27;</span>);
+    <pre><code class="hljs javascript"><span class="hljs-keyword">const</span> form = <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">closest</span>(<span class="hljs-string">&#x27;k-products-form&#x27;</span>);
 form.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;product-saved&#x27;</span>, <span class="hljs-function"><span class="hljs-params">event</span> =&gt;</span> {
   event.<span class="hljs-property">detail</span>.<span class="hljs-title function_">waitUntil</span>(<span class="hljs-title function_">saveMyOwnThing</span>(event.<span class="hljs-property">detail</span>.<span class="hljs-property">product</span>.<span class="hljs-property">id</span>));
 });</code></pre>

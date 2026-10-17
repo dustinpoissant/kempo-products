@@ -6,7 +6,7 @@ It works on its own. A dealership can list its cars with no checkout at all, and
 
 > Status: pre-release. See [PLAN.md](PLAN.md) for the design and what is still to come.
 
-**Documentation: <https://dustinpoissant.github.io/kempo-products/>**. It covers building a catalog, putting products on your pages, purchases and stock, import and export, using it with inventory, and building on it. This README is the short version.
+**Documentation: <https://dustinpoissant.github.io/kempo-products/>**. It covers building a catalog, putting products on your pages, quantity and the ledger, import and export, using it with inventory, and building on it. This README is the short version.
 
 ## Install
 
@@ -18,7 +18,7 @@ Then install it from **Admin > Extensions**. A **Products** entry appears in the
 
 ## Product types and fields
 
-A product has only what every catalog needs: a name, an address (its slug), a description, a status, a price, stock, pictures and tags. Everything else is up to you, and it needs no code.
+A product has only what every catalog needs: a name, an address (its slug), a description, a status, a price, quantity, pictures and tags. Everything else is up to you, and it needs no code.
 
 Under **Products > Types** make a type, such as "Vehicle" or "Model car". Under **Products > Fields** give it fields: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". A field applies to every product or to one type, and a product only shows the fields of its type. Field kinds are short text, long text, number, yes/no, date, colour, rating, choice list, and images (when kempo-media is installed).
 
@@ -30,7 +30,7 @@ A product's **status** is `draft`, `published` or `archived`; only published pro
 
 **Price** is optional. A product with no price shows its **price label** instead ("Call for price"). Turn off the `prices_visible` setting to run a catalog that never shows what things cost.
 
-**Stock** is a number, or blank for unlimited, which is the default. A catalog that never counts anything never shows "out of stock". When a product is bought its stock goes down; at zero it shows as out of stock.
+**Quantity** is a number, or blank for unlimited, which is the default. A catalog that never counts anything never shows "out of stock". When a product is bought its quantity goes down; at zero it shows as out of stock.
 
 ## Options and prices
 
@@ -64,15 +64,19 @@ Both pages are made of Lit components you can use on your own pages, such as a f
 
 ```html
 <script type="module" src="/products/components/ProductList.js"></script>
-<k-prod-list tag="featured" limit="4" hide-controls no-url></k-prod-list>
+<k-products-list tag="featured" limit="4" hide-controls no-url></k-products-list>
 
 <script type="module" src="/products/components/ProductDetail.js"></script>
-<k-prod-detail slug="1969-camaro"></k-prod-detail>
+<k-products-detail slug="1969-camaro"></k-products-detail>
 ```
 
-`<k-prod-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or a field's value, and can start sorted or searched. **[The components guide](https://dustinpoissant.github.io/kempo-products/components.html)** lists every attribute with recipes.
+`<k-products-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or a field's value, and can start sorted or searched. **[The components guide](https://dustinpoissant.github.io/kempo-products/components.html)** lists every attribute with recipes.
 
-A site can override the pages themselves with its own, and extensions can add to them through two named fragments, `products-list-extra` and `products-detail-extra`.
+A site can override the pages themselves with its own. Extensions add to them by composition (see below), and through two named fragments, `products-list-extra` and `products-detail-extra`.
+
+**Categories.** A product is of one **type** (which decides its fields) and can be in any number of **categories**, which are how shoppers browse. Manage them under **Admin → Products → Product Categories**, then tick them on a product's **Details** tab, when creating or editing it. A category has a name, a description and a key made from the name (`model-cars`); the key never changes, since it is in addresses like `/products/?category=model-cars`. Deleting a category takes it off its products and leaves them. `/categories/` lists the categories that have published products, with how many, and `<k-products-list category="model-cars">` (or `?category=` in the address) shows one. Categories travel in a CSV (`categories`, by key or name) and a JSON export (with the categories themselves); the server SDK has `getCategories`, `createCategory`, `updateCategory` and `deleteCategory`, and a product has `categories`, a list of keys.
+
+**Two addresses.** This extension answers on two scopes (`"public-scopes"` in its `kempo-config.json`): `/products/`, from `public/`, and `/categories/`, from `public-categories/`. `/categories/` lists the product categories (see above). Kempo refuses to install or enable this extension beside another that claims `/products` or `/categories`.
 
 A product's slug cannot be `api`, `components`, `vendor`, `sdk`, `index`, `admin`, `new` or `edit`, because those are this extension's own addresses.
 
@@ -89,7 +93,7 @@ A spreadsheet has one row per product. Only `name` is required:
 | `type` | A type's name or key. The type must exist already |
 | `status`, `availability` | As in the admin (`published`, `sold`, ...) |
 | `price`, `price_label` | A decimal such as `49.99`; the label shows when there is no price |
-| `stock` | A whole number, or empty for unlimited |
+| `quantity` | A whole number, or empty for unlimited |
 | `options` | The product's options as JSON (what Export writes) |
 | `field.<key>` | One column per custom field, e.g. `field.scale` |
 
@@ -97,25 +101,30 @@ An **empty cell leaves what a product already has unchanged** (and uses the defa
 
 The JSON export also carries the types and fields, and importing it creates any the site lacks. Images are not exported, because a media id means nothing on another site. Names that a spreadsheet would run as a formula (starting with `=`, `+`, `-` or `@`) are written with a leading apostrophe so they open as text, and the apostrophe is removed again on import.
 
-## Recording purchases
+## The ledger
 
-This extension does not take orders. Whoever does, whether that is `kempo-commerce`, the admin form (for sales made on Etsy or in person), or another extension, calls `recordPurchase`:
+Every change to a product's quantity is written to the **ledger**: who changed it, by how much, why, and what was left. Open it from the **Ledger** button on the Products page. There you can add stock to a product or take it away (a delivery, a count, a sale made somewhere else), and read what has happened.
+
+This extension does not take orders, hold stock for a payment, give credits or reverse anything. Whoever does (`kempo-commerce`, a supplier feed, you) adds an entry to the ledger:
 
 ```javascript
-import { recordPurchase, reversePurchase } from 'kempo-products/sdk';
+import { addLedgerEntry } from 'kempo-products/sdk';
 
-const [error, purchase] = await recordPurchase({
+const [error, entry] = await addLedgerEntry({
   ref: 'order-1042',
-  lines: [{ productId, quantity: 1, options: { color: 'red' } }],
+  reason: 'sale',
+  lines: [{ productId, change: -1 }],
 });
 ```
 
-- `ref` is the caller's own reference. Recording the same one twice is refused, so a retry can never take stock twice, and it is how a purchase is found later.
-- Every line is checked (the product is published, in stock, priced, and the options are real and available) and priced here from the catalog.
-- Stock for **all** the lines is taken in one transaction: every line or none.
-- Then `kempo-products:purchase:recorded` fires with the purchase, and that is how other extensions react.
+- A line's `change` is how much to add; negative takes. A sale takes, a return adds back (`undoes: 'order-1042'` says which entry it puts back).
+- **All the lines or none**: if any product has too little, nothing changes and the error names it (409). Quantity never goes below zero.
+- `ref` is the caller's own reference. Adding an entry with a `ref` that is already in the ledger changes nothing and returns the first one with `duplicate: true`, so a retry can never change the quantity twice. It is optional.
+- A product with unlimited quantity (`-1`) is never changed and gets no row.
+- `reason` (a short word) and `note` (free text) are shown on the ledger.
+- Afterwards `kempo-products:ledger:added` fires with the entry, and `kempo-products:product:quantity_changed` for each product.
 
-`reversePurchase(ref)` puts finite stock back once and fires `kempo-products:purchase:reversed`. A person recording a sale made elsewhere (the admin **Purchases** page) may give a unit price for a product that has none.
+`getLedger({ productId, limit, offset })` reads it, newest first, and `getLedgerEntry(ref)` reads one entry. Setting a quantity (`setQuantity`), adjusting it (`adjustQuantity`), creating a product with a quantity and editing one in the admin all write to the ledger too, so it adds up. Rows keep the product's name, so they still read correctly after it is deleted.
 
 ## Building on this extension
 
@@ -124,14 +133,14 @@ Declare the dependency in your `kempo-config.json`, and subscribe to what you ne
 ```json
 {
   "dependencies": ["kempo-products"],
-  "hooks": { "kempo-products:purchase:recorded": "./hooks/purchase-recorded.js" }
+  "hooks": { "kempo-products:ledger:added": "./hooks/ledger-added.js" }
 }
 ```
 
 ### Server SDK
 
 ```javascript
-import { getProducts, createProduct, setStock, recordPurchase } from 'kempo-products/sdk';
+import { getProducts, createProduct, setQuantity, addLedgerEntry } from 'kempo-products/sdk';
 ```
 
 Every function resolves to `[error, result]`, where `error` is `{ code, msg }` or `null`.
@@ -142,9 +151,9 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `getProduct(idOrSlug)` | One product with its options |
 | `createProduct(data, { owner })`, `updateProduct(id, data, { owner })`, `deleteProduct(id, { owner })` | Manage products. `owner` makes them your extension's |
 | `getPrice(productId, selections)` | The server's price for `{ optionKey: choiceKey }`: `{ unit, base, lines, currency }` |
-| `recordPurchase({ ref, lines, userId }, { manual })`, `reversePurchase(ref)`, `getPurchase(ref)`, `getPurchases()` | See above |
-| `setStock(id, stock, { actor })`, `adjustStock(id, delta, { actor })` | Change stock; `-1` is unlimited. Atomic, never below zero |
-| `setManagedBy(id, extension)` | Declare that your extension keeps this product's stock and choice availability in step with something else. People then see them read-only |
+| `addLedgerEntry({ ref, lines, note, reason, undoes, actor })`, `getLedger({ productId })`, `getLedgerEntry(ref)` | Change quantity and record it; see above |
+| `setQuantity(id, quantity, { actor, reason, note })`, `adjustQuantity(id, delta, { actor, reason, note })` | Change one product's quantity; `-1` is unlimited. Atomic, never below zero, and recorded in the ledger |
+| `setManagedBy(id, extension)` | Declare that your extension keeps this product's quantity and choice availability in step with something else. People then see them read-only, and you answer its ledger entries (see Managed quantity) |
 | `setChoiceAvailability(id, optionKey, choiceKey, available, { actor })` | Mark one choice in or out of stock |
 | `getTypes`, `registerType(owner, { name })`, `unregisterTypes(owner)` | Product types |
 | `getFields`, `registerField(owner, definition)`, `registerFields`, `unregisterFields(owner)` | Fields; `definition.productType` scopes one to a type |
@@ -172,11 +181,21 @@ Types, fields and products can each belong to an extension. The owner alone can 
 
 | | Only the owner can | Anyone with the permission can still |
 |---|---|---|
-| **Product** | change its slug, name and type, delete it | edit description, price, options, tags, images, field values and stock |
+| **Product** | change its slug, name and type, delete it | edit description, price, options, tags, images, field values and quantity |
 | **Type** | rename it, delete it | change its description and position |
 | **Field** | delete it; change its key, kind, requirement or choices | rename it, change its help text and whether it is listed or filterable |
 
 Ownership only comes from the server SDK; the HTTP routes never read an owner from a request.
+
+### Managed quantity
+
+An extension that keeps a product's quantity in step with something else (kempo-products-inventory makes it from raw materials) calls `setManagedBy(productId, 'my-extension')`. From then on:
+
+- People and other extensions cannot change that product's quantity or its choices' availability; only calls made with `{ actor: 'my-extension' }` can.
+- **The lock lasts only while that extension is installed and enabled.** Disable or uninstall it and its products are people's again, with no clean-up; enable it and they are its again. Products read from the catalog already say `managedBy: ''` when the manager is gone.
+- **kempo-products never writes a managed product's quantity itself.** `addLedgerEntry` first asks the manager, with `kempo-products:ledger:before_add` (`{ ref, lines, products, reason, note, undoes, actor }`, where each line is `{ productId, name, change }`). The manager takes what the lines use (or puts back what `undoes` took) and **throws `{ code, msg }` when it cannot**, so the entry is refused with its message and a managed product can never be oversold. Products that are not managed change as usual, in the same all-or-nothing transaction.
+- If the entry then fails (an unmanaged line was short), `kempo-products:ledger:add_failed` `{ ref }` tells the manager to undo what it did. A repeated `ref` is not a failure and does not fire it.
+- The manager writes its own quantity with `setQuantity` or an entry with `actor: 'my-extension'`; that is its entry in the ledger.
 
 ### Hooks
 
@@ -189,6 +208,7 @@ Declare them in your `kempo-config.json` `hooks`. Every payload carries `actor`:
 | `kempo-products:product:before_create` | `{ draft, userId }` (editable) |
 | `kempo-products:product:before_update` | `{ product, changes, userId }` (editable) |
 | `kempo-products:product:before_delete` | `{ product, userId }` |
+| `kempo-products:ledger:before_add` | `{ ref, lines, products, reason, note, undoes, actor }`, refuse only. Answered by the extension that manages some of the `products` (see Managed quantity) |
 | `kempo-products:type:before_create`, `before_update`, `before_delete` | refuse only |
 | `kempo-products:field:before_create`, `before_update`, `before_delete` | refuse only |
 
@@ -197,25 +217,70 @@ Declare them in your `kempo-config.json` `hooks`. Every payload carries `actor`:
 | Event | Payload |
 |---|---|
 | `kempo-products:product:created`, `updated`, `deleted` | `{ product, previous?, userId }` |
-| `kempo-products:product:stock_changed` | `{ product, previousStock, stock, reason }` |
-| `kempo-products:purchase:recorded` | `{ purchase }` |
-| `kempo-products:purchase:reversed` | `{ purchase }` |
+| `kempo-products:product:quantity_changed` | `{ product, previousQuantity, quantity, reason }` |
+| `kempo-products:ledger:added` | `{ ref, lines, handedOver, reason, note, undoes }`: `lines` are the ones products wrote, `{ productId, name, change, quantity }` |
+| `kempo-products:ledger:add_failed` | `{ ref }`: an entry a manager agreed to did not happen, so it undoes what it did |
 | `kempo-products:type:created`, `updated`, `deleted` | `{ type, previous? }` |
 | `kempo-products:field:created`, `updated`, `deleted` | `{ field, previous? }` |
+| `kempo-products:category:created`, `updated`, `deleted` | `{ category, previous?, products? }` (`products`: the ids it was taken off, on delete) |
+
+### Adding controls to products
+
+An extension that sells, reserves or compares products puts a control on **every product card and every product page** by composition: plain files, no registration, no editing either page. The pages carry locations; the extension fills them from a global content file in its `public/` folder, and the control is its own custom element:
+
+```html
+<!-- public/product-actions.global.html -->
+<content location="products-scripts"><script type="module" src="/shop/components/AddToCart.js"></script></content>
+<content location="products-card-actions"><k-shop-add-to-cart slot="actions"></k-shop-add-to-cart></content>
+<content location="products-detail-actions"><k-shop-add-to-cart slot="actions"></k-shop-add-to-cart></content>
+<content location="products-card-price"><k-sales-price slot="price"></k-sales-price></content>
+<content location="products-detail-price"><k-sales-price slot="price"></k-sales-price></content>
+```
+
+| Location | What goes there |
+|---|---|
+| `products-scripts` | The `<script type="module">` that defines your element. Loads on product pages only, outside the card template, so it runs once |
+| `products-card-actions` | Your element, in the one card template, for the card's `actions` slot (under the price). Each card gets its own copy |
+| `products-card-price` | An element for the card's `price` slot: it replaces the price shown |
+| `products-detail-actions` | Your element for a product page's `actions` slot (under the options) |
+| `products-detail-price` | An element for a product page's `price` slot: it replaces the price line |
+| `products-detail-extra` | Your element for a product page's `extra` slot (under the description) |
+
+A location is a plain insertion point: the element you put in it names the slot it fills with `slot="…"`, as any child of a web component does. The `price` slots have the usual price as their **default content**, so a site that installs nothing shows it unchanged, and an extension that shows it differently (a sale price with the old one struck through, in green) puts its own element there and the default is replaced. Read `card.product` and `card.config` (`page.product`, `page.price`, `page.config` and `page.money(minor)` on a product page) and format with `displayMoney` from `/products/sdk.js`. Two extensions that both fill `price` are both shown, so a price override is something one extension should own.
+
+When the browser creates your element it finds where it sits:
+
+```javascript
+// inside a card
+const card = this.closest('k-products-card');
+card.getAttribute('product-id');   // which product
+card.product;                      // the product the list already loaded, so no fetch is needed
+
+// on a product page
+const page = this.closest('k-products-detail');
+page.product; page.selections; page.price; page.complete;   // the choices so far and the price they make
+page.addEventListener('selection-change', this.update);     // when they change
+```
+
+A component that needs more than the product (stock, ratings) fetches it from its own extension's API using `product-id`. Several extensions can fill one location and stack by `priority`, highest first, unlike a fragment, which has one winner.
+
+`/products/` already has the card template. A page of your own that embeds a `<k-products-list>` includes it once with `<fragment name="products-card-template" />`; without it the cards show no extension content. A list can carry its own template instead, as a child.
+
+**Deprecated:** `registerProductAction('k-my-element')` (from `/products/components/actions.js`) still works for extensions that have not moved, and will be removed in a later major release.
 
 ### Adding to the admin form
 
-The product form is split into tabs: **Details**, **Description** (a full rich text editor, the same as pages use), **Media** and **Options**. An extension adds its own tab by shipping a global content file in its `admin/` directory (`admin/product-tab.global.html`) that pushes a `<k-prod-tab>` into the `products-admin-product-tabs` location the form pages carry:
+The product form is split into tabs: **Details**, **Description** (a full rich text editor, the same as pages use), **Media** and **Options**. An extension adds its own tab by shipping a global content file in its `admin/` directory (`admin/product-tab.global.html`) that pushes a `<k-products-tab>` into the `products-admin-product-tabs` location the form pages carry:
 
 ```html
 <content id="my-extension-product-tab" name="Shipping tab" owner="my-extension" enabled="true" locked="true" location="products-admin-product-tabs" priority="10">
-<k-prod-tab name="shipping" label="Shipping">
+<k-products-tab name="shipping" label="Shipping">
   <my-shipping-fields></my-shipping-fields>
-</k-prod-tab>
+</k-products-tab>
 </content>
 ```
 
-Tabs from several extensions all appear, after the built-in ones, ordered by `priority`. The form fires `draft-change` as it is edited and `product-saved` when the product is stored; a tab with more to save calls `event.detail.waitUntil(promise)` and the page waits. Your elements find the form with `this.closest('k-prod-form')`.
+Tabs from several extensions all appear, after the built-in ones, ordered by `priority`. The form fires `draft-change` as it is edited and `product-saved` when the product is stored; a tab with more to save calls `event.detail.waitUntil(promise)` and the page waits. Your elements find the form with `this.closest('k-products-form')`.
 
 The description is stored as HTML. The public product page sanitizes it when showing it (scripts, event handlers and `javascript:` links are removed) and the meta description and structured data use its plain text.
 
@@ -231,12 +296,10 @@ A product gets a **Credits** tab in the admin form, and its **Details** tab gets
 | **This is a credit-only item** (`creditsOnly`) | Buying it gives credits and nothing else: this is how people buy credits, so a *credit pack* is just a product. Without it the credits are a gift with the product: the buyer gets the item and the credits too. A credit-only product must give at least 1 credit, and cannot itself be paid for in credits. |
 | **Percentage that can be paid in credits** (`creditPercent`) | 0 to 100. **0% (the default) means credits cannot be used to pay for it at all; 100% means it can be bought entirely with credits.** Anything between is the share credits may cover, with money paying the rest. Good for rewards points. |
 
-How a purchase works with them:
+How they work:
 
-- `recordPurchase` gives the buyer the credits when it commits, as one grant to kempo-credits (kind `purchase`, referenced to the purchase's `ref`), **once however many times it is retried**. It needs a `userId`; a purchase recorded for nobody gives nothing. A grant that fails never undoes the sale: it is logged, and `grantPurchaseCredits(purchase)` is safe to call again.
-- The credits each line gave are copied onto the purchase, so changing the product later does not change what a buyer was given.
-- `reversePurchase` takes the credits back. What the buyer still holds is taken; what they have already spent becomes an amount they owe, which kempo-credits records and reports (and which blocks further spending until it is covered).
-- `getPrice` (and `GET /products/api/price`) also returns `credits` for a product that accepts them: `{ percent, perUnit, maxCredits, coveredMinor, remainingMinor }`, the most credits that may be used and the money left. **Spending the credits is the caller's job** (kempo-commerce, when it exists) with kempo-credits' `spendCredits`; products only says how much may be.
+- Products only says how many credits a product gives. **Giving them is the caller's job**: whoever takes the order grants them once it is paid (kempo-commerce does, with kempo-credits' `grantCredits`) and takes them back when it is refunded. Nothing here grants or takes back credits.
+- `getPrice` (and `GET /products/api/price`) also returns `credits` for a product that accepts them: `{ percent, perUnit, maxCredits, coveredMinor, remainingMinor }`, the most credits that may be used and the money left. **Spending the credits is the caller's job** (kempo-commerce) with kempo-credits' `spendCredits`; products only says how much may be.
 - Credits are not worth a fixed amount of money. The `credits_per_unit` setting says how many credits equal one whole unit of the currency (100 means 1 credit is 1 cent). Credits round up and money rounds down, so rounding never gives a discount.
 
 Selling credits for money needs a checkout, which this extension does not have: the buy flow (and tax, payments and refunds) is kempo-commerce's, and a credit pack is a product it sells.
@@ -245,13 +308,14 @@ Selling credits for money needs a checkout, which this extension does not have: 
 
 | Permission | Allows |
 |---|---|
-| `products:read` | See drafts and archived products, exact stock and purchases in the admin |
+| `products:read` | See drafts and archived products, exact quantity and the ledger in the admin |
 | `products:create`, `products:update`, `products:delete` | Manage products |
 | `products:types:manage` | Create, edit and delete types and fields |
-| `products:purchases:record` | Record a purchase made elsewhere, and reverse one |
+| `products:categories:manage` | Create, edit and delete categories. Putting a product in one only needs permission to edit the product |
+| `products:ledger:add` | Add an entry to the ledger: add stock to products or take it away |
 | `products:settings:manage` | Change the catalog settings on the Product Settings page |
 
-Published products need no permission to see. Three groups are provided: `kempo-products:viewer`, `kempo-products:manager` (manage products and record purchases) and `kempo-products:admin` (also types, fields and the settings page).
+Published products need no permission to see. Three groups are provided: `kempo-products:viewer`, `kempo-products:manager` (manage products and add to the ledger) and `kempo-products:admin` (also types, fields and the settings page).
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -260,11 +324,11 @@ Published products need no permission to see. Three groups are provided: `kempo-
 | `page_size` | `24` | Products per page on the public list |
 | `credits_per_unit` | `100` | How many credits equal one whole unit of the currency, used when a product accepts credits as payment. Only used with kempo-credits |
 
-These can be edited in a table at **Settings → Admin Settings**, or on the **Product Settings** page (Admin → Settings → Product Settings, at `/admin/extension/kempo-products/settings/`), which groups them into sections with explanations and checks every value before saving.
+These can be edited in a table at **Settings → Admin Settings**, or on the **Product Settings** page (Admin → Products → Product Settings, at `/admin/extension/kempo-products/settings/`), which groups them into sections with explanations and checks every value before saving.
 
 ## API
 
-JSON routes under `/products/api/`. Reads are public (published products only, no exact stock, and no prices when `prices_visible` is off); everything that changes something needs the permission above.
+JSON routes under `/products/api/`. Reads are public (published products only, no exact quantity, and no prices when `prices_visible` is off); everything that changes something needs the permission above.
 
 | Route | Purpose |
 |---|---|
@@ -274,7 +338,7 @@ JSON routes under `/products/api/`. Reads are public (published products only, n
 | `POST products`, `PATCH products/<id>`, `DELETE products/<id>` | Manage products |
 | `GET price?product=&options=` | The server's price for a set of choices |
 | `GET types`, `GET fields`, and `POST`/`PATCH`/`DELETE` on them | Types and fields |
-| `GET purchases`, `POST purchases`, `POST purchases/<ref>/reverse` | Purchases |
+| `GET ledger` (`productId`, `limit`, `offset`), `POST ledger` (`{ ref, lines, note, reason }`) | The ledger |
 | `GET export?format=csv\|json`, `POST import` | Download the catalog; import a file (`{ content, onMatch, dryRun }`) |
 
 Money is always a whole number of the smallest unit: `4999` is $49.99. Currencies without cents (yen) and with three decimals (dinar) are handled.
@@ -294,4 +358,4 @@ The database tests skip themselves when no database is reachable, and refuse to 
 
 ## Dashboard widget
 
-Adds a **Products** widget to the kempo admin dashboard showing catalog size, recorded purchases and the latest products, with a **New product** button. It is declared in `widgets` in `kempo-config.json` and registered when the extension is installed or updated; people only see it if they hold its permission, and can hide, reorder or resize it from the dashboard's Customize dialog. Needs a kempo with the dashboard (see kempo's `docs/dashboard.md`); on an older kempo the entry is ignored.
+Adds a **Products** widget to the kempo admin dashboard showing catalog size and the latest products, with a **New product** button. It is declared in `widgets` in `kempo-config.json` and registered when the extension is installed or updated; people only see it if they hold its permission, and can hide, reorder or resize it from the dashboard's Customize dialog. Needs a kempo with the dashboard (see kempo's `docs/dashboard.md`); on an older kempo the entry is ignored.

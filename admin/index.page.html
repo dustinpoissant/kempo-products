@@ -34,17 +34,20 @@ locked: true
       <kc-tc-field-sort-hide></kc-tc-field-sort-hide>
       <div class="flex"></div>
       <k-permission has="products:create">
-        <button id="importBtn" class="btn m0"><k-icon name="arrow" direction="up"></k-icon> Import</button>
+        <button id="importBtn" class="btn m0"><k-icon name="download" rotation="180"></k-icon> Import</button>
       </k-permission>
       <button id="exportBtn" class="btn m0"><k-icon name="download"></k-icon> Export</button>
-      <k-permission has="products:purchases:record">
-        <a href="/admin/extension/kempo-products/purchases" class="btn"><k-icon name="repeat"></k-icon> Purchases</a>
+      <k-permission has="products:read">
+        <a href="/admin/extension/kempo-products/ledger" class="btn"><k-icon src="/products/icons/product-ledger.svg"></k-icon> Ledger</a>
       </k-permission>
       <k-permission has="products:types:manage">
-        <a href="/admin/extension/kempo-products/types" class="btn"><k-icon name="folder"></k-icon> Types</a>
+        <a href="/admin/extension/kempo-products/types" class="btn"><k-icon src="/products/icons/product-types.svg"></k-icon> Types</a>
+      </k-permission>
+      <k-permission has="products:categories:manage">
+        <a href="/admin/extension/kempo-products/categories" class="btn"><k-icon src="/products/icons/product-categories.svg"></k-icon> Categories</a>
       </k-permission>
       <k-permission has="products:types:manage">
-        <a href="/admin/extension/kempo-products/fields" class="btn"><k-icon name="settings"></k-icon> Fields</a>
+        <a href="/admin/extension/kempo-products/fields" class="btn"><k-icon name="fields"></k-icon> Fields</a>
       </k-permission>
       <k-permission has="products:create">
         <a href="/admin/extension/kempo-products/new" class="btn primary" id="newProductBtn"><k-icon name="add"></k-icon> New Product</a>
@@ -65,7 +68,7 @@ locked: true
   </k-table>
 
   <script type="module">
-    import { getConfig, getProducts, getTypes, deleteProduct, displayMoney } from '/products/sdk.js';
+    import { getConfig, getProducts, getTypes, getCategories, deleteProduct, displayMoney } from '/products/sdk.js';
     import { getAllCurrentUserPermissions } from '/kempo/sdk.js';
     import Toast from '/kempo-ui/components/Toast.js';
     import Dialog from '/kempo-ui/components/Dialog.js';
@@ -85,8 +88,8 @@ locked: true
       for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
       $table.appendChild($control);
     };
-    addControl('k-prod-row-action', 'before', { action: 'view', icon: 'show', title: 'View on the site' });
-    if(can('update')) addControl('k-prod-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    addControl('k-products-row-action', 'before', { action: 'view', icon: 'show', title: 'View on the site' });
+    if(can('update')) addControl('k-products-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
     if(can('delete')){
       $table.setAttribute('request-delete', '');
       addControl('kc-tc-delete-record', 'after');
@@ -95,6 +98,8 @@ locked: true
     const [, config] = await getConfig();
     const [, typeData] = await getTypes();
     const typeNames = Object.fromEntries((typeData?.types ?? []).map(type => [type.key, type.name]));
+    const [, categoryData] = await getCategories();
+    const categoryNames = Object.fromEntries((categoryData?.categories ?? []).map(category => [category.key, category.name]));
 
     /* Display-only values are precomputed as plain strings so the table never formats user-supplied text itself. */
     const decorate = product => ({
@@ -103,7 +108,8 @@ locked: true
       statusText: product.status[0].toUpperCase() + product.status.slice(1),
       availabilityText: product.availability[0].toUpperCase() + product.availability.slice(1),
       priceText: product.price === null ? (product.priceLabel || '') : displayMoney(product.price, config.currency, config.decimals),
-      stockText: product.stock === -1 ? 'Unlimited' : String(product.stock),
+      quantityText: product.quantity === -1 ? 'Unlimited' : String(product.quantity),
+      categoriesText: product.categories.map(key => categoryNames[key] ?? key).join(', '),
       tagsText: product.tags.join(', '),
       managedText: product.managedBy || product.owner,
     });
@@ -114,7 +120,8 @@ locked: true
       { name: 'statusText', label: 'Status', size: 100, editable: false },
       { name: 'availabilityText', label: 'Availability', size: 120, editable: false },
       { name: 'priceText', label: 'Price', size: 110, editable: false },
-      { name: 'stockText', label: 'Stock', size: 100, editable: false },
+      { name: 'quantityText', label: 'Quantity', size: 100, editable: false },
+      { name: 'categoriesText', label: 'Categories', size: 180, editable: false },
       { name: 'tagsText', label: 'Tags', size: 160, editable: false },
       ...(products.some(product => product.managedBy || product.owner) ? [{ name: 'managedText', label: 'Managed by', size: 170, editable: false }] : []),
     ];

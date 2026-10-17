@@ -7,8 +7,8 @@ import { parseMoney, formatMoney } from '/products/sdk.js';
   null when empty; what a person types is parsed into it, so "49.99", "$49.99" and "49.9" all work.
   With `signed`, amounts read as adjustments: "+1.00", "-1.00" and "0.00".
 
-    <k-prod-money .value=${4999} decimals="2"></k-prod-money>
-    <k-prod-money signed .value=${-100}></k-prod-money>
+    <k-products-money .value=${4999} decimals="2"></k-products-money>
+    <k-products-money signed .value=${-100}></k-products-money>
 
   Fires `change` with { value } whenever the text is a valid amount (or empty).
 */
@@ -97,4 +97,4 @@ export default class MoneyInput extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-money', MoneyInput);
+customElements.define('k-products-money', MoneyInput);

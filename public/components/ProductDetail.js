@@ -4,6 +4,7 @@ import sanitizeHtml from '/kempo-ui/utils/sanitizeHtml.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
 import { getConfig, getProduct, getPrice, displayMoney, formatMoney } from '/products/sdk.js';
+import { syncActions } from '/products/components/actions.js';
 
 /*
   A product's page: pictures, price, the options a buyer chooses and the details of its type.
@@ -13,12 +14,21 @@ import { getConfig, getProduct, getPrice, displayMoney, formatMoney } from '/pro
   or is sold out in the address is ignored. The price shown is the server's, asked for again every
   time the choices change, so it is always the number that would be charged.
 
-    <k-prod-detail slug="1969-camaro"></k-prod-detail>
+    <k-products-detail slug="1969-camaro"></k-products-detail>
 
   Without a `slug` it uses the last part of the address. Fires `selection-change` with
-  { product, selections, price } whenever the choices (or the price they make) change; an extension
-  that adds a buy button reads the choices from it. Slot `actions` holds that button, and slot
-  `extra` anything else an extension wants under the description.
+  { product, selections, price, complete } whenever the choices (or the price they make) change.
+
+  Other extensions add to the page by composition, through slots. A component an extension puts in one is
+  an ordinary child of this element and finds it with `closest('k-products-detail')`. It reads `product`,
+  `selections`, `price` and `complete` from here (and `config` and `money(minor)` to show an amount), and
+  listens for `selection-change` on it to follow the buyer's choices.
+    price     has the price line as its default content. An extension that shows it differently (a sale
+              price with the old one struck through) puts its own element here and the default is not shown
+    actions   under the options, such as add to cart
+    extra     under the description
+  Elements registered with registerProductAction (see actions.js) are still placed above the description
+  for extensions that have not moved over.
 */
 export default class ProductDetail extends ShadowComponent {
   static properties = {
@@ -53,13 +63,29 @@ export default class ProductDetail extends ShadowComponent {
   connectedCallback(){
     super.connectedCallback();
     window.addEventListener('popstate', this.readSelections);
+    window.addEventListener('products-actions-changed', this.refreshActions);
     this.load();
   }
 
   disconnectedCallback(){
     window.removeEventListener('popstate', this.readSelections);
+    window.removeEventListener('products-actions-changed', this.refreshActions);
     super.disconnectedCallback();
   }
+
+  /* What a component inside the page reads: the product being shown, or null until it has loaded. */
+  get product(){
+    return this.data?.product ?? null;
+  }
+
+  updated(){
+    if(!this.data) return;
+    syncActions(this.renderRoot.querySelector('[data-actions]'), 'detail', {
+      product: this.data.product, selections: this.selections, price: this.price, complete: this.complete,
+    });
+  }
+
+  refreshActions = () => this.requestUpdate();
 
   /*
     Utility functions
@@ -147,7 +173,9 @@ export default class ProductDetail extends ShadowComponent {
     history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}`);
   };
 
+  /* Whether every required option is chosen. False until the product has loaded. */
   get complete(){
+    if(!this.data) return false;
     return this.data.product.options.every(option => !option.required || this.selections[option.key]);
   }
 
@@ -288,11 +316,12 @@ export default class ProductDetail extends ShadowComponent {
       <div class="span-12 d-span-6">
         ${type ? html`<div class="tc-muted small">${type.name}</div>` : ''}
         <h1>${product.name}</h1>
-        <div class="large mb" aria-live="polite">${this.priceLine}${this.pricing ? html` <k-spinner size="xs"></k-spinner>` : ''}</div>
+        <slot name="price"><div class="large mb" aria-live="polite">${this.priceLine}${this.pricing ? html` <k-spinner size="xs"></k-spinner>` : ''}</div></slot>
         ${this.creditLines.map(line => html`<p class="tc-muted mbq">${line}</p>`)}
         ${status ? html`<p><strong>${status}</strong></p>` : ''}
         ${product.options.map(option => this.renderOption(option))}
         <slot name="actions"></slot>
+        <div data-actions class="mb"></div>
         ${product.description ? (/<[a-z][\s\S]*>/i.test(product.description)
           ? html`<div class="mb">${unsafeHTML(sanitizeHtml(product.description))}</div>`
           : html`<div style="white-space: pre-line;" class="mb">${product.description}</div>`) : ''}
@@ -304,4 +333,4 @@ export default class ProductDetail extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-detail', ProductDetail);
+customElements.define('k-products-detail', ProductDetail);

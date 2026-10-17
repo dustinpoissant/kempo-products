@@ -8,24 +8,25 @@
   editing everything else in the admin. Owner is never read from an HTTP request:
 
     registerType(owner, { name })                    registerField(owner, { ..., productType })
+    createCategory({ name })                         updateProduct(id, { categories: [key] })
     createProduct(data, { owner })                   updateProduct(id, data, { owner })
     deleteProduct(id, { owner })                     unregisterProducts(owner, { release })
 
-  Taking an order is not this extension's job. Whoever does calls recordPurchase, which prices the
-  lines from the catalog, takes the stock and fires `kempo-products:purchase:recorded`:
+  Taking an order is not this extension's job. Whoever does (kempo-commerce, a person counting a shelf)
+  adds an entry to the ledger, which changes the quantity of every product in it, or none, and
+  records it. A sale takes, a return adds back:
 
-    import { recordPurchase } from 'kempo-products/sdk';
-    const [error, purchase] = await recordPurchase({ ref: 'order-1042', lines: [{ productId, quantity: 1, options: { color: 'red' } }] });
+    import { addLedgerEntry } from 'kempo-products/sdk';
+    const [error, entry] = await addLedgerEntry({ ref: 'order-1042', reason: 'sale', lines: [{ productId, change: -1 }] });
 
-  When kempo-credits is installed and enabled, a product can give credits (`creditsGranted`, or
-  `creditsOnly` for a credit pack) and accept credits as payment for part of its price
-  (`creditPercent`). recordPurchase gives the buyer the credits once it commits, and
-  reversePurchase takes back what they still hold. `getPrice` then also returns `credits`: the most
-  credits that may be used and the money left, worked out from the `credits_per_unit` setting.
-  Spending them is the caller's job, with kempo-credits' own `spendCredits`.
+  When kempo-credits is installed and enabled, a product can say how many credits it gives
+  (`creditsGranted`, or `creditsOnly` for a credit pack) and accept credits as payment for part of its
+  price (`creditPercent`). Giving and taking back credits is the caller's job, because only it knows an
+  order was paid. `getPrice` also returns `credits`: the most credits that may be used and the money
+  left, worked out from the `credits_per_unit` setting.
 
-  An extension that keeps stock in step with something else (inventory, a supplier feed) calls
-  setManagedBy(productId, 'my-extension') and then setStock / setChoiceAvailability with
+  An extension that keeps quantity in step with something else (inventory, a supplier feed) calls
+  setManagedBy(productId, 'my-extension') and then setQuantity / setChoiceAvailability with
   { actor: 'my-extension' }. People see those read-only from then on.
 */
 export {
@@ -35,8 +36,6 @@ export {
   updateProduct,
   deleteProduct,
   unregisterProducts,
-  setStock,
-  adjustStock,
   setManagedBy,
   setChoiceAvailability,
   getPrice,
@@ -55,6 +54,14 @@ export {
 } from './server/utils/types.js';
 
 export {
+  getCategories,
+  getCategory,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from './server/utils/categories.js';
+
+export {
   getFields,
   getField,
   createField,
@@ -66,19 +73,20 @@ export {
 } from './server/utils/fields.js';
 
 export {
-  recordPurchase,
-  reversePurchase,
-  getPurchase,
-  getPurchases,
-} from './server/utils/purchases.js';
+  addLedgerEntry,
+  getLedger,
+  getLedgerEntry,
+  adjustQuantity,
+  setQuantity,
+} from './server/utils/ledger.js';
 
-export { creditsEnabled, creditQuote, grantPurchaseCredits } from './server/utils/credits.js';
+export { creditsEnabled, creditQuote } from './server/utils/credits.js';
 export { getCreditsPerUnit } from './server/utils/settings.js';
 
 export { buildExport, parseImport, applyImport, importFile } from './server/utils/importExport.js';
 export { computePrice, normalizeOptions, checkSelections } from './server/utils/pricing.js';
 export { parseMoney, formatMoney, displayMoney, decimalsFor } from './server/utils/money.js';
-export { unavailableReason, isPurchasable, UNLIMITED } from './server/utils/stock.js';
+export { unavailableReason, isPurchasable, UNLIMITED } from './server/utils/quantity.js';
 export { mediaAvailable } from './server/utils/media.js';
 export { FIELD_TYPES } from './server/utils/fieldTypes.js';
 export { EVENTS } from './server/utils/events.js';

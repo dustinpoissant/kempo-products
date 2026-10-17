@@ -110,7 +110,7 @@ export const checkSelections = (options, selections = {}) => {
   The unit price for a product with the given selections. Start from the base price; the chosen
   choice of a `replace` option takes its place; then every `adjust` option's chosen amount is added.
   The total never goes below zero. Returns [error, { unit, base, lines }]; `lines` is the breakdown
-  for display and for the purchase record.
+  for display.
 */
 export const computePrice = (product, options, selections = {}) => {
   if(product.price === null || product.price === undefined){

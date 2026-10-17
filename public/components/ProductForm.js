@@ -6,7 +6,7 @@ import '/kempo-ui/components/Tags.js';
 import '/kempo-ui/components/Spinner.js';
 import '/kempo-ui/components/Tabs.js';
 import '/kempo-ui/components/HtmlEditor.js';
-import { getConfig, getProduct, getTypes, getFields, createProduct, updateProduct } from '/products/sdk.js';
+import { getConfig, getProduct, getTypes, getCategories, getFields, createProduct, updateProduct } from '/products/sdk.js';
 import '/products/components/MoneyInput.js';
 import '/products/components/FieldInput.js';
 import '/products/components/OptionsEditor.js';
@@ -34,11 +34,11 @@ export const safeNext = (value, fallback) => (typeof value === 'string' && /^\/(
 
 const blank = () => ({
   name: '', slug: '', type: '', description: '', status: 'draft', availability: 'available', price: null, priceLabel: '',
-  stock: -1, tags: [], images: [], fields: {}, options: [], creditsGranted: 0, creditsOnly: false, creditPercent: 0,
+  quantity: -1, tags: [], categories: [], images: [], fields: {}, options: [], creditsGranted: 0, creditsOnly: false, creditPercent: 0,
 });
 
 /*
-  Adds or edits a product, on one page split into tabs: Details (the basics, price, stock and the
+  Adds or edits a product, on one page split into tabs: Details (the basics, price, quantity and the
   fields of the product's type), Description (a full rich text editor), Media (pictures) and
   Options, plus Credits when kempo-credits is installed and enabled, where a product says how many
   credits buying it gives and whether it is nothing but credits. The Details tab then also says how
@@ -46,17 +46,17 @@ const blank = () => ({
   made. With `from-url` it takes both from the address instead (?id= and ?next=). After saving it
   goes to `next` (a path on this site), where the list shows a message.
 
-    <k-prod-form product-id="1969-camaro" next="/admin/extension/kempo-products/"></k-prod-form>
+    <k-products-form product-id="1969-camaro" next="/admin/extension/kempo-products/"></k-products-form>
 
-  Extensions add their own tabs without this file knowing about them. A <k-prod-tab> placed
+  Extensions add their own tabs without this file knowing about them. A <k-products-tab> placed
   directly inside the form becomes a tab after the built-in ones, in the order it appears:
 
-    <k-prod-form>
-      <k-prod-tab name="shipping" label="Shipping"> ...anything... </k-prod-tab>
-    </k-prod-form>
+    <k-products-form>
+      <k-products-tab name="shipping" label="Shipping"> ...anything... </k-products-tab>
+    </k-products-form>
 
   The admin pages put a <location name="products-admin-product-tabs"> inside the form, so an
-  extension only ships an admin/*.global.html that pushes its <k-prod-tab> there. What it holds
+  extension only ships an admin/*.global.html that pushes its <k-products-tab> there. What it holds
   can listen to two events on the form:
 
     `draft-change`     fired as the form is edited, with { changed, draft }
@@ -73,6 +73,7 @@ export default class ProductForm extends ShadowComponent {
     saving: { state: true },
     config: { state: true },
     types: { state: true },
+    categories: { state: true },
     allFields: { state: true },
     original: { state: true },
     draft: { state: true },
@@ -90,6 +91,7 @@ export default class ProductForm extends ShadowComponent {
     this.saving = false;
     this.config = null;
     this.types = [];
+    this.categories = [];
     this.allFields = [];
     this.original = null;
     this.draft = blank();
@@ -107,7 +109,7 @@ export default class ProductForm extends ShadowComponent {
   connectedCallback(){
     super.connectedCallback();
     window.addEventListener('beforeunload', this.warn);
-    this.extraTabs = [...this.querySelectorAll(':scope > k-prod-tab')].map($tab => {
+    this.extraTabs = [...this.querySelectorAll(':scope > k-products-tab')].map($tab => {
       const name = $tab.getAttribute('name') || $tab.getAttribute('label') || 'tab';
       $tab.slot = `tab-${name}`;
       $tab.style.display = 'block';
@@ -130,14 +132,15 @@ export default class ProductForm extends ShadowComponent {
     Utility functions
   */
   load = async () => {
-    const [[configError, config], [typesError, types], [fieldsError, fields]] = await Promise.all([getConfig(), getTypes(), getFields()]);
-    if(configError || typesError || fieldsError){
-      this.error = (configError || typesError || fieldsError).msg;
+    const [[configError, config], [typesError, types], [categoriesError, categories], [fieldsError, fields]] = await Promise.all([getConfig(), getTypes(), getCategories(), getFields()]);
+    if(configError || typesError || categoriesError || fieldsError){
+      this.error = (configError || typesError || categoriesError || fieldsError).msg;
       this.loading = false;
       return;
     }
     this.config = config;
     this.types = types.types;
+    this.categories = categories.categories;
     this.allFields = fields.fields;
     if(this.productId){
       const [error, data] = await getProduct(this.productId);
@@ -149,7 +152,7 @@ export default class ProductForm extends ShadowComponent {
       this.original = data.product;
       this.assets = data.images;
       this.slugEdited = true;
-      this.draft = { ...blank(), ...data.product, fields: { ...data.product.fields }, options: structuredClone(data.product.options), tags: [...data.product.tags], images: [...data.product.images] };
+      this.draft = { ...blank(), ...data.product, fields: { ...data.product.fields }, options: structuredClone(data.product.options), tags: [...data.product.tags], categories: [...data.product.categories], images: [...data.product.images] };
     } else {
       const params = new URLSearchParams(location.search);
       this.draft = { ...blank(), name: params.get('name') ?? '', type: params.get('type') ?? '' };
@@ -177,6 +180,11 @@ export default class ProductForm extends ShadowComponent {
     return [...new Set(`${$tags.value ?? ''},${pending}`.split(',').map(tag => tag.trim().replace(/\s+/g, ' ').toLowerCase()).filter(Boolean))];
   };
 
+  toggleCategory = (key, chosen) => {
+    const without = this.draft.categories.filter(existing => existing !== key);
+    this.set({ categories: chosen ? [...without, key] : without });
+  };
+
   set = changes => {
     this.draft = { ...this.draft, ...changes };
     this.dispatchEvent(new CustomEvent('draft-change', { detail: { changed: Object.keys(changes), draft: this.draft }, bubbles: true, composed: true }));
@@ -201,7 +209,7 @@ export default class ProductForm extends ShadowComponent {
     return this.editing && Boolean(this.original.owner);
   }
 
-  /* An extension that keeps stock in step with something else shows it read-only. */
+  /* An extension that keeps quantity in step with something else shows it read-only. */
   get managed(){
     return this.editing ? this.original.managedBy : '';
   }
@@ -226,9 +234,9 @@ export default class ProductForm extends ShadowComponent {
     this.set({ fields: { ...this.draft.fields, [event.detail.key]: event.detail.value } });
   };
 
-  handleStock = event => {
+  handleQuantity = event => {
     const value = event.target.value;
-    this.set({ stock: value === '' ? -1 : Number(value) });
+    this.set({ quantity: value === '' ? -1 : Number(value) });
   };
 
   save = async submitEvent => {
@@ -248,8 +256,9 @@ export default class ProductForm extends ShadowComponent {
       availability: draft.availability,
       price: draft.price,
       priceLabel: draft.priceLabel,
-      stock: draft.stock,
+      quantity: draft.quantity,
       tags: this.readTags(),
+      categories: draft.categories,
       images: draft.images,
       fields: Object.fromEntries(this.fields.map(field => [field.key, draft.fields[field.key] ?? (field.type === 'boolean' ? false : '')])),
       options: draft.options,
@@ -261,7 +270,7 @@ export default class ProductForm extends ShadowComponent {
     }
     if(!this.editing && !data.slug.trim()) delete data.slug;
     if(this.owned) for(const property of ['name', 'slug', 'type']) delete data[property];
-    if(this.managed) delete data.stock;
+    if(this.managed) delete data.quantity;
     if(!this.config.media) delete data.images;
     this.saving = true;
     const [error, saved] = this.editing ? await updateProduct(this.original.id, data) : await createProduct(data);
@@ -343,6 +352,17 @@ export default class ProductForm extends ShadowComponent {
     </div>`;
   }
 
+  /* The categories the product is in: a checkbox for each one the site has. */
+  renderCategories(){
+    const { draft, categories } = this;
+    return html`<div class="mb" id="categories" role="group" aria-labelledby="categoriesLabel">
+      <div class="d-b mbq" id="categoriesLabel">Categories<small class="d-b tc-muted">${categories.length ? 'Choose any number. Shoppers browse by category.' : 'Shoppers browse by category.'}</small></div>
+      ${categories.length ? html`<div class="d-f" style="gap: var(--spacer_h) var(--spacer);">
+        ${categories.map(category => html`<label class="checkbox m0"><input type="checkbox" name="category" value=${category.key} .checked=${draft.categories.includes(category.key)} @change=${event => this.toggleCategory(category.key, event.target.checked)}> ${category.name}</label>`)}
+      </div>` : html`<p class="tc-muted m0">There are no categories yet. <a href="/admin/extension/kempo-products/categories">Add some</a>, then choose them here.</p>`}
+    </div>`;
+  }
+
   render(){
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
@@ -393,15 +413,15 @@ export default class ProductForm extends ShadowComponent {
           <div class="d-f mb" style="gap: var(--spacer); align-items: flex-end;">
             <div class="flex" style="min-width: 10rem;">
               <label class="d-b mbq">Price (${config.currency.toUpperCase()})</label>
-              <k-prod-money decimals=${decimals} .value=${draft.price} placeholder="No price" label="Price" @change=${event => this.set({ price: event.detail.value })}></k-prod-money>
+              <k-products-money decimals=${decimals} .value=${draft.price} placeholder="No price" label="Price" @change=${event => this.set({ price: event.detail.value })}></k-products-money>
             </div>
             <div class="flex" style="min-width: 10rem;">
               <label class="d-b mbq" for="priceLabel">Shown when there is no price</label>
               <input type="text" id="priceLabel" class="full" placeholder="Call for price" .value=${draft.priceLabel} @input=${event => this.set({ priceLabel: event.target.value })}>
             </div>
             <div style="width: 9rem;">
-              <label class="d-b mbq" for="stock">Stock<small class="d-b tc-muted">${managed ? `Kept up to date by ${managed}.` : 'Blank is unlimited.'}</small></label>
-              <input type="number" id="stock" class="full" min="0" step="1" placeholder="Unlimited" .value=${draft.stock === -1 ? '' : String(draft.stock)} ?disabled=${Boolean(managed)} @input=${this.handleStock}>
+              <label class="d-b mbq" for="quantity">Quantity<small class="d-b tc-muted">${managed ? `Kept up to date by ${managed}.` : 'Blank is unlimited.'}</small></label>
+              <input type="number" id="quantity" class="full" min="0" step="1" placeholder="Unlimited" .value=${draft.quantity === -1 ? '' : String(draft.quantity)} ?disabled=${Boolean(managed)} @input=${this.handleQuantity}>
             </div>
           </div>
           ${this.credits ? this.renderCreditPercent() : ''}
@@ -409,8 +429,9 @@ export default class ProductForm extends ShadowComponent {
             <label class="d-b mbq" for="tags">Tags</label>
             <k-tags id="tags" .value=${draft.tags.join(',')}></k-tags>
           </div>
+          ${this.renderCategories()}
           ${this.fields.length ? html`<h4 class="mt mb">${draft.type ? this.types.find(type => type.key === draft.type)?.name ?? 'Details' : 'More details'}</h4>
-            ${this.fields.map(field => html`<k-prod-field-input .field=${field} .value=${draft.fields[field.key]} @change=${this.handleField}></k-prod-field-input>`)}` : ''}
+            ${this.fields.map(field => html`<k-products-field-input .field=${field} .value=${draft.fields[field.key]} @change=${this.handleField}></k-products-field-input>`)}` : ''}
         </k-tab-content>
         <k-tab-content name="description" class="pt">
           <p class="tc-muted mb">Shown on the product's page. Use headings, lists, links and pictures to describe it.</p>
@@ -420,11 +441,11 @@ export default class ProductForm extends ShadowComponent {
         </k-tab-content>
         <k-tab-content name="media" class="pt">
           ${config.media ? html`<p class="tc-muted">The first picture is the one shown on cards and lists.</p>
-            <k-prod-images .value=${draft.images} .assets=${this.assets} @change=${event => { this.assets = { ...this.assets, ...event.detail.assets }; this.set({ images: event.detail.value }); }}></k-prod-images>`
+            <k-products-images .value=${draft.images} .assets=${this.assets} @change=${event => { this.assets = { ...this.assets, ...event.detail.assets }; this.set({ images: event.detail.value }); }}></k-products-images>`
             : html`<p class="tc-muted">Install the kempo-media extension to add pictures to products.</p>`}
         </k-tab-content>
         <k-tab-content name="options" class="pt">
-          <k-prod-options-editor .value=${draft.options} decimals=${decimals} managed=${managed} @change=${event => this.set({ options: event.detail.value })}></k-prod-options-editor>
+          <k-products-options-editor .value=${draft.options} decimals=${decimals} managed=${managed} @change=${event => this.set({ options: event.detail.value })}></k-products-options-editor>
         </k-tab-content>
         ${this.credits ? html`<k-tab-content name="credits" class="pt">${this.renderCredits()}</k-tab-content>` : ''}
         ${this.extraTabs.map(tab => html`<k-tab-content name=${tab.name} class="pt"><slot name=${`tab-${tab.name}`}></slot></k-tab-content>`)}
@@ -437,4 +458,4 @@ export default class ProductForm extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-form', ProductForm);
+customElements.define('k-products-form', ProductForm);

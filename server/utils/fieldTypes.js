@@ -23,7 +23,7 @@ export const CONVERSIONS = { select: ['text'], text: ['longtext'] };
 export const canConvert = (from, to) => from === to || (CONVERSIONS[from] ?? []).includes(to);
 
 export const CORE_KEYS = [
-  'id', 'slug', 'name', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'stock',
+  'id', 'slug', 'name', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'quantity',
   'managedBy', 'images', 'tags', 'data', 'fields', 'options', 'owner', 'created', 'updated', 'publishedAt',
 ];
 

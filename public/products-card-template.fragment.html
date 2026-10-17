@@ -1,0 +1,14 @@
+<!--
+  Name: products-card-template. Used once on a page that shows a products list, it gives the list the one
+  template whose content goes into every card, with places for other extensions' content in it
+  (products-card-price, products-card-actions) and a place (products-scripts) for the scripts that define
+  their components. A contribution names the card slot it fills with slot="price" or slot="actions". See
+  docs/extending.html.
+-->
+<fragment>
+<template data-products-card>
+<location name="products-card-price" />
+<location name="products-card-actions" />
+</template>
+<location name="products-scripts" />
+</fragment>

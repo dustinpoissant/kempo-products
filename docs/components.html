@@ -70,27 +70,27 @@
         <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
         <a href="./catalog.html#products" class="d-b">Products</a>
         <a href="./catalog.html#price" class="d-b">Price</a>
-        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#quantity" class="d-b">Quantity</a>
         <a href="./catalog.html#options" class="d-b">Options and prices</a>
         <a href="./catalog.html#images" class="d-b">Images</a>
       </div>
       <h5><a href="./components.html">Components</a></h5>
       <div class="ml mb -mt">
         <a href="./components.html#home-page" class="d-b">Products on your home page</a>
-        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#k-products-list" class="d-b">&lt;k-products-list&gt;</a>
         <a href="./components.html#recipes" class="d-b">Recipes</a>
         <a href="./components.html#address" class="d-b">The address</a>
-        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
-        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#k-products-card" class="d-b">&lt;k-products-card&gt;</a>
+        <a href="./components.html#k-products-detail" class="d-b">&lt;k-products-detail&gt;</a>
         <a href="./components.html#sdk" class="d-b">Browser SDK</a>
         <a href="./components.html#styling" class="d-b">Styling</a>
       </div>
-      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <h5><a href="./ledger.html">The ledger</a></h5>
       <div class="ml mb -mt">
-        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
-        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
-        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
-        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+        <a href="./ledger.html#entries" class="d-b">Adding an entry</a>
+        <a href="./ledger.html#undoing" class="d-b">Putting back what an entry took</a>
+        <a href="./ledger.html#admin" class="d-b">In the admin</a>
+        <a href="./ledger.html#managed" class="d-b">Managed quantity</a>
       </div>
       <h5><a href="./import-export.html">Import and export</a></h5>
       <div class="ml mb -mt">
@@ -152,9 +152,9 @@
       <table>
         <thead><tr><th>Element</th><th>Shows</th></tr></thead>
         <tbody>
-          <tr><td><a href="#k-prod-list"><code>&lt;k-prod-list&gt;</code></a></td><td>A grid of products, from a handful on your home page to the whole searchable catalog</td></tr>
-          <tr><td><a href="#k-prod-card"><code>&lt;k-prod-card&gt;</code></a></td><td>One product as a card, for when you lay a page out yourself</td></tr>
-          <tr><td><a href="#k-prod-detail"><code>&lt;k-prod-detail&gt;</code></a></td><td>A product's full page, with its pictures, options and price</td></tr>
+          <tr><td><a href="#k-products-list"><code>&lt;k-products-list&gt;</code></a></td><td>A grid of products, from a handful on your home page to the whole searchable catalog</td></tr>
+          <tr><td><a href="#k-products-card"><code>&lt;k-products-card&gt;</code></a></td><td>One product as a card, for when you lay a page out yourself</td></tr>
+          <tr><td><a href="#k-products-detail"><code>&lt;k-products-detail&gt;</code></a></td><td>A product's full page, with its pictures, options and price</td></tr>
         </tbody>
       </table>
     </div>
@@ -165,7 +165,7 @@
     <pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/products/components/ProductList.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 
 <span class="hljs-tag">&lt;<span class="hljs-name">h2</span>&gt;</span>Featured<span class="hljs-tag">&lt;/<span class="hljs-name">h2</span>&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">tag</span>=<span class="hljs-string">&quot;featured&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;4&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span></code></pre>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">tag</span>=<span class="hljs-string">&quot;featured&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;4&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span></code></pre>
     <p>Now tag a few products <code>featured</code> in the product form, and they appear. Four attributes did the work:</p>
     <ul>
       <li><code>tag="featured"</code> picks only products with that tag.</li>
@@ -174,13 +174,13 @@
       <li><code>no-url</code> stops the list reading or writing the page's address (see <a href="#two-lists">two lists on one page</a>).</li>
     </ul>
 
-    <h2 id="k-prod-list" class="mt">&lt;k-prod-list&gt;</h2>
+    <h2 id="k-products-list" class="mt">&lt;k-products-list&gt;</h2>
     <p>Every attribute is optional. With none, it is the full catalog with a search box, filters and paging, which is what <code>/products/</code> shows.</p>
 
     <div class="mb">
       <img src="./media/public-list-light.png" alt="The full catalog list: a search box, type and sort drop-downs, and a grid of product cards." class="img-light full b r" />
       <img src="./media/public-list-dark.png" alt="The full catalog list: a search box, type and sort drop-downs, and a grid of product cards." class="img-dark full b r" />
-      <small class="d-b tc-muted">A <code>&lt;k-prod-list&gt;</code> with no attributes: search, filters, sorting and a grid of products.</small>
+      <small class="d-b tc-muted">A <code>&lt;k-products-list&gt;</code> with no attributes: search, filters, sorting and a grid of products.</small>
     </div>
 
     <h3 id="choosing" class="mt">Choosing which products</h3>
@@ -191,6 +191,7 @@
         <tbody>
           <tr><td><code>type</code></td><td>Products of one type. Use the type's key (shown on <strong>Products &gt; Types</strong>)</td><td><code>type="model-car"</code></td></tr>
           <tr><td><code>tag</code></td><td>Products that have every tag listed, comma separated</td><td><code>tag="featured"</code>, <code>tag="red,muscle"</code></td></tr>
+          <tr><td><code>category</code></td><td>Products in every category listed (their keys), comma separated. Visitors also get a Category menu unless this is set</td><td><code>category="model-cars"</code></td></tr>
           <tr><td><code>slugs</code></td><td>Exactly these products, by slug, comma separated, in the order you list them</td><td><code>slugs="1969-camaro,mini-cooper"</code></td></tr>
           <tr><td><code>availability</code></td><td>Products with one of these availabilities: <code>available</code>, <code>pending</code>, <code>sold</code></td><td><code>availability="available"</code></td></tr>
           <tr><td><code>in-stock</code></td><td>Products that are not out of stock. It is a flag: no value needed</td><td><code>in-stock</code></td></tr>
@@ -230,34 +231,34 @@
     <h3 id="recipes" class="mt">Recipes</h3>
     <p>Each of these is one line.</p>
     <pre><code class="hljs xml"><span class="hljs-comment">&lt;!-- The newest six, as a strip on the home page --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">sort</span>=<span class="hljs-string">&quot;newest&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;6&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">sort</span>=<span class="hljs-string">&quot;newest&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;6&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span>
 
 <span class="hljs-comment">&lt;!-- Four hand-picked products, in this order --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">slugs</span>=<span class="hljs-string">&quot;1969-camaro,mini-cooper,vw-beetle,mustang&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">slugs</span>=<span class="hljs-string">&quot;1969-camaro,mini-cooper,vw-beetle,mustang&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span>
 
 <span class="hljs-comment">&lt;!-- Everything tagged &quot;sale&quot; that you can actually buy, cheapest first --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">tag</span>=<span class="hljs-string">&quot;sale&quot;</span> <span class="hljs-attr">in-stock</span> <span class="hljs-attr">availability</span>=<span class="hljs-string">&quot;available&quot;</span> <span class="hljs-attr">sort</span>=<span class="hljs-string">&quot;price-asc&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">tag</span>=<span class="hljs-string">&quot;sale&quot;</span> <span class="hljs-attr">in-stock</span> <span class="hljs-attr">availability</span>=<span class="hljs-string">&quot;available&quot;</span> <span class="hljs-attr">sort</span>=<span class="hljs-string">&quot;price-asc&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span>
 
 <span class="hljs-comment">&lt;!-- The three most expensive in stock --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">in-stock</span> <span class="hljs-attr">sort</span>=<span class="hljs-string">&quot;price-desc&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;3&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">in-stock</span> <span class="hljs-attr">sort</span>=<span class="hljs-string">&quot;price-desc&quot;</span> <span class="hljs-attr">limit</span>=<span class="hljs-string">&quot;3&quot;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span>
 
 <span class="hljs-comment">&lt;!-- A page for one type, with search and paging, twelve at a time --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;model-car&quot;</span> <span class="hljs-attr">page-size</span>=<span class="hljs-string">&quot;12&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;model-car&quot;</span> <span class="hljs-attr">page-size</span>=<span class="hljs-string">&quot;12&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span>
 
 <span class="hljs-comment">&lt;!-- Only 1:18 scale cars --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;model-car&quot;</span> <span class="hljs-attr">filters</span>=<span class="hljs-string">&#x27;{&quot;scale&quot;:&quot;1:18&quot;}&#x27;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;model-car&quot;</span> <span class="hljs-attr">filters</span>=<span class="hljs-string">&#x27;{&quot;scale&quot;:&quot;1:18&quot;}&#x27;</span> <span class="hljs-attr">hide-controls</span> <span class="hljs-attr">no-url</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span>
 
 <span class="hljs-comment">&lt;!-- Vehicles that are not sold yet --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;vehicle&quot;</span> <span class="hljs-attr">availability</span>=<span class="hljs-string">&quot;available,pending&quot;</span> <span class="hljs-attr">page-size</span>=<span class="hljs-string">&quot;12&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;vehicle&quot;</span> <span class="hljs-attr">availability</span>=<span class="hljs-string">&quot;available,pending&quot;</span> <span class="hljs-attr">page-size</span>=<span class="hljs-string">&quot;12&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span>
 
 <span class="hljs-comment">&lt;!-- The whole catalog, which is what /products/ is --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-list</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-list</span>&gt;</span></code></pre>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-list</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-list</span>&gt;</span></code></pre>
 
     <h3 id="two-lists" class="mt">Two lists on one page</h3>
     <p>Without <code>no-url</code>, a list keeps what it is searching and filtering in the page's address (<code>/products/?q=camaro&amp;sort=price-asc</code>), so a filtered list can be bookmarked and survives a refresh. That is right for a page that is only the catalog. But on a page with a list among other things, or with two lists, they would all read and rewrite the same address and fight over it. Put <code>no-url</code> on any list that is not the page's main content.</p>
 
     <h3 id="address" class="mt">What the address does on a catalog page</h3>
-    <p>On <code>/products/</code>, or any page with a <code>&lt;k-prod-list&gt;</code> that has no <code>no-url</code>, these work in the address:</p>
+    <p>On <code>/products/</code>, or any page with a <code>&lt;k-products-list&gt;</code> that has no <code>no-url</code>, these work in the address:</p>
     <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Address</th><th>Does</th></tr></thead>
@@ -280,8 +281,8 @@
       <li>A list with nothing to show says "No products found."</li>
     </ul>
 
-    <h2 id="k-prod-card" class="mt">&lt;k-prod-card&gt;</h2>
-    <p>One product as a card: its first picture, name and price, linked to its page, with a "Sold", "Sale pending" or "Out of stock" badge when it is not for sale. <code>&lt;k-prod-list&gt;</code> is made of these.</p>
+    <h2 id="k-products-card" class="mt">&lt;k-products-card&gt;</h2>
+    <p>One product as a card: its first picture, name and price, linked to its page, with a "Sold", "Sale pending" or "Out of stock" badge when it is not for sale. <code>&lt;k-products-list&gt;</code> is made of these.</p>
     <p>It is given data and not a name, so you use it from a script. This is for when you want your own layout:</p>
     <pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span>&gt;</span><span class="language-javascript">
   <span class="hljs-keyword">import</span> <span class="hljs-string">&#x27;/products/components/ProductCard.js&#x27;</span>;
@@ -290,7 +291,7 @@
   <span class="hljs-keyword">const</span> [, config] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getConfig</span>();
   <span class="hljs-keyword">const</span> [, data] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getProducts</span>({ <span class="hljs-attr">tag</span>: <span class="hljs-string">&#x27;featured&#x27;</span>, <span class="hljs-attr">limit</span>: <span class="hljs-number">3</span> });
   <span class="hljs-keyword">for</span>(<span class="hljs-keyword">const</span> product <span class="hljs-keyword">of</span> data.<span class="hljs-property">items</span>){
-    <span class="hljs-keyword">const</span> card = <span class="hljs-variable language_">document</span>.<span class="hljs-title function_">createElement</span>(<span class="hljs-string">&#x27;k-prod-card&#x27;</span>);
+    <span class="hljs-keyword">const</span> card = <span class="hljs-variable language_">document</span>.<span class="hljs-title function_">createElement</span>(<span class="hljs-string">&#x27;k-products-card&#x27;</span>);
     card.<span class="hljs-property">product</span> = product;
     card.<span class="hljs-property">images</span> = data.<span class="hljs-property">images</span>;
     card.<span class="hljs-property">config</span> = config;
@@ -309,12 +310,12 @@
         </tbody>
       </table>
     </div>
-    <p>A card has a slot named <code>actions</code> under the price, for a button an extension adds, such as add to cart.</p>
+    <p>A card has two slots. <code>price</code> has the price as its default content, and an extension that shows it differently puts its own element there instead. <code>actions</code> is under the price and takes any number of controls. What goes in it is a child of the card, so a component an extension puts there finds the card with <code>closest('k-products-card')</code>. The card carries a <code>product-id</code> attribute, and its <code>product</code> property is the product it was given. <code>&lt;k-products-list&gt;</code> puts the content of the page's <code>&lt;template data-products-card&gt;</code> into every card's <code>actions</code> slot; a page that builds cards by hand puts its own children there. See <a href="./extending.html#actions">Adding controls to products</a>.</p>
 
-    <h2 id="k-prod-detail" class="mt">&lt;k-prod-detail&gt;</h2>
+    <h2 id="k-products-detail" class="mt">&lt;k-products-detail&gt;</h2>
     <p>A product's page. The <code>/products/&lt;slug&gt;/</code> page is this and little else.</p>
     <pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/products/components/ProductDetail.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">k-prod-detail</span> <span class="hljs-attr">slug</span>=<span class="hljs-string">&quot;1969-camaro&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-prod-detail</span>&gt;</span></code></pre>
+<span class="hljs-tag">&lt;<span class="hljs-name">k-products-detail</span> <span class="hljs-attr">slug</span>=<span class="hljs-string">&quot;1969-camaro&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">k-products-detail</span>&gt;</span></code></pre>
     <p>Without <code>slug</code> it uses the last part of the page's address, which is how <code>/products/1969-camaro/</code> works.</p>
     <p>It shows the pictures, the name and price, the options a buyer chooses, the description and the product's details. As options are chosen it writes them into the address (<code>?color=red&amp;clear-coat=no</code>), so a shared link opens with the same choices, and it asks the server for the price each time so the number shown is the number that would be charged. A choice that does not exist or is sold out in the address is ignored.</p>
     <div class="table-wrapper mb">
@@ -325,7 +326,7 @@
         </tbody>
       </table>
     </div>
-    <p>An extension that adds a buy button listens for <code>selection-change</code> to know what is selected. The slots are <code>actions</code> (under the options, for that button) and <code>extra</code> (under the description).</p>
+    <p>An extension that adds a buy button listens for <code>selection-change</code> to know what is selected. The slots are <code>price</code> (the price line is its default content, so an extension can replace it), <code>actions</code> (under the options, for that button) and <code>extra</code> (under the description). The page has a location for each, directly among the children, so an extension's element is a child of this one and finds it with <code>closest('k-products-detail')</code>. It reads <code>product</code>, <code>selections</code>, <code>price</code> and <code>complete</code> from it. See <a href="./extending.html#actions">Adding controls to products</a>.</p>
     <p>The page also writes a meta description and schema.org <code>Product</code> data (price, picture and availability) for search engines.</p>
 
     <h2 id="sdk" class="mt">Building your own</h2>
@@ -344,6 +345,7 @@
           <tr><td><code>q</code></td><td>Searches the name, description, slug, tags and field values</td></tr>
           <tr><td><code>type</code></td><td>One type's key</td></tr>
           <tr><td><code>tag</code></td><td>A tag, or a list of tags that must all be present</td></tr>
+          <tr><td><code>category</code></td><td>A category key, or a list of them that the product must all be in</td></tr>
           <tr><td><code>slugs</code></td><td>Comma separated slugs: only these</td></tr>
           <tr><td><code>availability</code></td><td>Comma separated: <code>available</code>, <code>pending</code>, <code>sold</code></td></tr>
           <tr><td><code>inStock</code></td><td><code>true</code> to drop products that are out of stock</td></tr>
@@ -353,7 +355,7 @@
         </tbody>
       </table>
     </div>
-    <p>It always returns published products only, to visitors. (A signed-in person who can manage the catalog may also pass <code>status</code> to see drafts, which is what the admin uses.) What comes back never includes the exact stock count, only whether a product is <code>inStock</code>, and no price when the site hides prices.</p>
+    <p>It always returns published products only, to visitors. (A signed-in person who can manage the catalog may also pass <code>status</code> to see drafts, which is what the admin uses.) What comes back never includes the exact quantity count, only whether a product is <code>inStock</code>, and no price when the site hides prices.</p>
 
     <h3 class="mt">Showing a price</h3>
     <p>Prices are whole numbers of the smallest unit: <code>4999</code> is $49.99. Do not do the arithmetic yourself:</p>

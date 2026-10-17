@@ -9,9 +9,9 @@ import '/products/components/MoneyInput.js';
   "0.00" changes nothing. An option set to "replace the base price" instead uses its choice's price
   as the price, the way most shops price variations.
 
-    <k-prod-options-editor .value=${product.options} decimals="2"></k-prod-options-editor>
+    <k-products-options-editor .value=${product.options} decimals="2"></k-products-options-editor>
 
-  `managed` is the name of an extension that keeps stock in step with something else; it decides
+  `managed` is the name of an extension that keeps quantity in step with something else; it decides
   which choices are in stock, so that box is shown read-only. Fires `change` with { value }: the
   whole list of options.
 */
@@ -73,9 +73,9 @@ export default class OptionsEditor extends ShadowComponent {
     return html`<div class="d-f b r pq mbh" style="align-items: center; gap: var(--spacer_h); flex-wrap: nowrap;">
       <input type="text" class="flex" style="width: auto; min-width: 0; margin: 0;" placeholder="Choice, e.g. Red" aria-label="Choice name"
         .value=${choice.label} @input=${event => this.patchChoice(index, choiceIndex, { label: event.target.value })}>
-      <k-prod-money style="width: 8rem;" ?signed=${!replacing} decimals=${this.decimals} .value=${choice.price} placeholder=${replacing ? 'Price' : '+/- 0.00'}
+      <k-products-money style="width: 8rem;" ?signed=${!replacing} decimals=${this.decimals} .value=${choice.price} placeholder=${replacing ? 'Price' : '+/- 0.00'}
         label=${replacing ? 'Price of this choice' : 'Price change for this choice'}
-        @change=${event => this.patchChoice(index, choiceIndex, { price: event.detail.value ?? 0 })}></k-prod-money>
+        @change=${event => this.patchChoice(index, choiceIndex, { price: event.detail.value ?? 0 })}></k-products-money>
       <label class="checkbox" style="margin: 0; white-space: nowrap;" title=${this.managed ? `In stock is kept up to date by ${this.managed}` : 'Untick when this choice is sold out'}>
         <input type="checkbox" .checked=${choice.available} ?disabled=${Boolean(this.managed)}
           @change=${event => this.patchChoice(index, choiceIndex, { available: event.target.checked })}> In stock
@@ -118,4 +118,4 @@ export default class OptionsEditor extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-options-editor', OptionsEditor);
+customElements.define('k-products-options-editor', OptionsEditor);

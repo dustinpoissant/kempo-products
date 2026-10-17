@@ -1,17 +1,18 @@
 import { test, before, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
+import { extension } from 'kempo/server/db/schema.js';
 import {
-  kempoProduct, kempoProductType, kempoProductField, kempoProductOption, kempoProductPurchase,
+  kempoProduct, kempoProductType, kempoProductField, kempoProductOption, kempoProductLedger,
 } from '../server/db/schema.js';
 import {
-  createProduct, updateProduct, deleteProduct, getProduct, getProducts, setStock, adjustStock, setManagedBy,
+  createProduct, updateProduct, deleteProduct, getProduct, getProducts, setManagedBy,
   setChoiceAvailability, getPrice, unregisterProducts,
 } from '../server/utils/products.js';
+import { setQuantity, adjustQuantity, addLedgerEntry, getLedger, getLedgerEntry } from '../server/utils/ledger.js';
 import { createType, deleteType, registerType, getTypes, unregisterTypes } from '../server/utils/types.js';
 import { createField, updateField, deleteField, registerField, getFields, unregisterFields } from '../server/utils/fields.js';
-import { recordPurchase, reversePurchase, getPurchase } from '../server/utils/purchases.js';
 import install from '../install.js';
 
 /*
@@ -35,7 +36,7 @@ if(!reachable && process.env.KEMPO_TEST_TIER === 'integration'){
 }
 
 const purge = async () => {
-  for(const table of [kempoProductPurchase, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]){
+  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]){
     await db.delete(table);
   }
 };
@@ -118,11 +119,11 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
       refused(await createProduct({ name: 'Api', slug: 'api' }), 400);
     });
 
-    test('products start as drafts, available, with unlimited stock and no price', async () => {
+    test('products start as drafts, available, with unlimited quantity and no price', async () => {
       const product = ok(await createProduct({ name: 'Draft thing' }));
       assert.equal(product.status, 'draft');
       assert.equal(product.availability, 'available');
-      assert.equal(product.stock, -1);
+      assert.equal(product.quantity, -1);
       assert.equal(product.price, null);
       assert.equal(product.purchasable, false);
       assert.equal(product.publishedAt, null);
@@ -195,134 +196,143 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
     });
   });
 
-  describe('stock', () => {
-    test('stock can be set, adjusted and never goes below zero', async () => {
-      const product = ok(await createProduct({ name: 'Stocked', stock: 3 }));
-      assert.equal(ok(await adjustStock(product.id, -2)).stock, 1);
-      refused(await adjustStock(product.id, -2), 409);
-      assert.equal(ok(await getProduct(product.id)).stock, 1);
-      assert.equal(ok(await setStock(product.id, 10)).stock, 10);
-      assert.equal(ok(await setStock(product.id, -1)).stock, -1);
-      assert.equal(ok(await adjustStock(product.id, -5)).stock, -1);
+  describe('quantity', () => {
+    test('quantity can be set, adjusted and never goes below zero', async () => {
+      const product = ok(await createProduct({ name: 'Stocked', quantity: 3 }));
+      assert.equal(ok(await adjustQuantity(product.id, -2)).quantity, 1);
+      refused(await adjustQuantity(product.id, -2), 409);
+      assert.equal(ok(await getProduct(product.id)).quantity, 1);
+      assert.equal(ok(await setQuantity(product.id, 10)).quantity, 10);
+      assert.equal(ok(await setQuantity(product.id, -1)).quantity, -1);
+      assert.equal(ok(await adjustQuantity(product.id, -5)).quantity, -1);
     });
 
-    test('a managed product keeps its stock and choice availability away from everyone else', async () => {
+    test('a managed product keeps its quantity and choice availability away from everyone else', async () => {
       const product = ok(await createProduct({
-        name: 'Managed', stock: 5,
+        name: 'Managed', quantity: 5,
         options: [{ label: 'Color', choices: [{ label: 'Red' }, { label: 'Blue' }] }],
       }));
+      await db.insert(extension).values({ name: 'connector', version: '0.0.0', enabled: true, kempo: {}, installedAt: new Date(), updatedAt: new Date() }).onConflictDoNothing();
       ok(await setManagedBy(product.id, 'connector'));
       refused(await setManagedBy(product.id, 'someone-else'), 409);
-      refused(await setStock(product.id, 1), 403);
-      refused(await adjustStock(product.id, -1), 403);
-      refused(await updateProduct(product.id, { stock: 1 }), 403);
+      refused(await setQuantity(product.id, 1), 403);
+      refused(await adjustQuantity(product.id, -1), 403);
+      refused(await updateProduct(product.id, { quantity: 1 }), 403);
       refused(await setChoiceAvailability(product.id, 'color', 'red', false), 403);
-      assert.equal(ok(await updateProduct(product.id, { stock: 5, description: 'still editable' })).description, 'still editable');
-      assert.equal(ok(await setStock(product.id, 2, { actor: 'connector' })).stock, 2);
+      assert.equal(ok(await updateProduct(product.id, { quantity: 5, description: 'still editable' })).description, 'still editable');
+      assert.equal(ok(await setQuantity(product.id, 2, { actor: 'connector' })).quantity, 2);
       const out = ok(await setChoiceAvailability(product.id, 'color', 'red', false, { actor: 'connector' }));
       assert.equal(out.options[0].choices[0].available, false);
       const edited = ok(await updateProduct(product.id, { options: [{ label: 'Color', choices: [{ label: 'Red', available: true }, { label: 'Blue' }] }] }));
       assert.equal(edited.options[0].choices[0].available, false, 'a person cannot flip a managed choice back');
       ok(await setManagedBy(product.id, ''));
-      assert.equal(ok(await setStock(product.id, 9)).stock, 9);
+      assert.equal(ok(await setQuantity(product.id, 9)).quantity, 9);
+      await db.delete(extension).where(eq(extension.name, 'connector'));
     });
   });
 
-  describe('purchases', () => {
-    const live = (name, extra = {}) => createProduct({ name, price: 1000, status: 'published', ...extra }).then(ok);
+  describe('ledger', () => {
+    const stocked = (name, quantity, extra = {}) => createProduct({ name, price: 1000, status: 'published', quantity, ...extra }).then(ok);
+    const rowsFor = async id => ok(await getLedger({ productId: id })).items;
 
-    test('recording prices the lines from the catalog and takes stock', async () => {
-      const car = await live('Car', { stock: 5, options: [{ label: 'Clear coat', choices: [{ label: 'Yes' }, { label: 'No', price: -100 }] }] });
-      const purchase = ok(await recordPurchase({ ref: 'order-1', lines: [{ productId: car.id, quantity: 2, options: { 'clear-coat': 'no' } }] }));
-      assert.equal(purchase.total, 1800);
-      assert.equal(purchase.lines[0].unitPrice, 900);
-      assert.equal(purchase.lines[0].optionLines[0].choiceLabel, 'No');
-      assert.equal(ok(await getProduct(car.id)).stock, 3);
+    test('an entry changes the quantity and writes what changed and what was left', async () => {
+      const car = await stocked('Car', 5);
+      const entry = ok(await addLedgerEntry({ ref: 'order-1', reason: 'sale', note: 'Etsy 1042', lines: [{ productId: car.id, change: -2 }] }));
+      assert.deepEqual(entry.lines.map(line => [line.change, line.quantity]), [[-2, 3]]);
+      assert.equal(ok(await getProduct(car.id)).quantity, 3);
+      const [row] = await rowsFor(car.id);
+      assert.equal(row.change, -2);
+      assert.equal(row.quantity, 3);
+      assert.equal(row.reason, 'sale');
+      assert.equal(row.note, 'Etsy 1042');
+      assert.equal(row.name, 'Car');
     });
 
-    test('the same ref cannot be recorded twice', async () => {
-      const item = await live('Once', { stock: 5 });
-      ok(await recordPurchase({ ref: 'order-twice', lines: [{ productId: item.id }] }));
-      refused(await recordPurchase({ ref: 'order-twice', lines: [{ productId: item.id }] }), 409);
-      assert.equal(ok(await getProduct(item.id)).stock, 4);
+    test('adding stock raises the quantity', async () => {
+      const item = await stocked('Delivery', 1);
+      ok(await addLedgerEntry({ lines: [{ productId: item.id, change: 10 }], reason: 'restock' }));
+      assert.equal(ok(await getProduct(item.id)).quantity, 11);
     });
 
-    test('a purchase is all or nothing across its lines', async () => {
-      const plenty = await live('Plenty', { stock: 5 });
-      const scarce = await live('Scarce', { stock: 1 });
-      refused(await recordPurchase({ ref: 'order-partial', lines: [{ productId: plenty.id }, { productId: scarce.id, quantity: 2 }] }), 409);
-      assert.equal(ok(await getProduct(plenty.id)).stock, 5);
-      assert.equal(ok(await getProduct(scarce.id)).stock, 1);
-      assert.equal((await getPurchase('order-partial'))[0].code, 404, 'nothing was recorded');
+    test('the same ref changes nothing the second time and returns the first entry', async () => {
+      const item = await stocked('Once', 5);
+      ok(await addLedgerEntry({ ref: 'order-twice', lines: [{ productId: item.id, change: -1 }] }));
+      const again = ok(await addLedgerEntry({ ref: 'order-twice', lines: [{ productId: item.id, change: -1 }] }));
+      assert.equal(again.duplicate, true);
+      assert.equal(ok(await getProduct(item.id)).quantity, 4);
+      assert.equal((await rowsFor(item.id)).filter(row => row.ref === 'order-twice').length, 1);
     });
 
-    test('two lines for one product share its stock', async () => {
-      const item = await live('Shared', { stock: 3 });
-      refused(await recordPurchase({ ref: 'order-shared', lines: [{ productId: item.id, quantity: 2 }, { productId: item.id, quantity: 2 }] }), 409);
-      assert.equal(ok(await getProduct(item.id)).stock, 3);
+    test('an entry is all or nothing across its lines', async () => {
+      const plenty = await stocked('Plenty', 5);
+      const scarce = await stocked('Scarce', 1);
+      refused(await addLedgerEntry({ ref: 'order-partial', lines: [{ productId: plenty.id, change: -1 }, { productId: scarce.id, change: -2 }] }), 409);
+      assert.equal(ok(await getProduct(plenty.id)).quantity, 5);
+      assert.equal(ok(await getProduct(scarce.id)).quantity, 1);
+      assert.equal((await getLedgerEntry('order-partial'))[0].code, 404, 'nothing was written');
     });
 
-    test('unlimited stock is never taken', async () => {
-      const item = await live('Unlimited');
-      ok(await recordPurchase({ ref: 'order-unlimited', lines: [{ productId: item.id, quantity: 50 }] }));
-      assert.equal(ok(await getProduct(item.id)).stock, -1);
+    test('two lines for one product share its quantity', async () => {
+      const item = await stocked('Shared', 3);
+      refused(await addLedgerEntry({ ref: 'order-shared', lines: [{ productId: item.id, change: -2 }, { productId: item.id, change: -2 }] }), 409);
+      assert.equal(ok(await getProduct(item.id)).quantity, 3);
     });
 
-    test('a product that cannot be bought refuses, and says why', async () => {
-      const draft = ok(await createProduct({ name: 'Not live', price: 100 }));
-      assert.match(refused(await recordPurchase({ ref: 'o-draft', lines: [{ productId: draft.id }] }), 409).msg, /not for sale/);
-      const sold = await live('Sold out', { availability: 'sold' });
-      assert.match(refused(await recordPurchase({ ref: 'o-sold', lines: [{ productId: sold.id }] }), 409).msg, /sold/);
-      const empty = await live('Empty', { stock: 0 });
-      assert.match(refused(await recordPurchase({ ref: 'o-empty', lines: [{ productId: empty.id }] }), 409).msg, /out of stock/);
-      refused(await recordPurchase({ ref: 'o-missing', lines: [{ productId: 'ffffffffffffffff' }] }), 404);
+    test('quantity never goes below zero', async () => {
+      const item = await stocked('Floor', 2);
+      assert.match(refused(await addLedgerEntry({ lines: [{ productId: item.id, change: -3 }] }), 409).msg, /Floor: not enough in stock/);
+      ok(await addLedgerEntry({ lines: [{ productId: item.id, change: -2 }] }));
+      assert.equal(ok(await getProduct(item.id)).quantity, 0);
     });
 
-    test('a missing required option is refused', async () => {
-      const car = await live('Picky', { options: [{ label: 'Color', choices: [{ label: 'Red' }] }] });
-      refused(await recordPurchase({ ref: 'o-opt', lines: [{ productId: car.id }] }), 400);
+    test('unlimited quantity is never changed and gets no row', async () => {
+      const item = await stocked('Unlimited', undefined);
+      const entry = ok(await addLedgerEntry({ ref: 'order-unlimited', lines: [{ productId: item.id, change: -50 }] }));
+      assert.deepEqual(entry.lines, []);
+      assert.equal(ok(await getProduct(item.id)).quantity, -1);
+      assert.equal((await rowsFor(item.id)).length, 0);
     });
 
-    test('a manual record may price a product that has none, and ignores whether it is for sale', async () => {
-      const priceless = ok(await createProduct({ name: 'Call for price', stock: 2 }));
-      refused(await recordPurchase({ ref: 'm-1', lines: [{ productId: priceless.id }] }), 409);
-      const purchase = ok(await recordPurchase({ ref: 'm-2', lines: [{ productId: priceless.id, unitPrice: 12345 }] }, { manual: true }));
-      assert.equal(purchase.total, 12345);
-      assert.equal(ok(await getProduct(priceless.id)).stock, 1);
+    test('an entry that puts back what an earlier one took is just another entry', async () => {
+      const item = await stocked('Returnable', 5);
+      ok(await addLedgerEntry({ ref: 'o-rev', lines: [{ productId: item.id, change: -3 }] }));
+      ok(await addLedgerEntry({ ref: 'o-rev:return', undoes: 'o-rev', reason: 'return', lines: [{ productId: item.id, change: 3 }] }));
+      assert.equal(ok(await getProduct(item.id)).quantity, 5);
+      assert.equal((await rowsFor(item.id)).find(row => row.ref === 'o-rev:return').undoes, 'o-rev');
     });
 
-    test('malformed purchases are refused', async () => {
-      refused(await recordPurchase({ lines: [{ productId: 'x' }] }), 400);
-      refused(await recordPurchase({ ref: 'r', lines: [] }), 400);
-      refused(await recordPurchase({ ref: 'r', lines: [{ productId: 'x', quantity: 0 }] }), 400);
-      refused(await recordPurchase({ ref: 'r', lines: [{ productId: 'x', quantity: 1.5 }] }), 400);
+    test('a product that is missing, and malformed entries, are refused', async () => {
+      refused(await addLedgerEntry({ lines: [{ productId: 'ffffffffffffffff', change: 1 }] }), 404);
+      refused(await addLedgerEntry({ lines: [] }), 400);
+      refused(await addLedgerEntry({ lines: [{ productId: '', change: 1 }] }), 400);
+      refused(await addLedgerEntry({ lines: [{ productId: 'x', change: 0 }] }), 400);
+      refused(await addLedgerEntry({ lines: [{ productId: 'x', change: 1.5 }] }), 400);
+      refused(await addLedgerEntry({ ref: 'x'.repeat(201), lines: [{ productId: 'x', change: 1 }] }), 400);
     });
 
-    test('reversing puts stock back once', async () => {
-      const item = await live('Returnable', { stock: 5 });
-      ok(await recordPurchase({ ref: 'o-rev', lines: [{ productId: item.id, quantity: 3 }] }));
-      assert.equal(ok(await getProduct(item.id)).stock, 2);
-      assert.equal(ok(await reversePurchase('o-rev')).status, 'reversed');
-      assert.equal(ok(await getProduct(item.id)).stock, 5);
-      refused(await reversePurchase('o-rev'), 409);
-      refused(await reversePurchase('never-recorded'), 404);
-      assert.equal(ok(await getProduct(item.id)).stock, 5);
+    test('setting and adjusting the quantity, and creating and editing a product, are in the ledger too', async () => {
+      const item = await stocked('Counted', 4);
+      ok(await setQuantity(item.id, 10, { reason: 'count' }));
+      ok(await adjustQuantity(item.id, -3));
+      ok(await updateProduct(item.id, { quantity: 20 }));
+      const rows = (await rowsFor(item.id)).reverse();
+      assert.deepEqual(rows.map(row => [row.reason, row.change, row.quantity]), [['created', 4, 4], ['count', 6, 10], ['adjusted', -3, 7], ['edited', 13, 20]]);
     });
 
-    test('a reversed ref cannot be reused', async () => {
-      const item = await live('Reuse', { stock: 5 });
-      ok(await recordPurchase({ ref: 'o-reuse', lines: [{ productId: item.id }] }));
-      ok(await reversePurchase('o-reuse'));
-      refused(await recordPurchase({ ref: 'o-reuse', lines: [{ productId: item.id }] }), 409);
+    test('going to or from unlimited is written with no change', async () => {
+      const item = await stocked('Switch', 4);
+      ok(await setQuantity(item.id, ''));
+      const [row] = await rowsFor(item.id);
+      assert.equal(row.change, 0);
+      assert.equal(row.quantity, -1);
     });
 
-    test('the record survives the product being deleted', async () => {
-      const item = await live('Short lived', { stock: 2 });
-      ok(await recordPurchase({ ref: 'o-gone', lines: [{ productId: item.id }] }));
+    test('the ledger survives the product being deleted, and can be read for one product', async () => {
+      const item = await stocked('Short lived', 2);
+      ok(await addLedgerEntry({ ref: 'o-gone', lines: [{ productId: item.id, change: -1 }] }));
       ok(await deleteProduct(item.id));
-      const purchase = ok(await getPurchase('o-gone'));
-      assert.equal(purchase.lines[0].name, 'Short lived');
-      assert.equal(ok(await reversePurchase('o-gone')).status, 'reversed');
+      assert.equal(ok(await getLedgerEntry('o-gone')).lines[0].name, 'Short lived');
+      assert.equal((await rowsFor(item.id)).length, 2);
     });
   });
 });

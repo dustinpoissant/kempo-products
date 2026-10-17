@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { sql } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
 import {
-  kempoProduct, kempoProductType, kempoProductField, kempoProductOption, kempoProductPurchase,
+  kempoProduct, kempoProductType, kempoProductField, kempoProductOption, kempoProductLedger,
 } from '../server/db/schema.js';
 import { createProduct, getProduct, getProducts } from '../server/utils/products.js';
 import { createType, getTypes } from '../server/utils/types.js';
@@ -29,7 +29,7 @@ if(!reachable && process.env.KEMPO_TEST_TIER === 'integration'){
 }
 
 const purge = async () => {
-  for(const table of [kempoProductPurchase, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]) await db.delete(table);
+  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]) await db.delete(table);
 };
 
 const ok = ([error, value]) => {
@@ -47,7 +47,7 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     ok(await createField({ label: 'Scale', type: 'select', options: ['1:18', '1:24'], productType: 'model-car' }));
     ok(await createField({ label: 'Engine size', type: 'number' }));
     ok(await createProduct({
-      name: 'Red car', type: 'model-car', price: 4999, status: 'published', stock: 3, tags: ['red', 'muscle'], description: 'A red, fast car.\nWith a second line.',
+      name: 'Red car', type: 'model-car', price: 4999, status: 'published', quantity: 3, tags: ['red', 'muscle'], description: 'A red, fast car.\nWith a second line.',
       fields: { scale: '1:18', engineSize: 5.7 },
       options: [{ label: 'Clear coat', choices: [{ label: 'Yes' }, { label: 'No', price: -100 }] }],
     }));
@@ -63,12 +63,12 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     assert.equal(filename, 'products.csv');
     assert.match(contentType, /text\/csv/);
     const [header, ...rows] = parseCsv(body);
-    assert.deepEqual(header.slice(0, 11), ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'stock', 'tags', 'description', 'options']);
+    assert.deepEqual(header.slice(0, 12), ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'quantity', 'tags', 'categories', 'description', 'options']);
     assert.ok(header.includes('field.scale') && header.includes('field.engineSize'));
     assert.equal(rows.length, 2);
     const red = rows.find(row => row[0] === 'red-car');
     assert.equal(red[header.indexOf('price')], '49.99');
-    assert.equal(red[header.indexOf('stock')], '3');
+    assert.equal(red[header.indexOf('quantity')], '3');
     assert.equal(red[header.indexOf('tags')], 'red, muscle');
     assert.equal(red[header.indexOf('field.scale')], '1:18');
     assert.equal(JSON.parse(red[header.indexOf('options')])[0].choices[1].price, -100);
@@ -103,13 +103,13 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
   });
 
   test('new products are created from a spreadsheet with the defaults, matching a type by its name', async () => {
-    const csv = 'Name,Type,Price,Stock,Tags,FIELD.SCALE\nBlue car,Model car,25.50,,"blue, fast",1:24\n';
+    const csv = 'Name,Type,Price,Quantity,Tags,FIELD.SCALE\nBlue car,Model car,25.50,,"blue, fast",1:24\n';
     const result = ok(await importFile(csv));
     assert.equal(result.created, 1, JSON.stringify(result.errors));
     const blue = ok(await getProduct('blue-car'));
     assert.equal(blue.type, 'model-car');
     assert.equal(blue.price, 2550);
-    assert.equal(blue.stock, -1, 'an empty stock cell is unlimited');
+    assert.equal(blue.quantity, -1, 'an empty quantity cell is unlimited');
     assert.equal(blue.status, 'draft');
     assert.deepEqual(blue.tags, ['blue', 'fast']);
     assert.equal(blue.fields.scale, '1:24', 'field columns match whatever the case');
@@ -121,12 +121,12 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     const red = ok(await getProduct('red-car'));
     assert.equal(red.price, 5900);
     assert.match(red.description, /second line/, 'the empty description did not clear it');
-    assert.equal(red.stock, 3);
+    assert.equal(red.quantity, 3);
     assert.equal(red.options.length, 1, 'options were not in the file, so they are unchanged');
   });
 
   test('options in a spreadsheet are JSON in one cell', async () => {
-    const options = JSON.stringify([{ label: 'Wheels', choices: [{ label: 'Stock' }, { label: 'Chrome', price: 500 }] }]);
+    const options = JSON.stringify([{ label: 'Wheels', choices: [{ label: 'Quantity' }, { label: 'Chrome', price: 500 }] }]);
     const csv = `name,price,options\nWheeled,10,"${options.replace(/"/g, '""')}"`;
     ok(await importFile(csv));
     const wheeled = ok(await getProduct('wheeled'));
@@ -167,7 +167,7 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     assert.equal(red.price, 5900);
     assert.equal(red.fields.engineSize, 5.7);
     assert.equal(red.options[0].choices[1].price, -100);
-    assert.equal(red.stock, 3);
+    assert.equal(red.quantity, 3);
   });
 
   test('parsing alone reads rows without touching the database', async () => {

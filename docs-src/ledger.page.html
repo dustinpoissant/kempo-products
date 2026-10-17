@@ -1,0 +1,52 @@
+<page pageName="The ledger" title="The ledger - Kempo Products">
+  <content>
+    <p>Every change to a product's quantity is written to the ledger: when, who, by how much, why, and what was left. This extension does not take orders, hold stock for a payment, give credits or reverse anything. Whoever does adds an entry to the ledger, and products changes the quantities.</p>
+
+    <h2 id="entries" class="mt">Adding an entry</h2>
+    <pre><code class="language-js">import { addLedgerEntry } from 'kempo-products/sdk';
+
+const [error, entry] = await addLedgerEntry({
+  ref: 'order-1042',
+  reason: 'sale',
+  lines: [
+    { productId: '9f2c1e0a44b7d3a1', change: -2 },
+    { productId: '51b7c0d9e8a2f364', change: -1 },
+  ],
+});</code></pre>
+    <ul>
+      <li>A line's <code>change</code> is how much to add. Negative takes away. A sale takes, a delivery or a return adds.</li>
+      <li><strong>Every line or none.</strong> If any product has too little, nothing changes and the error says which one (409). Quantity never goes below zero. Two lines for one product share that product's quantity.</li>
+      <li><code>ref</code> is the caller's own reference and is optional. Adding an entry with a <code>ref</code> that is already in the ledger changes nothing and returns the first one with <code>duplicate: true</code>, so a retry can never change the quantity twice.</li>
+      <li><code>reason</code> (a short word such as <code>sale</code>, <code>return</code> or <code>count</code>) and <code>note</code> (free text) are shown on the ledger.</li>
+      <li>A product with unlimited quantity is never changed and gets no row.</li>
+    </ul>
+    <p>Then <code>kempo-products:ledger:added</code> fires with the entry, and <code>kempo-products:product:quantity_changed</code> for each product. Nothing a listener does can undo the entry.</p>
+
+    <h2 id="undoing" class="mt">Putting back what an entry took</h2>
+    <p>There is no reverse. A cancelled order is another entry that adds the same quantities back. Say which entry it puts back with <code>undoes</code>, which is what lets the extension that maintains a product's quantity return exactly what it took:</p>
+    <pre><code class="language-js">await addLedgerEntry({
+  ref: 'order-1042:cancelled',
+  undoes: 'order-1042',
+  reason: 'return',
+  lines: [{ productId: '9f2c1e0a44b7d3a1', change: 2 }],
+});</code></pre>
+
+    <h2 id="reading" class="mt">Reading it</h2>
+    <p><code>getLedger({ productId, limit, offset })</code> returns <code>{ items, total }</code>, newest first, and <code>getLedgerEntry(ref)</code> returns one entry. Each row keeps the product's name, so it still reads correctly after the product is deleted.</p>
+    <p>Changing a quantity any other way is in the ledger too: <code>setQuantity</code>, <code>adjustQuantity</code>, creating a product with a quantity, and editing the quantity on a product in the admin. So the ledger adds up.</p>
+
+    <h2 id="admin" class="mt">In the admin</h2>
+    <p>The <strong>Ledger</strong> button on the Products page opens the ledger. A person with the <code>products:ledger:add</code> permission can add stock to a product or take it away there, for a delivery, a count, or a sale made on Etsy or in person.</p>
+
+    <h2 id="managed" class="mt">Managed quantity</h2>
+    <p>An extension that keeps a product's quantity in step with something else, such as inventory, declares that, and people then see the quantity and which choices are in stock as read-only, with the extension's name:</p>
+    <pre><code class="language-js">import { setManagedBy, setQuantity, setChoiceAvailability } from 'kempo-products/sdk';
+
+await setManagedBy(productId, 'my-extension');
+await setQuantity(productId, 7, { actor: 'my-extension' });
+await setChoiceAvailability(productId, 'color', 'red', false, { actor: 'my-extension' });</code></pre>
+    <p>Anyone else who tries to change a managed product's quantity, through the admin or the SDK, is refused. Pass <code>''</code> to <code>setManagedBy</code> to hand it back to people.</p>
+    <p>The lock lasts only while the managing extension is installed and enabled: disable or uninstall it and its products are people's again, and enabling it takes them back.</p>
+    <p>A managed product's quantity is never written by kempo-products. <code>addLedgerEntry</code> first fires <code>kempo-products:ledger:before_add</code> with <code>{ ref, lines, products, reason, note, undoes, actor }</code>; the manager takes what the lines use (or puts back what <code>undoes</code> took) and throws <code>{ code, msg }</code> when it cannot, which refuses the entry with that message. If the entry then fails, <code>kempo-products:ledger:add_failed</code> <code>{ ref }</code> tells the manager to undo what it did.</p>
+  </content>
+</page>

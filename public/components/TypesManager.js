@@ -10,7 +10,7 @@ import { getTypes, createType, updateType, deleteType } from '/products/sdk.js';
   Lists the product types ("Vehicle", "Model car") and lets them be added, renamed and deleted.
   A type groups products and decides which custom fields they show.
 
-    <k-prod-types></k-prod-types>
+    <k-products-types></k-products-types>
 */
 export default class TypesManager extends ShadowComponent {
   static properties = {
@@ -141,4 +141,4 @@ export default class TypesManager extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-types', TypesManager);
+customElements.define('k-products-types', TypesManager);

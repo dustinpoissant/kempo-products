@@ -7,7 +7,7 @@ import '/kempo-ui/components/Rating.js';
   The form control for one custom field, with its label and description. `field` is a field
   definition from the API and `value` its current value.
 
-    <k-prod-field-input .field=${field} .value=${product.fields[field.key]}></k-prod-field-input>
+    <k-products-field-input .field=${field} .value=${product.fields[field.key]}></k-products-field-input>
 
   Fires `change` with { key, value }. An empty value is '' (which the API reads as "no value"), and
   a boolean is always true or false.
@@ -84,4 +84,4 @@ export default class FieldInput extends ShadowComponent {
   }
 }
 
-customElements.define('k-prod-field-input', FieldInput);
+customElements.define('k-products-field-input', FieldInput);

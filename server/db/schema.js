@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { pgTable, text, timestamp, integer, boolean, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 /*
@@ -21,10 +22,11 @@ export const kempoProduct = pgTable('kempoProduct', {
   creditsGranted: integer('creditsGranted').notNull().default(0), // kempo-credits: credits the buyer is given, per unit bought
   creditsOnly: boolean('creditsOnly').notNull().default(false), // kempo-credits: buying it gives credits and nothing else
   creditPercent: integer('creditPercent').notNull().default(0), // kempo-credits: how much of the price may be paid in credits, 0-100
-  stock: integer('stock').notNull().default(-1), // -1 = unlimited
-  managedBy: text('managedBy').notNull().default(''), // '' = people; otherwise the extension that maintains stock and choice availability
+  quantity: integer('quantity').notNull().default(-1), // -1 = unlimited
+  managedBy: text('managedBy').notNull().default(''), // '' = people; otherwise the extension that maintains quantity and choice availability
   images: jsonb('images').notNull().default([]), // kempo-media ids, in order; empty without kempo-media
   tags: jsonb('tags').notNull().default([]),
+  categories: jsonb('categories').notNull().default([]), // keys of kempoProductCategory rows, in the order chosen
   data: jsonb('data').notNull().default({}),
   owner: text('owner').notNull().default(''), // '' for products people manage, or the extension that created it
   created: timestamp('created').notNull(),
@@ -35,6 +37,21 @@ export const kempoProduct = pgTable('kempoProduct', {
   index('kempoProductOwnerIdx').on(table.owner),
   index('kempoProductStatusIdx').on(table.status),
 ]);
+
+/*
+  A way to group products for browsing ("Model cars", "Paint"), separate from the product's type: a
+  type decides which fields a product has and a product is of one, while a product can be in any
+  number of categories. Its key is used in addresses (/products/?category=model-cars) and is fixed once
+  created. A product lists the keys of its categories in its `categories` column.
+*/
+export const kempoProductCategory = pgTable('kempoProductCategory', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull(),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  position: integer('position').notNull().default(0),
+  created: timestamp('created').notNull(),
+}, table => [uniqueIndex('kempoProductCategoryKeyIdx').on(table.key)]);
 
 /*
   A kind of product ("Vehicle", "Model car") with its own fields. Its key is fixed once created.
@@ -86,18 +103,29 @@ export const kempoProductOption = pgTable('kempoProductOption', {
 }, table => [uniqueIndex('kempoProductOptionKeyIdx').on(table.productId, table.key)]);
 
 /*
-  A record that something was purchased. `ref` is supplied by whoever took the order, so recording
-  the same one twice is refused (a retry can never take stock twice) and it can be reversed later.
-  `lines` is a snapshot, so it still reads correctly after the product changes or is deleted.
+  The ledger: one row for every change to a product's quantity, whoever made it (a person, a sale, a
+  count, an extension). `change` is how much was added (negative: taken) and `quantity` what was left
+  afterwards, so the ledger can be read on its own. A product with unlimited quantity has no rows.
+
+  `ref` is the caller's own reference for one entry, which may touch several products (one row each).
+  A ref is used once per product, so a retry can never change the quantity twice. `undoes` is the ref
+  of an earlier entry this one puts back, which the extension that maintains a product's quantity uses
+  to return exactly what it took. `name` is kept so a row still reads correctly after its product is gone.
 */
-export const kempoProductPurchase = pgTable('kempoProductPurchase', {
+export const kempoProductLedger = pgTable('kempoProductLedger', {
   id: text('id').primaryKey(),
-  ref: text('ref').notNull(),
-  lines: jsonb('lines').notNull().default([]),
-  total: integer('total').notNull().default(0),
-  currency: text('currency').notNull().default('usd'),
+  ref: text('ref').notNull().default(''),
+  productId: text('productId').notNull(),
+  name: text('name').notNull().default(''),
+  change: integer('change').notNull(),
+  quantity: integer('quantity').notNull(),
+  reason: text('reason').notNull().default(''),
+  note: text('note').notNull().default(''),
+  actor: text('actor').notNull().default(''), // the extension that made the change, or '' for a person
   userId: text('userId').notNull().default(''),
-  status: text('status').notNull().default('recorded'), // recorded | reversed
+  undoes: text('undoes').notNull().default(''),
   created: timestamp('created').notNull(),
-  updated: timestamp('updated').notNull(),
-}, table => [uniqueIndex('kempoProductPurchaseRefIdx').on(table.ref)]);
+}, table => [
+  uniqueIndex('kempoProductLedgerRefIdx').on(table.ref, table.productId).where(sql`${table.ref} <> ''`),
+  index('kempoProductLedgerProductIdx').on(table.productId, table.created),
+]);

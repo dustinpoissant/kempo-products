@@ -4,7 +4,7 @@
   
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Purchases and stock - Kempo Products</title>
+  <title>The ledger - Kempo Products</title>
   <meta name="description" content="A product catalog for kempo cms: browse, filter and search products with no checkout required, and connect them to inventory." />
   <link rel="icon" type="image/svg+xml" href="./media/icon.svg" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/kempo-css@2/dist/kempo.min.css" />
@@ -70,27 +70,27 @@
         <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
         <a href="./catalog.html#products" class="d-b">Products</a>
         <a href="./catalog.html#price" class="d-b">Price</a>
-        <a href="./catalog.html#stock" class="d-b">Stock</a>
+        <a href="./catalog.html#quantity" class="d-b">Quantity</a>
         <a href="./catalog.html#options" class="d-b">Options and prices</a>
         <a href="./catalog.html#images" class="d-b">Images</a>
       </div>
       <h5><a href="./components.html">Components</a></h5>
       <div class="ml mb -mt">
         <a href="./components.html#home-page" class="d-b">Products on your home page</a>
-        <a href="./components.html#k-prod-list" class="d-b">&lt;k-prod-list&gt;</a>
+        <a href="./components.html#k-products-list" class="d-b">&lt;k-products-list&gt;</a>
         <a href="./components.html#recipes" class="d-b">Recipes</a>
         <a href="./components.html#address" class="d-b">The address</a>
-        <a href="./components.html#k-prod-card" class="d-b">&lt;k-prod-card&gt;</a>
-        <a href="./components.html#k-prod-detail" class="d-b">&lt;k-prod-detail&gt;</a>
+        <a href="./components.html#k-products-card" class="d-b">&lt;k-products-card&gt;</a>
+        <a href="./components.html#k-products-detail" class="d-b">&lt;k-products-detail&gt;</a>
         <a href="./components.html#sdk" class="d-b">Browser SDK</a>
         <a href="./components.html#styling" class="d-b">Styling</a>
       </div>
-      <h5><a href="./purchases.html">Purchases and stock</a></h5>
+      <h5><a href="./ledger.html">The ledger</a></h5>
       <div class="ml mb -mt">
-        <a href="./purchases.html#recording" class="d-b">Recording a purchase</a>
-        <a href="./purchases.html#reversing" class="d-b">Reversing</a>
-        <a href="./purchases.html#manual" class="d-b">Sales made elsewhere</a>
-        <a href="./purchases.html#managed" class="d-b">Managed stock</a>
+        <a href="./ledger.html#entries" class="d-b">Adding an entry</a>
+        <a href="./ledger.html#undoing" class="d-b">Putting back what an entry took</a>
+        <a href="./ledger.html#admin" class="d-b">In the admin</a>
+        <a href="./ledger.html#managed" class="d-b">Managed quantity</a>
       </div>
       <h5><a href="./import-export.html">Import and export</a></h5>
       <div class="ml mb -mt">
@@ -145,55 +145,56 @@
   </script>
 
   <main>
-    <h1>Purchases and stock</h1>
+    <h1>The ledger</h1>
     
-    <p>This extension does not take orders. Whoever does, whether that is a checkout extension, the admin form for sales made on Etsy or in person, or another extension, tells products that something was purchased. Products then prices the lines, takes the stock, and lets every other extension know.</p>
+    <p>Every change to a product's quantity is written to the ledger: when, who, by how much, why, and what was left. This extension does not take orders, hold stock for a payment, give credits or reverse anything. Whoever does adds an entry to the ledger, and products changes the quantities.</p>
 
-    <h2 id="recording" class="mt">Recording a purchase</h2>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { recordPurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+    <h2 id="entries" class="mt">Adding an entry</h2>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { addLedgerEntry } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 
-<span class="hljs-keyword">const</span> [error, purchase] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">recordPurchase</span>({
+<span class="hljs-keyword">const</span> [error, entry] = <span class="hljs-keyword">await</span> <span class="hljs-title function_">addLedgerEntry</span>({
   <span class="hljs-attr">ref</span>: <span class="hljs-string">&#x27;order-1042&#x27;</span>,
+  <span class="hljs-attr">reason</span>: <span class="hljs-string">&#x27;sale&#x27;</span>,
   <span class="hljs-attr">lines</span>: [
-    { <span class="hljs-attr">productId</span>: <span class="hljs-string">&#x27;9f2c1e0a44b7d3a1&#x27;</span>, <span class="hljs-attr">quantity</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">options</span>: { <span class="hljs-attr">color</span>: <span class="hljs-string">&#x27;red&#x27;</span>, <span class="hljs-string">&#x27;clear-coat&#x27;</span>: <span class="hljs-string">&#x27;no&#x27;</span> } },
+    { <span class="hljs-attr">productId</span>: <span class="hljs-string">&#x27;9f2c1e0a44b7d3a1&#x27;</span>, <span class="hljs-attr">change</span>: -<span class="hljs-number">2</span> },
+    { <span class="hljs-attr">productId</span>: <span class="hljs-string">&#x27;51b7c0d9e8a2f364&#x27;</span>, <span class="hljs-attr">change</span>: -<span class="hljs-number">1</span> },
   ],
 });</code></pre>
     <ul>
-      <li><code>ref</code> is the caller's own reference for the order. Recording the same one twice is refused, so a retry can never take stock twice, and it is how a purchase is found later.</li>
-      <li>Every line is checked: the product is published, available, in stock and priced, and the options are real and in stock. A failure says which product and why.</li>
-      <li>The price of each line is worked out here from the catalog, never taken from the caller. A purchase records what was charged, with the names and option labels as they were then, so it still reads correctly after the product changes or is deleted.</li>
-      <li>Stock for <strong>every</strong> line is taken in one transaction: all of it or none of it. Two lines for one product share that product's stock. Unlimited stock is never taken.</li>
+      <li>A line's <code>change</code> is how much to add. Negative takes away. A sale takes, a delivery or a return adds.</li>
+      <li><strong>Every line or none.</strong> If any product has too little, nothing changes and the error says which one (409). Quantity never goes below zero. Two lines for one product share that product's quantity.</li>
+      <li><code>ref</code> is the caller's own reference and is optional. Adding an entry with a <code>ref</code> that is already in the ledger changes nothing and returns the first one with <code>duplicate: true</code>, so a retry can never change the quantity twice.</li>
+      <li><code>reason</code> (a short word such as <code>sale</code>, <code>return</code> or <code>count</code>) and <code>note</code> (free text) are shown on the ledger.</li>
+      <li>A product with unlimited quantity is never changed and gets no row.</li>
     </ul>
-    <p>Then <code>kempo-products:purchase:recorded</code> fires with the purchase. That is how other extensions react: the inventory connector uses it to take the materials out of inventory. Nothing a listener does can undo the purchase.</p>
+    <p>Then <code>kempo-products:ledger:added</code> fires with the entry, and <code>kempo-products:product:quantity_changed</code> for each product. Nothing a listener does can undo the entry.</p>
 
-    <h2 id="reversing" class="mt">Reversing a purchase</h2>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { reversePurchase } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+    <h2 id="undoing" class="mt">Putting back what an entry took</h2>
+    <p>There is no reverse. A cancelled order is another entry that adds the same quantities back. Say which entry it puts back with <code>undoes</code>, which is what lets the extension that maintains a product's quantity return exactly what it took:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">await</span> <span class="hljs-title function_">addLedgerEntry</span>({
+  <span class="hljs-attr">ref</span>: <span class="hljs-string">&#x27;order-1042:cancelled&#x27;</span>,
+  <span class="hljs-attr">undoes</span>: <span class="hljs-string">&#x27;order-1042&#x27;</span>,
+  <span class="hljs-attr">reason</span>: <span class="hljs-string">&#x27;return&#x27;</span>,
+  <span class="hljs-attr">lines</span>: [{ <span class="hljs-attr">productId</span>: <span class="hljs-string">&#x27;9f2c1e0a44b7d3a1&#x27;</span>, <span class="hljs-attr">change</span>: <span class="hljs-number">2</span> }],
+});</code></pre>
 
-<span class="hljs-keyword">await</span> <span class="hljs-title function_">reversePurchase</span>(<span class="hljs-string">&#x27;order-1042&#x27;</span>);</code></pre>
-    <p>For a cancelled or refunded order. It puts finite stock back, marks the purchase reversed, and fires <code>kempo-products:purchase:reversed</code>. A purchase can only be reversed once, a product deleted since is skipped, and a reversed reference cannot be recorded again.</p>
+    <h2 id="reading" class="mt">Reading it</h2>
+    <p><code>getLedger({ productId, limit, offset })</code> returns <code>{ items, total }</code>, newest first, and <code>getLedgerEntry(ref)</code> returns one entry. Each row keeps the product's name, so it still reads correctly after the product is deleted.</p>
+    <p>Changing a quantity any other way is in the ledger too: <code>setQuantity</code>, <code>adjustQuantity</code>, creating a product with a quantity, and editing the quantity on a product in the admin. So the ledger adds up.</p>
 
-    <h2 id="manual" class="mt">Sales made elsewhere</h2>
-    <p>Under <strong>Products &gt; Purchases</strong> a person can record a sale made on Etsy, in person, or over the phone, and reverse one. It does the same as above, so stock and anything listening stay right, with two differences that only apply to this form:</p>
-    <ul>
-      <li>A product that has no price (a "call for price" item) can be given a price on the line.</li>
-      <li>The product need not be published or marked available. You are recording something that already happened.</li>
-    </ul>
-    <div class="mb">
-      <img src="./media/admin-purchases-light.png" alt="The Purchases admin page: a Record a purchase form with a reference, a product and quantity, above a table of recorded purchases with Reverse buttons." class="img-light full b r" />
-      <img src="./media/admin-purchases-dark.png" alt="The Purchases admin page: a Record a purchase form with a reference, a product and quantity, above a table of recorded purchases with Reverse buttons." class="img-dark full b r" />
-      <small class="d-b tc-muted">Recording a sale made elsewhere, and the purchases recorded so far. A reversed purchase (the last row) cannot be reversed again.</small>
-    </div>
-    <p>Code that records a purchase (for example a checkout) is never given either of these. It gets the catalog's price and the catalog's rules.</p>
+    <h2 id="admin" class="mt">In the admin</h2>
+    <p>The <strong>Ledger</strong> button on the Products page opens the ledger. A person with the <code>products:ledger:add</code> permission can add stock to a product or take it away there, for a delivery, a count, or a sale made on Etsy or in person.</p>
 
-    <h2 id="managed" class="mt">Managed stock</h2>
-    <p>An extension that keeps a product's stock in step with something else, such as inventory, declares that, and people then see the stock and which choices are in stock as read-only, with the extension's name:</p>
-    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { setManagedBy, setStock, setChoiceAvailability } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+    <h2 id="managed" class="mt">Managed quantity</h2>
+    <p>An extension that keeps a product's quantity in step with something else, such as inventory, declares that, and people then see the quantity and which choices are in stock as read-only, with the extension's name:</p>
+    <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { setManagedBy, setQuantity, setChoiceAvailability } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 
 <span class="hljs-keyword">await</span> <span class="hljs-title function_">setManagedBy</span>(productId, <span class="hljs-string">&#x27;my-extension&#x27;</span>);
-<span class="hljs-keyword">await</span> <span class="hljs-title function_">setStock</span>(productId, <span class="hljs-number">7</span>, { <span class="hljs-attr">actor</span>: <span class="hljs-string">&#x27;my-extension&#x27;</span> });
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">setQuantity</span>(productId, <span class="hljs-number">7</span>, { <span class="hljs-attr">actor</span>: <span class="hljs-string">&#x27;my-extension&#x27;</span> });
 <span class="hljs-keyword">await</span> <span class="hljs-title function_">setChoiceAvailability</span>(productId, <span class="hljs-string">&#x27;color&#x27;</span>, <span class="hljs-string">&#x27;red&#x27;</span>, <span class="hljs-literal">false</span>, { <span class="hljs-attr">actor</span>: <span class="hljs-string">&#x27;my-extension&#x27;</span> });</code></pre>
-    <p>Anyone else who tries to change a managed product's stock, through the admin or the SDK, is refused. Pass <code>''</code> to <code>setManagedBy</code> to hand it back to people.</p>
-    <p>Whenever a product's stock changes, <code>kempo-products:product:stock_changed</code> fires with the previous and new stock.</p>
+    <p>Anyone else who tries to change a managed product's quantity, through the admin or the SDK, is refused. Pass <code>''</code> to <code>setManagedBy</code> to hand it back to people.</p>
+    <p>The lock lasts only while the managing extension is installed and enabled: disable or uninstall it and its products are people's again, and enabling it takes them back.</p>
+    <p>A managed product's quantity is never written by kempo-products. <code>addLedgerEntry</code> first fires <code>kempo-products:ledger:before_add</code> with <code>{ ref, lines, products, reason, note, undoes, actor }</code>; the manager takes what the lines use (or puts back what <code>undoes</code> took) and throws <code>{ code, msg }</code> when it cannot, which refuses the entry with that message. If the entry then fails, <code>kempo-products:ledger:add_failed</code> <code>{ ref }</code> tells the manager to undo what it did.</p>
   
     <hr />
     <p class="tc-muted small">kempo-products is open source under the MIT license. <a href="https://github.com/dustinpoissant/kempo-products" target="_blank">View it on GitHub</a>, or <a href="https://github.com/dustinpoissant/kempo-products/issues" target="_blank">report a problem</a>.</p>

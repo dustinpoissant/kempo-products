@@ -1,19 +1,20 @@
 import { getProducts, getProduct, createProduct, updateProduct } from './products.js';
 import { getTypes, createType } from './types.js';
+import { getCategories, createCategory } from './categories.js';
 import { getFields, createField } from './fields.js';
 import { parseCsv, toCsv, toRecords } from './csv.js';
 import { parseMoney, formatMoney } from './money.js';
 import { slugify } from './slug.js';
 import { getCurrency } from './settings.js';
-import { STATUSES, AVAILABILITIES, UNLIMITED } from './stock.js';
+import { STATUSES, AVAILABILITIES, UNLIMITED } from './quantity.js';
 
 /*
   Moving a catalog in and out as a file. Two formats:
 
     csv   one row per product, for a spreadsheet. Columns: slug, name, type, status, availability,
-          price (49.99), price_label, stock (blank is unlimited), tags (comma separated),
-          description, options (JSON), and one `field.<key>` column per custom field.
-    json  everything, including the types and fields themselves, so a catalog can move between sites.
+          price (49.99), price_label, quantity (blank is unlimited), tags (comma separated),
+          categories (comma separated keys or names), description, options (JSON), and one `field.<key>` column per custom field.
+    json  everything, including the types, categories and fields themselves, so a catalog can move between sites.
 
   Images are not exported: a media id means nothing on another site.
 
@@ -21,7 +22,7 @@ import { STATUSES, AVAILABILITIES, UNLIMITED } from './stock.js';
   same file twice updates or skips instead of duplicating. In a CSV an empty cell leaves what the
   product has unchanged and uses the default for a new one.
 */
-const BASE_COLUMNS = ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'stock', 'tags', 'description', 'options'];
+const BASE_COLUMNS = ['slug', 'name', 'type', 'status', 'availability', 'price', 'price_label', 'quantity', 'tags', 'categories', 'description', 'options'];
 
 export const FORMATS = ['csv', 'json'];
 
@@ -56,6 +57,8 @@ export const buildExport = async ({ format = 'csv' } = {}) => {
   if(fieldsError) return [fieldsError, null];
   const [typesError, types] = await getTypes();
   if(typesError) return [typesError, null];
+  const [categoriesError, categories] = await getCategories();
+  if(categoriesError) return [categoriesError, null];
   const currency = await getCurrency();
 
   if(format === 'json'){
@@ -64,11 +67,12 @@ export const buildExport = async ({ format = 'csv' } = {}) => {
       version: 1,
       currency,
       types: types.map(({ key, name, description }) => ({ key, name, description })),
+      categories: categories.map(({ key, name, description, position }) => ({ key, name, description, position })),
       fields: fields.map(({ key, label, type, productType, description, required, listed, filterable, options }) => ({ key, label, type, productType, description, required, listed, filterable, options })),
       products: products.map(product => ({
         slug: product.slug, name: product.name, type: product.type, description: product.description, status: product.status,
-        availability: product.availability, price: product.price, priceLabel: product.priceLabel, stock: product.stock,
-        tags: product.tags, fields: product.fields, options: product.options.map(stripOption),
+        availability: product.availability, price: product.price, priceLabel: product.priceLabel, quantity: product.quantity,
+        tags: product.tags, categories: product.categories, fields: product.fields, options: product.options.map(stripOption),
       })),
     }, null, 2);
     return [null, { filename: 'products.json', contentType: 'application/json; charset=utf-8', body }];
@@ -80,7 +84,7 @@ export const buildExport = async ({ format = 'csv' } = {}) => {
     rows.push([
       product.slug, product.name, product.type, product.status, product.availability,
       product.price === null ? '' : formatMoney(product.price, currency), product.priceLabel,
-      product.stock === UNLIMITED ? '' : product.stock, product.tags.join(', '), product.description,
+      product.quantity === UNLIMITED ? '' : product.quantity, product.tags.join(', '), product.categories.join(', '), product.description,
       product.options.length ? JSON.stringify(product.options.map(stripOption)) : '',
       ...keys.map(key => cell(product.fields[key])),
     ]);
@@ -117,9 +121,10 @@ const fromRecord = (record, line, { currency, fieldKeys }) => {
     data.price = minor;
   }
   if((record.price_label ?? '').trim()) data.priceLabel = record.price_label.trim();
-  const stock = (record.stock ?? '').trim().toLowerCase();
-  if(stock) data.stock = stock === 'unlimited' ? UNLIMITED : stock;
+  const quantity = (record.quantity ?? '').trim().toLowerCase();
+  if(quantity) data.quantity = quantity === 'unlimited' ? UNLIMITED : quantity;
   if((record.tags ?? '').trim()) data.tags = splitTags(record.tags);
+  const categories = (record.categories ?? '').trim() ? splitTags(record.categories) : undefined;
   if((record.description ?? '').trim()) data.description = record.description.trim();
   if((record.options ?? '').trim()){
     try {
@@ -136,7 +141,7 @@ const fromRecord = (record, line, { currency, fieldKeys }) => {
     if(key) fields[key] = value.trim();
   }
   if(Object.keys(fields).length) data.fields = fields;
-  return { row: { line, slug, typeText: (record.type ?? '').trim(), data } };
+  return { row: { line, slug, typeText: (record.type ?? '').trim(), categories, data } };
 };
 
 /* One product object from a JSON file (the shape buildExport writes) -> the same. */
@@ -144,18 +149,19 @@ const fromJson = (product, line) => {
   const name = String(product?.name ?? '').trim();
   if(!name) return { error: fail(line, 'name is required') };
   const data = { name };
-  for(const property of ['description', 'status', 'availability', 'price', 'priceLabel', 'stock', 'tags', 'fields', 'options']){
+  for(const property of ['description', 'status', 'availability', 'price', 'priceLabel', 'quantity', 'tags', 'fields', 'options']){
     if(product[property] !== undefined) data[property] = product[property];
   }
   const slug = String(product.slug ?? '').trim().toLowerCase() || slugify(name);
   if(!slug) return { error: fail(line, 'a slug could not be made from this name', name) };
-  return { row: { line, slug, typeText: String(product.type ?? '').trim(), data } };
+  const categories = Array.isArray(product.categories) ? product.categories.map(String) : undefined;
+  return { row: { line, slug, typeText: String(product.type ?? '').trim(), categories, data } };
 };
 
 /*
   Reads a file (the text of a .csv or .json) into rows to import. Resolves to
   [null, { rows, errors, types, fields, format }]; `errors` holds the rows that could not be read,
-  and `types` and `fields` (JSON only) are definitions to create when missing.
+  and `types`, `categories` and `fields` (JSON only) are definitions to create when missing.
 */
 export const parseImport = async text => {
   const content = String(text ?? '').replace(/^﻿/, '').trim();
@@ -173,10 +179,12 @@ export const parseImport = async text => {
     const products = Array.isArray(parsed) ? parsed : parsed?.products;
     if(!Array.isArray(products)) return [{ code: 400, msg: 'The JSON has no list of products' }, null];
     products.forEach((product, index) => {
+      /* A file exported before the rename calls it "stock". */
+      if(product && typeof product === 'object' && product.quantity === undefined && product.stock !== undefined) product = { ...product, quantity: product.stock };
       const { row, error } = fromJson(product, index + 1);
       if(row) rows.push(row); else errors.push(error);
     });
-    return [null, { rows, errors, format: 'json', types: Array.isArray(parsed.types) ? parsed.types : [], fields: Array.isArray(parsed.fields) ? parsed.fields : [] }];
+    return [null, { rows, errors, format: 'json', types: Array.isArray(parsed.types) ? parsed.types : [], categories: Array.isArray(parsed.categories) ? parsed.categories : [], fields: Array.isArray(parsed.fields) ? parsed.fields : [] }];
   }
 
   let records;
@@ -191,10 +199,11 @@ export const parseImport = async text => {
   if(fieldsError) return [fieldsError, null];
   const context = { currency: await getCurrency(), fieldKeys: new Map(fields.map(field => [field.key.toLowerCase(), field.key])) };
   records.forEach((record, index) => {
+    if(record.quantity === undefined && record.stock !== undefined) record.quantity = record.stock;
     const { row, error } = fromRecord(record, index + 2, context);
     if(row) rows.push(row); else errors.push(error);
   });
-  return [null, { rows, errors, format: 'csv', types: [], fields: [] }];
+  return [null, { rows, errors, format: 'csv', types: [], categories: [], fields: [] }];
 };
 
 const resolveType = (text, types) => {
@@ -203,17 +212,29 @@ const resolveType = (text, types) => {
   return types.find(type => type.key === lower || type.name.toLowerCase() === lower)?.key ?? null;
 };
 
+/* A category named in a file by its key or its name, as its key; null when the site has no such category. */
+const resolveCategory = (text, categories) => {
+  const lower = String(text).trim().toLowerCase();
+  return categories.find(category => category.key === lower || String(category.name ?? '').toLowerCase() === lower)?.key ?? null;
+};
+
 /*
-  Brings the types and fields a JSON file carries into existence when the site lacks them, as
+  Brings the types, categories and fields a JSON file carries into existence when the site lacks them, as
   things people manage. One that exists already is left alone, whatever the file says.
 */
-const createDefinitions = async ({ types, fields }) => {
+const createDefinitions = async ({ types, categories, fields }) => {
   const problems = [];
   const [, existingTypes] = await getTypes();
   for(const type of types){
     if((existingTypes ?? []).some(existing => existing.key === type.key)) continue;
     const [error] = await createType({ key: type.key, name: type.name, description: type.description });
     if(error) problems.push(`Type "${type.name ?? type.key}": ${error.msg}`);
+  }
+  const [, existingCategories] = await getCategories();
+  for(const category of categories){
+    if((existingCategories ?? []).some(existing => existing.key === category.key)) continue;
+    const [error] = await createCategory({ key: category.key, name: category.name, description: category.description, position: category.position });
+    if(error) problems.push(`Category "${category.name ?? category.key}": ${error.msg}`);
   }
   const [, existingFields] = await getFields();
   for(const field of fields){
@@ -231,19 +252,30 @@ const createDefinitions = async ({ types, fields }) => {
   fails is reported and the rest carry on. Resolves to
   [null, { created, updated, skipped, errors: [{ line, name, message }], total }].
 */
-export const applyImport = async ({ rows, errors: readErrors = [], types = [], fields = [] }, { onMatch = 'skip', dryRun = false, userId = '' } = {}) => {
+export const applyImport = async ({ rows, errors: readErrors = [], types = [], categories = [], fields = [] }, { onMatch = 'skip', dryRun = false, userId = '' } = {}) => {
   if(!['skip', 'update'].includes(onMatch)) return [{ code: 400, msg: 'onMatch must be skip or update' }, null];
   const result = { created: 0, updated: 0, skipped: 0, errors: [...readErrors], total: rows.length + readErrors.length, notes: [] };
 
-  if(!dryRun && (types.length || fields.length)) result.notes.push(...await createDefinitions({ types, fields }));
+  if(!dryRun && (types.length || categories.length || fields.length)) result.notes.push(...await createDefinitions({ types, categories, fields }));
   const [, known] = await getTypes();
   const available = [...(known ?? []), ...(dryRun ? types.map(type => ({ key: type.key, name: type.name ?? type.key })) : [])];
+  const [, knownCategories] = await getCategories();
+  const availableCategories = [...(knownCategories ?? []), ...(dryRun ? categories.map(category => ({ key: category.key, name: category.name ?? category.key })) : [])];
 
   for(const row of rows){
     const type = resolveType(row.typeText, available);
     if(type === null){
       result.errors.push(fail(row.line, `there is no product type "${row.typeText}". Make it first under Products > Types`, row.data.name));
       continue;
+    }
+    if(row.categories){
+      const keys = row.categories.map(text => resolveCategory(text, availableCategories));
+      const missing = row.categories.find((text, index) => keys[index] === null);
+      if(missing !== undefined){
+        result.errors.push(fail(row.line, `there is no category "${missing}". Make it first under Products > Categories`, row.data.name));
+        continue;
+      }
+      row.data.categories = [...new Set(keys)];
     }
     const [lookupError, existing] = await getProduct(row.slug);
     if(lookupError && lookupError.code !== 404){

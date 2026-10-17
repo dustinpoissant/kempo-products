@@ -1,15 +1,17 @@
 import db from 'kempo/server/db/index.js';
 import { eq, and, or, ilike, sql, desc, asc, inArray } from 'drizzle-orm';
 import crypto from 'crypto';
-import { kempoProduct, kempoProductOption, kempoProductType } from '../db/schema.js';
+import { kempoProduct, kempoProductOption, kempoProductType, kempoProductLedger } from '../db/schema.js';
+import { ledgerRowsFor } from './ledgerRows.js';
 import { getFields } from './fields.js';
 import { coerceValues, applicableFields } from './fieldTypes.js';
 import { EVENTS, guard, notify } from './hooks.js';
 import { normalizeTags, tidyTag } from './tags.js';
+import { categoryKeys, MAX_CATEGORIES_PER_PRODUCT } from './categories.js';
 import { normalizeSlug, withSuffix } from './slug.js';
 import { normalizeOptions, computePrice } from './pricing.js';
-import { normalizeStock, UNLIMITED, STATUSES, AVAILABILITIES, unavailableReason } from './stock.js';
-import { lockedProductChanges, notYours, stockLocked, ownerLabel } from './ownership.js';
+import { normalizeQuantity, UNLIMITED, STATUSES, AVAILABILITIES, unavailableReason } from './quantity.js';
+import { lockedProductChanges, notYours, quantityLocked, refuseIfManaged, ownerLabel, activeManagers } from './ownership.js';
 import { getAssets, checkAssets } from './media.js';
 import { getCurrency } from './settings.js';
 import { normalizeCredits, quoteFor } from './credits.js';
@@ -53,10 +55,11 @@ const shape = (row, options = []) => {
     creditsGranted: row.creditsGranted ?? 0,
     creditsOnly: row.creditsOnly ?? false,
     creditPercent: row.creditPercent ?? 0,
-    stock: row.stock,
+    quantity: row.quantity,
     managedBy: row.managedBy,
     images: row.images ?? [],
     tags: row.tags ?? [],
+    categories: row.categories ?? [],
     fields: row.data ?? {},
     options,
     owner: row.owner,
@@ -65,7 +68,7 @@ const shape = (row, options = []) => {
     publishedAt: row.publishedAt,
   };
   const reason = unavailableReason(product);
-  return { ...product, inStock: product.stock !== 0, purchasable: !reason, unavailableReason: reason };
+  return { ...product, inStock: product.quantity !== 0, purchasable: !reason, unavailableReason: reason };
 };
 
 const optionsFor = async productIds => {
@@ -76,9 +79,15 @@ const optionsFor = async productIds => {
   return byProduct;
 };
 
+/* Rows as the catalog presents them: a product whose manager is gone is no longer managed. */
+const unmanagedIfGone = async rows => {
+  const live = await activeManagers(rows.map(row => row.managedBy));
+  return rows.map(row => !row.managedBy || live.has(row.managedBy) ? row : { ...row, managedBy: '' });
+};
+
 const withOptions = async rows => {
   const options = await optionsFor(rows.map(row => row.id));
-  return rows.map(row => shape(row, options[row.id] ?? []));
+  return (await unmanagedIfGone(rows)).map(row => shape(row, options[row.id] ?? []));
 };
 
 /* The images the given products hold, described for display (empty without kempo-media). */
@@ -95,10 +104,11 @@ const SORTS = {
 export const SORT_KEYS = Object.keys(SORTS);
 
 /*
+  `category` keeps products in every one of the given categories (keys), as `tag` does for tags.
   `ids` and `slugs` fetch exactly those products, `owner` keeps one owner's ('' for the ones people manage),
   `filters` is { fieldKey: 'exact value' } over a type's fields, and `inStock` drops sold-out ones.
 */
-export const getProducts = async ({ q, type, status, availability, tag, filters = {}, ids, slugs, owner, inStock = false, sort = 'newest', limit = 50, offset = 0 } = {}) => {
+export const getProducts = async ({ q, type, status, availability, tag, category, filters = {}, ids, slugs, owner, inStock = false, sort = 'newest', limit = 50, offset = 0 } = {}) => {
   try {
     const conditions = [];
     if(q){
@@ -117,6 +127,9 @@ export const getProducts = async ({ q, type, status, availability, tag, filters 
     for(const wanted of [tag].flat().map(tidyTag).filter(Boolean)){
       conditions.push(sql`${kempoProduct.tags} @> ${JSON.stringify([wanted])}::jsonb`);
     }
+    for(const wanted of [category].flat().map(key => String(key ?? '').trim().toLowerCase()).filter(Boolean)){
+      conditions.push(sql`${kempoProduct.categories} @> ${JSON.stringify([wanted])}::jsonb`);
+    }
     for(const [key, value] of Object.entries(filters ?? {})){
       if(value === undefined || value === null || value === '') continue;
       conditions.push(sql`${kempoProduct.data}->>${key} = ${String(value)}`);
@@ -130,7 +143,7 @@ export const getProducts = async ({ q, type, status, availability, tag, filters 
       conditions.push(inArray(kempoProduct.slug, slugs.map(slug => String(slug).trim().toLowerCase())));
     }
     if(owner !== undefined) conditions.push(eq(kempoProduct.owner, String(owner ?? '')));
-    if(inStock) conditions.push(sql`${kempoProduct.stock} <> 0`);
+    if(inStock) conditions.push(sql`${kempoProduct.quantity} <> 0`);
 
     const where = conditions.length ? and(...conditions) : undefined;
     const [{ total }] = await db.select({ total: sql`count(*)::int` }).from(kempoProduct).where(where);
@@ -151,7 +164,8 @@ export const getProduct = async idOrSlug => {
       .where(ID_PATTERN.test(key) ? or(eq(kempoProduct.id, key), eq(kempoProduct.slug, key)) : eq(kempoProduct.slug, key));
     if(!row) return [{ code: 404, msg: 'Product not found' }, null];
     const options = await optionsFor([row.id]);
-    return [null, shape(row, options[row.id] ?? [])];
+    const [current] = await unmanagedIfGone([row]);
+    return [null, shape(current, options[row.id] ?? [])];
   } catch {
     return [{ code: 500, msg: 'Failed to retrieve product' }, null];
   }
@@ -198,15 +212,27 @@ const validate = async (input, { type, partial }) => {
     if(label.length > MAX_PRICE_LABEL) return [{ code: 400, msg: `The price label must be ${MAX_PRICE_LABEL} characters or fewer` }, null];
     values.priceLabel = label;
   }
-  if(input.stock !== undefined){
-    const [stockError, stock] = normalizeStock(input.stock);
-    if(stockError) return [stockError, null];
-    values.stock = stock;
+  if(input.quantity !== undefined){
+    const [quantityError, quantity] = normalizeQuantity(input.quantity);
+    if(quantityError) return [quantityError, null];
+    values.quantity = quantity;
   }
   if(input.tags !== undefined){
     const [tagsError, tags] = normalizeTags(input.tags);
     if(tagsError) return [tagsError, null];
     values.tags = tags;
+  }
+  if(input.categories !== undefined){
+    const list = Array.isArray(input.categories) ? input.categories : typeof input.categories === 'string' ? input.categories.split(',') : null;
+    if(!list) return [{ code: 400, msg: 'Categories must be a list of category keys' }, null];
+    const keys = [...new Set(list.map(key => String(key ?? '').trim().toLowerCase()).filter(Boolean))];
+    if(keys.length > MAX_CATEGORIES_PER_PRODUCT) return [{ code: 400, msg: `A product can be in at most ${MAX_CATEGORIES_PER_PRODUCT} categories` }, null];
+    if(keys.length){
+      const known = await categoryKeys();
+      const unknown = keys.find(key => !known.has(key));
+      if(unknown) return [{ code: 400, msg: `There is no category "${unknown}"` }, null];
+    }
+    values.categories = keys;
   }
   if(input.images !== undefined){
     const list = Array.isArray(input.images) ? input.images : [];
@@ -256,12 +282,13 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
     availability: data.availability ?? 'available',
     price: data.price ?? null,
     priceLabel: data.priceLabel ?? '',
-    stock: data.stock ?? UNLIMITED,
+    quantity: data.quantity ?? UNLIMITED,
     creditsGranted: data.creditsGranted,
     creditsOnly: data.creditsOnly,
     creditPercent: data.creditPercent,
     images: data.images ?? [],
     tags: data.tags ?? [],
+    categories: data.categories ?? [],
     fields: data.fields ?? {},
     options: data.options ?? [],
   };
@@ -297,6 +324,9 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
           created: now, updated: now, publishedAt: columns.status === 'published' ? now : null,
         }).returning();
         await insertOptions(tx, row.id, options);
+        if(row.quantity !== UNLIMITED){
+          await tx.insert(kempoProductLedger).values(ledgerRowsFor([{ productId: row.id, name: row.name, change: row.quantity, quantity: row.quantity }], { reason: 'created', actor: owner, userId: data.userId ?? '', now }));
+        }
         return row;
       });
       const product = shape(created, options);
@@ -313,14 +343,14 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
 /*
   Updates only what is supplied. `fields` is merged, and an empty value clears one. The slug, name
   and type of an owned product need its `owner`. A product an extension manages (`managedBy`)
-  keeps its stock and option availability: people and other extensions cannot change them.
+  keeps its quantity and option availability: people and other extensions cannot change them.
 */
 export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   const [lookupError, existing] = await getProduct(id);
   if(lookupError) return [lookupError, null];
 
   const changes = {};
-  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'stock', 'images', 'tags', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(data[property] !== undefined) changes[property] = data[property];
   }
   if(data.fields !== undefined) changes.fields = { ...data.fields };
@@ -331,12 +361,12 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   const locked = lockedProductChanges(existing, changes, owner);
   if(locked.length) return [{ code: 403, msg: `${locked.join(', ')} can only be changed by ${ownerLabel(existing.owner)}` }, null];
 
-  if(changes.stock !== undefined && stockLocked(existing, owner)){
-    const [stockError, stock] = normalizeStock(changes.stock);
-    if(stockError || stock !== existing.stock){
-      return [{ code: 403, msg: `Stock is maintained by the "${existing.managedBy}" extension` }, null];
+  if(changes.quantity !== undefined && quantityLocked(existing, owner)){
+    const [quantityError, quantity] = normalizeQuantity(changes.quantity);
+    if(quantityError || quantity !== existing.quantity){
+      return [{ code: 403, msg: `Quantity is maintained by the "${existing.managedBy}" extension` }, null];
     }
-    delete changes.stock;
+    delete changes.quantity;
   }
 
   const type = changes.type !== undefined ? String(changes.type).trim() : existing.type;
@@ -353,7 +383,7 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   Object.assign(values, credits);
 
   const updates = {};
-  for(const property of ['name', 'description', 'status', 'availability', 'price', 'priceLabel', 'stock', 'images', 'tags', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'description', 'status', 'availability', 'price', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(values[property] !== undefined) updates[property] = values[property];
   }
   if(changes.type !== undefined) updates.type = type;
@@ -388,12 +418,16 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
         await tx.delete(kempoProductOption).where(eq(kempoProductOption.productId, existing.id));
         await insertOptions(tx, existing.id, options);
       }
+      if(updated.quantity !== existing.quantity){
+        const both = updated.quantity !== UNLIMITED && existing.quantity !== UNLIMITED;
+        await tx.insert(kempoProductLedger).values(ledgerRowsFor([{ productId: updated.id, name: updated.name, change: both ? updated.quantity - existing.quantity : 0, quantity: updated.quantity }], { reason: 'edited', actor: owner, userId: data.userId ?? '', now: updates.updated }));
+      }
       return updated;
     });
-    const product = shape(row, options ?? existing.options);
+    const product = shape({ ...row, managedBy: existing.managedBy }, options ?? existing.options);
     await notify(EVENTS.productUpdated, { product, previous: existing, userId: data.userId ?? '', actor: owner });
-    if(product.stock !== existing.stock){
-      await notify(EVENTS.productStockChanged, { product, previousStock: existing.stock, stock: product.stock, reason: 'edited', actor: owner });
+    if(product.quantity !== existing.quantity){
+      await notify(EVENTS.productQuantityChanged, { product, previousQuantity: existing.quantity, quantity: product.quantity, reason: 'edited', actor: owner });
     }
     return [null, product];
   } catch(error) {
@@ -445,58 +479,7 @@ export const unregisterProducts = async (owner, { release = false } = {}) => {
 };
 
 /*
-  Stock. `actor` is the extension making the change ('' = a person). A product another extension
-  manages (`managedBy`) can only have its stock changed by that extension.
-*/
-const refuseIfManaged = (product, actor) => stockLocked(product, actor)
-  ? [{ code: 403, msg: `Stock is maintained by the "${product.managedBy}" extension` }, null]
-  : null;
-
-export const setStock = async (id, stock, { actor = '', reason = 'set' } = {}) => {
-  const [lookupError, existing] = await getProduct(id);
-  if(lookupError) return [lookupError, null];
-  const managed = refuseIfManaged(existing, actor);
-  if(managed) return managed;
-  const [stockError, value] = normalizeStock(stock);
-  if(stockError) return [stockError, null];
-  if(value === existing.stock) return [null, existing];
-
-  try {
-    const [row] = await db.update(kempoProduct).set({ stock: value, updated: new Date() }).where(eq(kempoProduct.id, existing.id)).returning();
-    const product = shape(row, existing.options);
-    await notify(EVENTS.productStockChanged, { product, previousStock: existing.stock, stock: value, reason, actor });
-    return [null, product];
-  } catch {
-    return [{ code: 500, msg: 'Failed to change stock' }, null];
-  }
-};
-
-/* Adds `delta` (negative to take) atomically. Unlimited stock stays unlimited; stock never goes below zero. */
-export const adjustStock = async (id, delta, { actor = '', reason = 'adjusted' } = {}) => {
-  const change = Number(delta);
-  if(!Number.isInteger(change) || change === 0) return [{ code: 400, msg: 'delta must be a non-zero whole number' }, null];
-  const [lookupError, existing] = await getProduct(id);
-  if(lookupError) return [lookupError, null];
-  const managed = refuseIfManaged(existing, actor);
-  if(managed) return managed;
-  if(existing.stock === UNLIMITED) return [null, existing];
-
-  try {
-    const [row] = await db.update(kempoProduct)
-      .set({ stock: sql`${kempoProduct.stock} + ${change}`, updated: new Date() })
-      .where(and(eq(kempoProduct.id, existing.id), sql`${kempoProduct.stock} <> ${UNLIMITED}`, sql`${kempoProduct.stock} + ${change} >= 0`))
-      .returning();
-    if(!row) return [{ code: 409, msg: 'Insufficient stock' }, null];
-    const product = shape(row, existing.options);
-    await notify(EVENTS.productStockChanged, { product, previousStock: row.stock - change, stock: row.stock, reason, actor });
-    return [null, product];
-  } catch {
-    return [{ code: 500, msg: 'Failed to change stock' }, null];
-  }
-};
-
-/*
-  Declares that an extension keeps this product's stock and option availability in step with
+  Declares that an extension keeps this product's quantity and option availability in step with
   something else. People then see them read-only. Pass '' to hand them back to people.
 */
 export const setManagedBy = async (id, extension) => {

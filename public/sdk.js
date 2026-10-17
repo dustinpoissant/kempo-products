@@ -60,18 +60,27 @@ export const getTypes = () => req('GET', `${BASE}/types`);
 export const createType = data => req('POST', `${BASE}/types`, data);
 export const updateType = (key, data) => req('PATCH', `${BASE}/types/${enc(key)}`, data);
 export const deleteType = key => req('DELETE', `${BASE}/types/${enc(key)}`);
+
+/*
+  Categories group products for browsing. A product is in any number of them: set `categories` (a list of
+  keys) when creating or updating it, and ask for one with getProducts({ category }). A visitor's
+  `count` is the published products in it; people who manage the catalog also get `total`.
+*/
+export const getCategories = () => req('GET', `${BASE}/categories`);
+export const createCategory = data => req('POST', `${BASE}/categories`, data);
+export const updateCategory = (key, data) => req('PATCH', `${BASE}/categories/${enc(key)}`, data);
+export const deleteCategory = key => req('DELETE', `${BASE}/categories/${enc(key)}`);
 export const getFields = (params = {}) => req('GET', `${BASE}/fields${buildQuery(params)}`);
 export const createField = data => req('POST', `${BASE}/fields`, data);
 export const updateField = (key, data, { type = '' } = {}) => req('PATCH', `${BASE}/fields/${enc(key)}${buildQuery({ type })}`, data);
 export const deleteField = (key, { type = '' } = {}) => req('DELETE', `${BASE}/fields/${enc(key)}${buildQuery({ type })}`);
 
 /*
-  Purchases made elsewhere (Etsy, in person). Each takes stock and fires the purchase hook; a
-  reversal puts it back.
+  The ledger: every change to a product's quantity. An entry adds to (or, negative, takes from) the
+  quantity of one or more products.
 */
-export const getPurchases = (params = {}) => req('GET', `${BASE}/purchases${buildQuery(params)}`);
-export const recordPurchase = data => req('POST', `${BASE}/purchases`, data);
-export const reversePurchase = ref => req('POST', `${BASE}/purchases/${enc(ref)}/reverse`, {});
+export const getLedger = (params = {}) => req('GET', `${BASE}/ledger${buildQuery(params)}`);
+export const addLedgerEntry = data => req('POST', `${BASE}/ledger`, data);
 
 /*
   Money. Prices are whole numbers of the smallest currency unit (4999 is $49.99).

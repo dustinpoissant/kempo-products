@@ -7,7 +7,7 @@ import '/kempo-ui/components/Icon.js';
   The page owns the dialog and the request; this only reports the choice, as a `productAction`
   event on the table: { action, record }.
 
-    <k-prod-row-action action="edit" icon="edit" title="Edit"></k-prod-row-action>
+    <k-products-row-action action="edit" icon="edit" title="Edit"></k-products-row-action>
 */
 export default class RowAction extends AdminTableControl {
   static properties = {
@@ -31,4 +31,4 @@ export default class RowAction extends AdminTableControl {
   render(){ return html`<slot><k-icon name="${this.icon}"></k-icon></slot>`; }
 }
 
-customElements.define('k-prod-row-action', RowAction);
+customElements.define('k-products-row-action', RowAction);

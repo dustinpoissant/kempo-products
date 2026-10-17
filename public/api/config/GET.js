@@ -3,7 +3,7 @@ import { getCurrency, getPageSize, getCreditsPerUnit } from '../../../server/uti
 import { creditsEnabled } from '../../../server/utils/credits.js';
 import { mediaAvailable } from '../../../server/utils/media.js';
 import { FIELD_TYPES, OPTIONAL_TYPES, CONVERSIONS } from '../../../server/utils/fieldTypes.js';
-import { STATUSES, AVAILABILITIES } from '../../../server/utils/stock.js';
+import { STATUSES, AVAILABILITIES } from '../../../server/utils/quantity.js';
 import { PRICE_TYPES } from '../../../server/utils/pricing.js';
 import { SORT_KEYS } from '../../../server/utils/products.js';
 import { decimalsFor } from '../../../server/utils/money.js';

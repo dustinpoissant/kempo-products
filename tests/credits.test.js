@@ -4,11 +4,9 @@ import { sql, eq } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
 import { extension } from 'kempo/server/db/schema.js';
 import {
-  kempoProduct, kempoProductType, kempoProductField, kempoProductOption, kempoProductPurchase,
+  kempoProduct, kempoProductType, kempoProductField, kempoProductOption,
 } from '../server/db/schema.js';
 import { createProduct, updateProduct, getPrice } from '../server/utils/products.js';
-import { recordPurchase, reversePurchase } from '../server/utils/purchases.js';
-import { grantPurchaseCredits } from '../server/utils/credits.js';
 import { saveCatalogSettings, readCatalogSettings } from '../server/utils/catalogSettings.js';
 import install from '../install.js';
 
@@ -30,7 +28,7 @@ const ready = Boolean(reachable && credits);
 const skip = ready ? false : credits ? 'no throwaway database' : 'kempo-credits is not installed (it is an optional peer)';
 
 const purge = async () => {
-  for(const table of [kempoProductPurchase, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]) await db.delete(table);
+  for(const table of [kempoProductOption, kempoProduct, kempoProductField, kempoProductType]) await db.delete(table);
 };
 
 const ok = ([error, value]) => {
@@ -144,65 +142,6 @@ describe('kempo-credits integration', { skip }, () => {
       refused(await updateProduct(pack.id, { creditPercent: 25 }), 400);
       refused(await updateProduct(pack.id, { creditsGranted: 0 }), 400);
       ok(await updateProduct(pack.id, { creditsOnly: false, creditPercent: 25 }));
-    });
-
-    test('buying gives the credits, once, however many times it is asked', async () => {
-      const buyer = user();
-      const product = ok(await createProduct({ name: 'Gift with purchase', price: 1000, creditsGranted: 250, status: 'published' }));
-
-      const purchase = ok(await recordPurchase({ ref: ref(), userId: buyer, lines: [{ productId: product.id, quantity: 2 }] }));
-      assert.equal(ok(await credits.getBalance({ userId: buyer })).total, 500);
-
-      const again = ok(await grantPurchaseCredits(purchase));
-      assert.equal(again.duplicate, true);
-      assert.equal(ok(await credits.getBalance({ userId: buyer })).total, 500);
-
-      const { entries } = ok(await credits.listEntries({ userId: buyer }));
-      assert.equal(entries[0].referenceOwner, 'kempo-products');
-      assert.equal(entries[0].referenceId, purchase.ref);
-    });
-
-    test('a credit pack gives credits and nothing is spent but money', async () => {
-      const buyer = user();
-      const pack = ok(await createProduct({ name: 'Big pack', price: 1999, creditsOnly: true, creditsGranted: 2200, status: 'published' }));
-      ok(await recordPurchase({ ref: ref(), userId: buyer, lines: [{ productId: pack.id, quantity: 1 }] }));
-      assert.equal(ok(await credits.getBalance({ userId: buyer })).total, 2200);
-    });
-
-    test('a purchase with no user, or a product that gives nothing, grants nothing', async () => {
-      const buyer = user();
-      const gift = ok(await createProduct({ name: 'Anonymous gift', price: 100, creditsGranted: 10, status: 'published' }));
-      const plain = ok(await createProduct({ name: 'Plain', price: 100, status: 'published' }));
-
-      ok(await recordPurchase({ ref: ref(), lines: [{ productId: gift.id, quantity: 1 }] }));
-      ok(await recordPurchase({ ref: ref(), userId: buyer, lines: [{ productId: plain.id, quantity: 3 }] }));
-      assert.equal(ok(await credits.getBalance({ userId: buyer })).total, 0);
-    });
-
-    test('the credits are what the product gave when it was bought, not what it gives now', async () => {
-      const buyer = user();
-      const product = ok(await createProduct({ name: 'Changing gift', price: 100, creditsGranted: 40, status: 'published' }));
-      const purchase = ok(await recordPurchase({ ref: ref(), userId: buyer, lines: [{ productId: product.id, quantity: 1 }] }));
-      ok(await updateProduct(product.id, { creditsGranted: 0 }));
-
-      ok(await reversePurchase(purchase.ref));
-      const balance = ok(await credits.getBalance({ userId: buyer }));
-      assert.equal(balance.total, 0, 'the 40 credits the buyer was given were taken back');
-      assert.equal(balance.owed, 0);
-    });
-
-    test('reversing a purchase takes what is held, and what was spent is owed', async () => {
-      const buyer = user();
-      const product = ok(await createProduct({ name: 'Spent gift', price: 100, creditsGranted: 500, status: 'published' }));
-      const purchase = ok(await recordPurchase({ ref: ref(), userId: buyer, lines: [{ productId: product.id, quantity: 1 }] }));
-      ok(await credits.spendCredits({
-        userId: buyer, amount: 200, reason: 'test', reference: { owner: 'credits-test', ref: purchase.ref }, idempotencyKey: `spend:${purchase.ref}`,
-      }));
-
-      ok(await reversePurchase(purchase.ref));
-      const balance = ok(await credits.getBalance({ userId: buyer }));
-      assert.equal(balance.owed, 200);
-      assert.equal(balance.total, -200);
     });
   });
 
