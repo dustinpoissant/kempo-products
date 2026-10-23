@@ -10,15 +10,14 @@ import { and, eq, inArray } from 'drizzle-orm';
   Ownership never changes what quantity does: anyone with the permission can still adjust an owned
   product's quantity. It protects what the owner builds on:
 
-    products  slug, name, type and deletion belong to the owner
-    types     renaming and deletion belong to the owner
-    fields    see fields.js
+    products  slug, name and deletion belong to the owner
+    attributes    see attributes.js
 
-  Everything else (description, price, tags, categories, images, field values, options) stays editable by
+  Everything else (description, price, tags, categories, images, attribute values, options) stays editable by
   anyone, so an extension's products still show up and can be tidied in the admin. An extension that
   needs to guard more than this subscribes to the before_* hooks.
 */
-export const LOCKED_PRODUCT_PROPERTIES = ['slug', 'name', 'type'];
+export const LOCKED_PRODUCT_PROPERTIES = ['slug', 'name'];
 
 export const ownerLabel = owner => owner ? `the "${owner}" extension` : 'people using the admin';
 

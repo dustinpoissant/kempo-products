@@ -67,7 +67,8 @@
       </div>
       <h5><a href="./catalog.html">Your catalog</a></h5>
       <div class="ml mb -mt">
-        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#templates" class="d-b">Templates</a>
+        <a href="./catalog.html#attributes" class="d-b">Attributes</a>
         <a href="./catalog.html#products" class="d-b">Products</a>
         <a href="./catalog.html#price" class="d-b">Price</a>
         <a href="./catalog.html#quantity" class="d-b">Quantity</a>
@@ -108,7 +109,7 @@
       <h5><a href="./extending.html">Building on it</a></h5>
       <div class="ml mb -mt">
         <a href="./extending.html#sdk" class="d-b">Server SDK</a>
-        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#register" class="d-b">Shipping attributes</a>
         <a href="./extending.html#ownership" class="d-b">Ownership</a>
         <a href="./extending.html#hooks" class="d-b">Hooks</a>
         <a href="./extending.html#tabs" class="d-b">Adding to the pages</a>
@@ -155,13 +156,15 @@
         <tbody>
           <tr><td><code>GET config</code></td><td>none</td><td>The currency, whether prices show, whether images are available, and the allowed values</td></tr>
           <tr><td><code>GET products</code></td><td>none</td><td>List and search. Parameters are on <a href="./components.html#sdk">the Components page</a></td></tr>
-          <tr><td><code>GET products/&lt;id or slug&gt;</code></td><td>none</td><td>One product, with its options, the fields of its type, and its images</td></tr>
+          <tr><td><code>GET products/&lt;id or slug&gt;</code></td><td>none</td><td>One product, with its options, the attributes of its type, and its images</td></tr>
           <tr><td><code>POST products</code></td><td><code>products:create</code></td><td>Create a product</td></tr>
           <tr><td><code>PATCH products/&lt;id&gt;</code></td><td><code>products:update</code></td><td>Change a product. Only what is sent changes</td></tr>
           <tr><td><code>DELETE products/&lt;id&gt;</code></td><td><code>products:delete</code></td><td>Delete a product</td></tr>
           <tr><td><code>GET price?product=&amp;options=</code></td><td>none</td><td>The server's price for a set of choices. <code>options</code> is JSON: <code>{"color":"gold"}</code></td></tr>
-          <tr><td><code>GET types</code>, <code>GET fields</code></td><td>none</td><td>The types and fields. <code>fields?type=model-car</code> gives what a product of that type shows</td></tr>
-          <tr><td><code>POST</code>, <code>PATCH</code>, <code>DELETE</code> on <code>types</code> and <code>fields</code></td><td><code>products:types:manage</code></td><td>Manage types and fields</td></tr>
+          <tr><td><code>GET templates</code></td><td>none</td><td>The product templates, each with <code>count</code> (products made from it)</td></tr>
+          <tr><td><code>POST templates</code>, <code>PATCH</code>, <code>DELETE</code> on <code>templates/&lt;key&gt;</code></td><td><code>products:templates:manage</code></td><td>Manage templates</td></tr>
+          <tr><td><code>GET attributes</code></td><td>none</td><td>The attributes every product has</td></tr>
+          <tr><td><code>POST</code>, <code>PATCH</code>, <code>DELETE</code> on <code>attributes</code></td><td><code>products:attributes:manage</code></td><td>Manage attributes</td></tr>
           <tr><td><code>GET categories</code></td><td>none</td><td>The categories, each with <code>count</code> (published products in it). People who manage the catalog also get <code>total</code></td></tr>
           <tr><td><code>POST categories</code>, <code>PATCH</code> and <code>DELETE categories/&lt;key&gt;</code></td><td><code>products:categories:manage</code></td><td>Manage categories. <code>DELETE</code> takes the category off its products and returns how many</td></tr>
           <tr><td><code>GET ledger</code></td><td><code>products:read</code></td><td>The ledger, newest first (<code>productId</code>, <code>limit</code>, <code>offset</code>)</td></tr>
@@ -180,7 +183,8 @@
         <tbody>
           <tr><td><code>products:read</code></td><td>See drafts and archived products, exact quantity, and the ledger in the admin</td></tr>
           <tr><td><code>products:create</code>, <code>products:update</code>, <code>products:delete</code></td><td>Manage products</td></tr>
-          <tr><td><code>products:types:manage</code></td><td>Create, edit and delete types and fields</td></tr>
+          <tr><td><code>products:templates:manage</code></td><td>Create, edit and delete product templates</td></tr>
+          <tr><td><code>products:attributes:manage</code></td><td>Create, edit and delete the custom attributes products have</td></tr>
           <tr><td><code>products:categories:manage</code></td><td>Create, edit and delete categories. Putting a product in one only needs permission to edit the product</td></tr>
           <tr><td><code>products:ledger:add</code></td><td>Add an entry to the ledger: add stock to products or take it away</td></tr>
         </tbody>
@@ -193,7 +197,7 @@
         <tbody>
           <tr><td><code>kempo-products:viewer</code></td><td>See everything in the catalog, including drafts, but not change it</td></tr>
           <tr><td><code>kempo-products:manager</code></td><td>Add, edit and delete products, and add to the ledger</td></tr>
-          <tr><td><code>kempo-products:admin</code></td><td>Everything a manager can, and set up types and fields</td></tr>
+          <tr><td><code>kempo-products:admin</code></td><td>Everything a manager can, and set up types and attributes</td></tr>
         </tbody>
       </table>
     </div>

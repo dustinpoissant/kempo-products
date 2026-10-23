@@ -1,9 +1,9 @@
 /*
-  Pure helpers with no database access, so field definitions and values can be validated and unit
-  tested without a server. This follows kempo-inventory's field engine; it is copied, not shared,
+  Pure helpers with no database access, so attribute definitions and values can be validated and unit
+  tested without a server. This follows kempo-inventory's attribute engine; it is copied, not shared,
   until a third extension needs it.
 */
-export const FIELD_TYPES = ['text', 'longtext', 'number', 'boolean', 'date', 'color', 'rating', 'select', 'media'];
+export const ATTRIBUTE_TYPES = ['text', 'longtext', 'number', 'currency', 'boolean', 'date', 'color', 'rating', 'select', 'media'];
 
 /* Types that need another extension. They are valid in a definition, but creating one is refused when it is missing. */
 export const OPTIONAL_TYPES = { media: 'kempo-media' };
@@ -15,16 +15,17 @@ export const MAX_LONGTEXT = 20000;
 
 /*
   The only type changes that cannot lose or reject what products already hold: a choice list becomes
-  free text, and short text becomes long text. Anything else is refused: delete the field and make a
+  free text, and short text becomes long text. Anything else is refused: delete the attribute and make a
   new one instead.
 */
-export const CONVERSIONS = { select: ['text'], text: ['longtext'] };
+/* A currency attribute is whole smallest units, so it can become a plain number and nothing is lost; the reverse would round. */
+export const CONVERSIONS = { select: ['text'], text: ['longtext'], currency: ['number'] };
 
 export const canConvert = (from, to) => from === to || (CONVERSIONS[from] ?? []).includes(to);
 
 export const CORE_KEYS = [
   'id', 'slug', 'name', 'type', 'description', 'status', 'availability', 'price', 'priceLabel', 'quantity',
-  'managedBy', 'images', 'tags', 'data', 'fields', 'options', 'owner', 'created', 'updated', 'publishedAt',
+  'managedBy', 'images', 'tags', 'data', 'attributes', 'options', 'owner', 'created', 'updated', 'publishedAt',
 ];
 
 export const KEY_PATTERN = /^[a-z][a-zA-Z0-9]{0,39}$/;
@@ -41,36 +42,29 @@ export const keyFromLabel = label => {
   return /^[a-z]/.test(key) ? key.slice(0, 40) : '';
 };
 
-/* A product type's key is lower-case with dashes: "Model car" -> "model-car". */
-export const TYPE_KEY_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
+/* An attribute's tab and a product type's key are lower-case with dashes. */
+export const DASH_KEY_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
 
-export const typeKeyFromName = name => String(name ?? '')
-  .normalize('NFKD')
-  .replace(/[̀-ͯ]/g, '')
-  .toLowerCase()
-  .replace(/[^a-z0-9]+/g, '-')
-  .replace(/^-+|-+$/g, '')
-  .replace(/^[^a-z]+/, '')
-  .slice(0, 40)
-  .replace(/-+$/g, '');
-
-/* Validates and normalises a field definition. Returns [error, definition]. */
-export const normalizeFieldDefinition = (input = {}) => {
+/* Validates and normalises an attribute definition. Returns [error, definition]. */
+export const normalizeAttributeDefinition = (input = {}) => {
   const label = String(input.label ?? '').trim();
-  if(!label) return [{ code: 400, msg: 'Field label is required' }, null];
+  if(!label) return [{ code: 400, msg: 'Attribute label is required' }, null];
 
   const key = String(input.key ?? keyFromLabel(label)).trim();
   if(!KEY_PATTERN.test(key)){
-    return [{ code: 400, msg: 'Field key must start with a lowercase letter and contain only letters and numbers (max 40)' }, null];
+    return [{ code: 400, msg: 'Attribute key must start with a lowercase letter and contain only letters and numbers (max 40)' }, null];
   }
   if(CORE_KEYS.includes(key)) return [{ code: 400, msg: `"${key}" is reserved` }, null];
 
-  if(!FIELD_TYPES.includes(input.type)) return [{ code: 400, msg: `Field type must be one of: ${FIELD_TYPES.join(', ')}` }, null];
+  if(!ATTRIBUTE_TYPES.includes(input.type)) return [{ code: 400, msg: `Attribute type must be one of: ${ATTRIBUTE_TYPES.join(', ')}` }, null];
+
+  const tab = String(input.tab ?? '').trim();
+  if(tab && !DASH_KEY_PATTERN.test(tab)) return [{ code: 400, msg: 'An attribute tab must start with a lowercase letter and use only lowercase letters, numbers and dashes (max 40)' }, null];
 
   let options = [];
   if(input.type === 'select'){
     options = [...new Set((Array.isArray(input.options) ? input.options : []).map(o => String(o).trim()).filter(Boolean))];
-    if(!options.length) return [{ code: 400, msg: 'A select field needs at least one option' }, null];
+    if(!options.length) return [{ code: 400, msg: 'A select attribute needs at least one option' }, null];
   }
 
   return [null, {
@@ -80,6 +74,7 @@ export const normalizeFieldDefinition = (input = {}) => {
     description: String(input.description ?? ''),
     required: Boolean(input.required),
     listed: input.listed === undefined ? true : Boolean(input.listed),
+    tab,
     filterable: input.filterable === undefined ? input.type === 'select' : Boolean(input.filterable),
     options,
     position: Number.isInteger(input.position) ? input.position : 0,
@@ -87,14 +82,14 @@ export const normalizeFieldDefinition = (input = {}) => {
 };
 
 /*
-  Coerces one raw value to the field's type. Returns [error, value]; an empty input yields
+  Coerces one raw value to the attribute's type. Returns [error, value]; an empty input yields
   [null, null], meaning "no value".
 */
-export const coerceValue = (field, raw) => {
-  if(field.type !== 'boolean' && (isEmpty(raw) || (Array.isArray(raw) && !raw.length))) return [null, null];
-  const bad = msg => [{ code: 400, msg: `${field.label}: ${msg}` }, null];
+export const coerceValue = (attribute, raw) => {
+  if(attribute.type !== 'boolean' && (isEmpty(raw) || (Array.isArray(raw) && !raw.length))) return [null, null];
+  const bad = msg => [{ code: 400, msg: `${attribute.label}: ${msg}` }, null];
 
-  switch(field.type){
+  switch(attribute.type){
     case 'text': {
       const value = String(raw).trim();
       if(!value) return [null, null];
@@ -108,6 +103,10 @@ export const coerceValue = (field, raw) => {
     case 'number': {
       const value = typeof raw === 'number' ? raw : Number(String(raw).trim());
       return Number.isFinite(value) ? [null, value] : bad('must be a number');
+    }
+    case 'currency': {
+      const value = typeof raw === 'number' ? raw : Number(String(raw).trim());
+      return Number.isSafeInteger(value) ? [null, value] : bad('must be an amount in the smallest unit of the currency, as a whole number');
     }
     case 'rating': {
       const value = typeof raw === 'number' ? raw : Number(String(raw).trim());
@@ -136,7 +135,7 @@ export const coerceValue = (field, raw) => {
     case 'select': {
       const value = String(raw).trim();
       if(!value) return [null, null];
-      return field.options.includes(value) ? [null, value] : bad(`must be one of: ${field.options.join(', ')}`);
+      return attribute.options.includes(value) ? [null, value] : bad(`must be one of: ${attribute.options.join(', ')}`);
     }
     case 'media': {
       const list = Array.isArray(raw) ? raw : String(raw).split(',');
@@ -151,37 +150,42 @@ export const coerceValue = (field, raw) => {
 };
 
 /*
-  The fields a product shows: the default ones (type '') plus those scoped to its type. An untyped
-  product gets only the defaults.
+  The attributes a product has: the ones every product has, then those of its template (unless a shared attribute has the
+  key), then its own. Each attribute says where it came from (`fromTemplate`, `own`) so a form can show it.
 */
-export const applicableFields = (fields, productType) => fields.filter(f => !f.productType || f.productType === (productType ?? ''));
+export const applicableAttributes = (shared, template = null, own = []) => {
+  const taken = new Set(shared.map(attribute => attribute.key));
+  const fromTemplate = (template?.attributes ?? []).filter(attribute => !taken.has(attribute.key)).map(attribute => ({ ...attribute, fromTemplate: true }));
+  for(const attribute of fromTemplate) taken.add(attribute.key);
+  return [...shared, ...fromTemplate, ...own.filter(attribute => !taken.has(attribute.key)).map(attribute => ({ ...attribute, own: true }))];
+};
 
 /*
-  Validates `input` (an object keyed by field key) against `fields`.
-    partial=false: every required field must be present (creating a product)
+  Validates `input` (an object keyed by attribute key) against `attributes`.
+    partial=false: every required attribute must be present (creating a product)
     partial=true:  only the keys supplied are checked (updating a product)
   Returns [error, values] where `values[key]` is the coerced value, or null to clear it.
 */
-export const coerceValues = (fields, input = {}, { partial = false } = {}) => {
+export const coerceValues = (attributes, input = {}, { partial = false } = {}) => {
   if(input === null || typeof input !== 'object' || Array.isArray(input)){
-    return [{ code: 400, msg: 'fields must be an object' }, null];
+    return [{ code: 400, msg: 'attributes must be an object' }, null];
   }
-  const byKey = new Map(fields.map(f => [f.key, f]));
+  const byKey = new Map(attributes.map(f => [f.key, f]));
   const values = {};
 
   for(const key of Object.keys(input)){
-    if(!byKey.has(key)) return [{ code: 400, msg: `Unknown field "${key}"` }, null];
+    if(!byKey.has(key)) return [{ code: 400, msg: `Unknown attribute "${key}"` }, null];
   }
 
-  for(const field of fields){
-    const supplied = Object.prototype.hasOwnProperty.call(input, field.key);
+  for(const attribute of attributes){
+    const supplied = Object.prototype.hasOwnProperty.call(input, attribute.key);
     if(partial && !supplied) continue;
-    const [error, value] = coerceValue(field, supplied ? input[field.key] : undefined);
+    const [error, value] = coerceValue(attribute, supplied ? input[attribute.key] : undefined);
     if(error) return [error, null];
-    if(value === null && field.required){
-      return [{ code: 400, msg: `${field.label} is required` }, null];
+    if(value === null && attribute.required){
+      return [{ code: 400, msg: `${attribute.label} is required` }, null];
     }
-    if(supplied || value !== null) values[field.key] = value;
+    if(supplied || value !== null) values[attribute.key] = value;
   }
   return [null, values];
 };

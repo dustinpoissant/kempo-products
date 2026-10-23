@@ -10,7 +10,7 @@ import { exportUrl, importProducts } from '/products/sdk.js';
     openExportDialog();
     openImportDialog({ onDone: () => reload() });
 
-  CSV is a spreadsheet of products. JSON holds everything, including the types and fields, so a
+  CSV is a spreadsheet of products. JSON holds everything, including the attributes, so a
   catalog can move between sites. Images are not included. Importing matches rows to products by
   slug, so importing a file twice never duplicates anything.
 */
@@ -24,11 +24,11 @@ export const openExportDialog = () => {
     <p class="mb">Download every product.</p>
     <label class="d-f mb" style="gap: var(--spacer_h); align-items: flex-start; cursor: pointer;">
       <input type="radio" name="exportKind" value="csv" checked @change=${() => { kind = 'csv'; }}>
-      <span><strong>Spreadsheet</strong> (.csv)<br><small class="tc-muted">One row per product, with a column for every field. Opens in Excel or Google Sheets.</small></span>
+      <span><strong>Spreadsheet</strong> (.csv)<br><small class="tc-muted">One row per product, with a column for every attribute. Opens in Excel or Google Sheets.</small></span>
     </label>
     <label class="d-f mb" style="gap: var(--spacer_h); align-items: flex-start; cursor: pointer;">
       <input type="radio" name="exportKind" value="json" @change=${() => { kind = 'json'; }}>
-      <span><strong>Everything</strong> (.json)<br><small class="tc-muted">Products plus the types and fields they use, to move a catalog to another site.</small></span>
+      <span><strong>Everything</strong> (.json)<br><small class="tc-muted">Products plus the categories and attributes they use, to move a catalog to another site.</small></span>
     </label>`, $body);
 
   const $dialog = Dialog.create($body, {
@@ -71,7 +71,7 @@ export const openImportDialog = ({ onDone = () => {} } = {}) => {
   $body.className = 'p';
 
   const draw = () => render(html`
-    <p class="mb">Add products from a spreadsheet (.csv) or an export (.json). Products are matched by their address (slug), so nothing is added twice. Empty cells in a spreadsheet leave a product's existing value alone.</p>
+    <p class="mb">Add products from a spreadsheet (.csv) or an export (.json). Products are matched by their URL (slug), so nothing is added twice. Empty cells in a spreadsheet leave a product's existing value alone.</p>
     <div class="mb"><input type="file" id="importFile" accept=".csv,.json,text/csv,application/json" class="full" @change=${read}></div>
     <div class="mb">
       <label class="d-b mbq" for="onMatch">When a product is already there</label>

@@ -38,8 +38,12 @@
       "description": "Delete products"
     },
     {
-      "name": "products:types:manage",
-      "description": "Create, edit and delete product types and the custom fields they have"
+      "name": "products:templates:manage",
+      "description": "Create, edit and delete product templates"
+    },
+    {
+      "name": "products:attributes:manage",
+      "description": "Create, edit and delete the custom attributes products have"
     },
     {
       "name": "products:categories:manage",
@@ -103,7 +107,7 @@
     },
     {
       "name": "kempo-products:admin",
-      "description": "Can manage products, and set up the product types and fields they have",
+      "description": "Can manage products, and set up the templates and attributes they have",
       "permissions": [
         "system:admin:access",
         "products:read",
@@ -111,7 +115,8 @@
         "products:update",
         "products:delete",
         "products:ledger:add",
-        "products:types:manage",
+        "products:templates:manage",
+        "products:attributes:manage",
         "products:categories:manage",
         "products:settings:manage"
       ]

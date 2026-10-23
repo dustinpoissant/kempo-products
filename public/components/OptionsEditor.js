@@ -104,6 +104,13 @@ export default class OptionsEditor extends ShadowComponent {
         <small class="d-b tc-muted mbq">Choices</small>
         ${option.choices.map((choice, choiceIndex) => this.renderChoice(option, index, choice, choiceIndex))}
         <button type="button" class="btn mb" @click=${() => this.addChoice(index)}><k-icon name="add"></k-icon> Add choice</button>
+        <div class="mb">
+          <label class="d-b mbq" for=${`default-${index}`}>Default choice<small class="d-b tc-muted">Chosen for the buyer to start with. They can still pick another.</small></label>
+          <select id=${`default-${index}`} style="width: auto;" @change=${event => this.patchOption(index, { choices: option.choices.map((other, otherIndex) => ({ ...other, default: otherIndex === Number(event.target.value) })) })}>
+            <option value="-1" ?selected=${!option.choices.some(choice => choice.default)}>None</option>
+            ${option.choices.map((choice, choiceIndex) => html`<option value=${choiceIndex} ?selected=${Boolean(choice.default)}>${choice.label || `Choice ${choiceIndex + 1}`}</option>`)}
+          </select>
+        </div>
       </div>
     </div>`;
   }
@@ -113,7 +120,7 @@ export default class OptionsEditor extends ShadowComponent {
       ${this.managed ? html`<p class="tc-muted mb">Which choices are in stock is kept up to date by the ${this.managed} extension.</p>` : ''}
       ${this.options.length ? html`<small class="d-b tc-muted mb">A choice is added to the base price by default: -1.00 takes a dollar off and 0.00 changes nothing. Only one option can replace the base price.</small>` : ''}
       ${this.options.map((option, index) => this.renderOption(option, index))}
-      <button type="button" class="btn mb" @click=${this.addOption}><k-icon name="add"></k-icon> Add option</button>
+      <button type="button" class="btn primary mb" @click=${this.addOption}><k-icon name="add"></k-icon> Add option</button>
     </div>`;
   }
 }

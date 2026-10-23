@@ -1,10 +1,11 @@
 import db from 'kempo/server/db/index.js';
 import { eq, and, or, ilike, sql, desc, asc, inArray } from 'drizzle-orm';
 import crypto from 'crypto';
-import { kempoProduct, kempoProductOption, kempoProductType, kempoProductLedger } from '../db/schema.js';
+import { kempoProduct, kempoProductOption, kempoProductLedger, kempoProductTemplate } from '../db/schema.js';
 import { ledgerRowsFor } from './ledgerRows.js';
-import { getFields } from './fields.js';
-import { coerceValues, applicableFields } from './fieldTypes.js';
+import { getAttributes } from './attributes.js';
+import { coerceValues, applicableAttributes, normalizeAttributeDefinition } from './attributeTypes.js';
+import { inheritedFor } from './inherit.js';
 import { EVENTS, guard, notify } from './hooks.js';
 import { normalizeTags, tidyTag } from './tags.js';
 import { categoryKeys, MAX_CATEGORIES_PER_PRODUCT } from './categories.js';
@@ -15,6 +16,7 @@ import { lockedProductChanges, notYours, quantityLocked, refuseIfManaged, ownerL
 import { getAssets, checkAssets } from './media.js';
 import { getCurrency } from './settings.js';
 import { normalizeCredits, quoteFor } from './credits.js';
+import { GENERIC, normalizeProductType } from './productTypes.js';
 
 const newId = () => crypto.randomBytes(8).toString('hex');
 
@@ -37,32 +39,61 @@ const shapeOption = row => ({
 });
 
 /*
-  The shape callers see: core properties, `fields` (the type's custom values) and `options`, plus
+  The shape callers see: core properties, `attributes` (the custom values) and `options`, plus
   what a client needs to decide whether to offer a buy button without re-deriving the rules.
+
+  A product made from a template (`template`, its key) inherits from it. `options` is everything a buyer can
+  choose: the options the template offers (marked `fromTemplate`) and then the product's own. A product option with
+  the same key as one of the template's adds its choices to the template's (a choice with the same key replaces
+  it), so a template can offer black and white and one product add red. The template's choices are marked
+  `fromTemplate` too. `ownOptions` is only what was set on the product itself, which is what a form edits and an
+  export writes. `attributes` is only the values the product holds; `inherited` is the template's defaults it falls back
+  to, and `attributeDefs` the attributes the product added to its template's.
+
+  A template can also give a product its type, price, lowest price, price label, description, tags and categories
+  (see templates.js): each is the product's own when it has one and the template's when it leaves it blank. What
+  the top-level properties hold is what is in force, so everything that reads a product sees it; `own` holds only
+  what the product itself was given, which is what a form edits and an export writes.
 */
-const shape = (row, options = []) => {
+const shape = (row, ownOptions = [], templates = {}) => {
   if(!row) return row;
+  const template = templates[row.template] ?? {};
+  const base = template.product ?? {};
+  const fromTemplate = (template.options ?? []).map(option => {
+    const own = ownOptions.find(candidate => candidate.key === option.key);
+    const ownKeys = new Set((own?.choices ?? []).map(choice => choice.key));
+    // a default the product picks beats the template's
+    const ownDefault = (own?.choices ?? []).some(choice => choice.default);
+    const inherited = option.choices.filter(choice => !ownKeys.has(choice.key)).map(choice => ({ ...choice, fromTemplate: true, ...(ownDefault ? { default: false } : {}) }));
+    return { ...option, fromTemplate: true, choices: [...inherited, ...(own?.choices ?? [])].map((choice, position) => ({ ...choice, position })) };
+  });
+  const extra = ownOptions.filter(own => !fromTemplate.some(option => option.key === own.key));
   const product = {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    type: row.type,
-    description: row.description,
+    description: row.description || base.description || '',
     status: row.status,
     availability: row.availability,
-    price: row.price,
-    minimumPrice: row.minimumPrice ?? null,
-    priceLabel: row.priceLabel,
+    price: row.price ?? base.price ?? null,
+    minimumPrice: row.minimumPrice ?? base.minimumPrice ?? null,
+    priceLabel: row.priceLabel || base.priceLabel || '',
     creditsGranted: row.creditsGranted ?? 0,
-    creditsOnly: row.creditsOnly ?? false,
+    productType: row.productType || base.productType || GENERIC,
+    creditsOnly: (row.productType || base.productType || GENERIC) === 'credits-only',
     creditPercent: row.creditPercent ?? 0,
     quantity: row.quantity,
     managedBy: row.managedBy,
     images: row.images ?? [],
-    tags: row.tags ?? [],
-    categories: row.categories ?? [],
-    fields: row.data ?? {},
-    options,
+    tags: row.tags?.length ? row.tags : base.tags ?? [],
+    categories: row.categories?.length ? row.categories : base.categories ?? [],
+    own: { productType: row.productType ?? '', price: row.price ?? null, minimumPrice: row.minimumPrice ?? null, priceLabel: row.priceLabel ?? '', description: row.description ?? '', tags: row.tags ?? [], categories: row.categories ?? [] },
+    template: row.template ?? '',
+    attributeDefs: row.attributeDefs ?? [],
+    attributes: row.data ?? {},
+    inherited: inheritedFor(template.defaults, row.data),
+    options: [...fromTemplate, ...extra],
+    ownOptions,
     owner: row.owner,
     created: row.created,
     updated: row.updated,
@@ -86,9 +117,20 @@ const unmanagedIfGone = async rows => {
   return rows.map(row => !row.managedBy || live.has(row.managedBy) ? row : { ...row, managedBy: '' });
 };
 
+/* Every template by key: what a product made from one inherits. */
+const templateMap = async () => {
+  try {
+    const rows = await db.select().from(kempoProductTemplate);
+    return Object.fromEntries(rows.map(row => [row.key, row]));
+  } catch {
+    return {};
+  }
+};
+
 const withOptions = async rows => {
   const options = await optionsFor(rows.map(row => row.id));
-  return (await unmanagedIfGone(rows)).map(row => shape(row, options[row.id] ?? []));
+  const templates = await templateMap();
+  return (await unmanagedIfGone(rows)).map(row => shape(row, options[row.id] ?? [], templates));
 };
 
 /* The images the given products hold, described for display (empty without kempo-media). */
@@ -107,9 +149,11 @@ export const SORT_KEYS = Object.keys(SORTS);
 /*
   `category` keeps products in every one of the given categories (keys), as `tag` does for tags.
   `ids` and `slugs` fetch exactly those products, `owner` keeps one owner's ('' for the ones people manage),
-  `filters` is { fieldKey: 'exact value' } over a type's fields, and `inStock` drops sold-out ones.
+  `template` keeps the products made from one template (its key), `filters` is { attributeKey: 'exact value' } over the
+  custom attributes (a product that leaves one blank counts as having its template's default), and `inStock` drops
+  sold-out ones.
 */
-export const getProducts = async ({ q, type, status, availability, tag, category, filters = {}, ids, slugs, owner, inStock = false, sort = 'newest', limit = 50, offset = 0 } = {}) => {
+export const getProducts = async ({ q, template, status, availability, tag, category, filters = {}, ids, slugs, owner, inStock = false, sort = 'newest', limit = 50, offset = 0 } = {}) => {
   try {
     const conditions = [];
     if(q){
@@ -122,7 +166,7 @@ export const getProducts = async ({ q, type, status, availability, tag, category
         sql`${kempoProduct.data}::text ilike ${like}`,
       ));
     }
-    if(type !== undefined && type !== null) conditions.push(eq(kempoProduct.type, String(type)));
+    if(template !== undefined && template !== null) conditions.push(eq(kempoProduct.template, String(template)));
     if(status) conditions.push(inArray(kempoProduct.status, [status].flat()));
     if(availability) conditions.push(inArray(kempoProduct.availability, [availability].flat()));
     for(const wanted of [tag].flat().map(tidyTag).filter(Boolean)){
@@ -133,7 +177,7 @@ export const getProducts = async ({ q, type, status, availability, tag, category
     }
     for(const [key, value] of Object.entries(filters ?? {})){
       if(value === undefined || value === null || value === '') continue;
-      conditions.push(sql`${kempoProduct.data}->>${key} = ${String(value)}`);
+      conditions.push(sql`coalesce(nullif(${kempoProduct.data}->>${key}, ''), (select ${kempoProductTemplate.defaults}->>${key} from ${kempoProductTemplate} where ${kempoProductTemplate.key} = ${kempoProduct.template})) = ${String(value)}`);
     }
     if(Array.isArray(ids)){
       if(!ids.length) return [null, { items: [], total: 0 }];
@@ -166,18 +210,53 @@ export const getProduct = async idOrSlug => {
     if(!row) return [{ code: 404, msg: 'Product not found' }, null];
     const options = await optionsFor([row.id]);
     const [current] = await unmanagedIfGone([row]);
-    return [null, shape(current, options[row.id] ?? [])];
+    return [null, shape(current, options[row.id] ?? [], await templateMap())];
   } catch {
     return [{ code: 500, msg: 'Failed to retrieve product' }, null];
   }
 };
 
+export const MAX_OWN_ATTRIBUTES = 20;
+
+/*
+  The attributes a product adds to its template's: each a valid attribute, with a key of its own that is neither one every
+  product has nor one of the template's. Returns [error, definitions].
+*/
+const checkAttributeDefs = async (list, template) => {
+  if(!Array.isArray(list)) return [{ code: 400, msg: 'attributeDefs must be a list' }, null];
+  if(list.length > MAX_OWN_ATTRIBUTES) return [{ code: 400, msg: `A product can have at most ${MAX_OWN_ATTRIBUTES} attributes of its own` }, null];
+  const [error, shared] = await getAttributes();
+  if(error) return [error, null];
+  const taken = new Set([...shared, ...(template?.attributes ?? [])].map(attribute => attribute.key));
+  const defs = [];
+  for(const [index, raw] of list.entries()){
+    const [invalid, attribute] = normalizeAttributeDefinition({ ...raw, position: index });
+    if(invalid) return [invalid, null];
+    if(taken.has(attribute.key)) return [{ code: 409, msg: `An attribute with the key "${attribute.key}" already exists on this product` }, null];
+    taken.add(attribute.key);
+    defs.push({ ...attribute, tab: '' });
+  }
+  return [null, defs];
+};
+
+/* A template by key, as [error, row]; no key is no template. */
+const resolveTemplate = async key => {
+  const wanted = String(key ?? '').trim();
+  if(!wanted) return [null, null];
+  try {
+    const [row] = await db.select().from(kempoProductTemplate).where(eq(kempoProductTemplate.key, wanted));
+    return row ? [null, row] : [{ code: 400, msg: `There is no template "${wanted}"` }, null];
+  } catch {
+    return [{ code: 500, msg: 'Failed to look up the template' }, null];
+  }
+};
+
 /*
   The pieces of a product's data that need validating on create and update. Returns
-  [error, values] where `values` holds only what was supplied, tidied. `type` is the product's
-  final type (for which fields apply).
+  [error, values] where `values` holds only what was supplied, tidied. `template` is the product's final template (a
+  row, or null) and `ownDefs` the attributes it has of its own, which decide which custom attributes apply.
 */
-const validate = async (input, { type, partial }) => {
+const validate = async (input, { partial, template = null, ownDefs = [] }) => {
   const values = {};
 
   if(input.name !== undefined){
@@ -260,20 +339,23 @@ const validate = async (input, { type, partial }) => {
     if(optionsError) return [optionsError, null];
     values.options = options;
   }
-  if(input.fields !== undefined || !partial){
-    const [fieldsError, allFields] = await getFields();
+  if(input.attributeDefs !== undefined){
+    const [defsError, defs] = await checkAttributeDefs(input.attributeDefs, template);
+    if(defsError) return [defsError, null];
+    values.attributeDefs = defs;
+    ownDefs = defs;
+  }
+  if(input.attributes !== undefined || !partial){
+    const [fieldsError, shared] = await getAttributes();
     if(fieldsError) return [fieldsError, null];
-    const [invalid, coerced] = coerceValues(applicableFields(allFields, type), input.fields ?? {}, { partial });
+    // a required attribute its template gives a default is already filled in, so leaving it blank is fine
+    const defaults = template?.defaults ?? {};
+    const applicable = applicableAttributes(shared, template, ownDefs).map(attribute => attribute.required && ![null, undefined, ''].includes(defaults[attribute.key]) ? { ...attribute, required: false } : attribute);
+    const [invalid, coerced] = coerceValues(applicable, input.attributes ?? {}, { partial });
     if(invalid) return [invalid, null];
-    values.fields = coerced;
+    values.attributes = coerced;
   }
   return [null, values];
-};
-
-const typeExists = async key => {
-  if(!key) return true;
-  const [type] = await db.select({ key: kempoProductType.key }).from(kempoProductType).where(eq(kempoProductType.key, key));
-  return Boolean(type);
 };
 
 const withoutNulls = values => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== null));
@@ -286,7 +368,6 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
   const draft = {
     name: data.name,
     slug: data.slug,
-    type: data.type ?? '',
     description: data.description ?? '',
     status: data.status ?? 'draft',
     availability: data.availability ?? 'available',
@@ -295,30 +376,32 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
     priceLabel: data.priceLabel ?? '',
     quantity: data.quantity ?? UNLIMITED,
     creditsGranted: data.creditsGranted,
+    productType: data.productType,
     creditsOnly: data.creditsOnly,
     creditPercent: data.creditPercent,
     images: data.images ?? [],
     tags: data.tags ?? [],
     categories: data.categories ?? [],
-    fields: data.fields ?? {},
+    template: data.template ?? '',
+    attributeDefs: data.attributeDefs ?? [],
+    attributes: data.attributes ?? {},
     options: data.options ?? [],
   };
   const refused = await guard(EVENTS.productBeforeCreate, { draft, userId: data.userId ?? '', actor: owner });
   if(refused) return [refused, null];
 
-  const type = String(draft.type ?? '').trim();
-  try {
-    if(!(await typeExists(type))) return [{ code: 400, msg: `There is no product type "${type}"` }, null];
-  } catch {
-    return [{ code: 500, msg: 'Failed to create product' }, null];
-  }
-
   if(draft.name === undefined) return [{ code: 400, msg: 'Name is required' }, null];
-  const [invalid, values] = await validate(draft, { type, partial: false });
+  const [templateError, template] = await resolveTemplate(draft.template);
+  if(templateError) return [templateError, null];
+  const [invalid, values] = await validate(draft, { partial: false, template });
   if(invalid) return [invalid, null];
+  const [itemError, item] = await normalizeProductType(draft);
+  if(itemError) return [itemError, null];
+  if(item.productType !== undefined) draft.creditsOnly = item.creditsOnly;
   const [creditsInvalid, credits] = await normalizeCredits(draft);
   if(creditsInvalid) return [creditsInvalid, null];
   Object.assign(values, credits);
+  values.productType = item.productType ?? (template ? '' : GENERIC);
 
   const explicitSlug = String(draft.slug ?? '').trim() !== '';
   const [slugError, baseSlug] = normalizeSlug(draft.slug, values.name);
@@ -328,14 +411,14 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
     return [{ code: 400, msg: 'The minimum price cannot be above the price' }, null];
   }
 
-  const { options = [], fields = {}, ...columns } = values;
+  const { options = [], attributes = {}, attributeDefs = [], ...columns } = values;
   const now = new Date();
   for(let attempt = 1; attempt <= 50; attempt++){
     const slug = explicitSlug ? baseSlug : withSuffix(baseSlug, attempt);
     try {
       const created = await db.transaction(async tx => {
         const [row] = await tx.insert(kempoProduct).values({
-          id: newId(), slug, type, ...columns, data: withoutNulls(fields), owner,
+          id: newId(), slug, ...columns, template: template?.key ?? '', attributeDefs, data: withoutNulls(attributes), owner,
           created: now, updated: now, publishedAt: columns.status === 'published' ? now : null,
         }).returning();
         await insertOptions(tx, row.id, options);
@@ -344,7 +427,7 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
         }
         return row;
       });
-      const product = shape(created, options);
+      const product = shape(created, options, await templateMap());
       await notify(EVENTS.productCreated, { product, userId: data.userId ?? '', actor: owner });
       return [null, product];
     } catch(error) {
@@ -356,8 +439,8 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
 };
 
 /*
-  Updates only what is supplied. `fields` is merged, and an empty value clears one. The slug, name
-  and type of an owned product need its `owner`. A product an extension manages (`managedBy`)
+  Updates only what is supplied. `attributes` is merged, and an empty value clears one. The slug and name
+  of an owned product need its `owner`. A product an extension manages (`managedBy`)
   keeps its quantity and option availability: people and other extensions cannot change them.
 */
 export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
@@ -365,10 +448,10 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   if(lookupError) return [lookupError, null];
 
   const changes = {};
-  for(const property of ['name', 'slug', 'type', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'options', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'slug', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'options', 'productType', 'creditsGranted', 'creditsOnly', 'creditPercent', 'template', 'attributeDefs']){
     if(data[property] !== undefined) changes[property] = data[property];
   }
-  if(data.fields !== undefined) changes.fields = { ...data.fields };
+  if(data.attributes !== undefined) changes.attributes = { ...data.attributes };
 
   const refused = await guard(EVENTS.productBeforeUpdate, { product: existing, changes, userId: data.userId ?? '', actor: owner });
   if(refused) return [refused, null];
@@ -384,18 +467,20 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
     delete changes.quantity;
   }
 
-  const type = changes.type !== undefined ? String(changes.type).trim() : existing.type;
-  try {
-    if(changes.type !== undefined && !(await typeExists(type))) return [{ code: 400, msg: `There is no product type "${type}"` }, null];
-  } catch {
-    return [{ code: 500, msg: 'Failed to update product' }, null];
+  const [itemError, item] = await normalizeProductType(changes, existing);
+  if(itemError) return [itemError, null];
+  if(item.productType !== undefined){
+    changes.productType = item.productType;
+    changes.creditsOnly = item.creditsOnly;
   }
-
-  const [invalid, values] = await validate(changes, { type, partial: true });
+  const [templateError, template] = await resolveTemplate(changes.template !== undefined ? changes.template : existing.template);
+  if(templateError) return [templateError, null];
+  const [invalid, values] = await validate(changes, { partial: true, template, ownDefs: existing.attributeDefs });
   if(invalid) return [invalid, null];
   const [creditsInvalid, credits] = await normalizeCredits(changes, existing);
   if(creditsInvalid) return [creditsInvalid, null];
   Object.assign(values, credits);
+  if(changes.productType !== undefined) values.productType = changes.productType;
 
   const nextPrice = values.price !== undefined ? values.price : existing.price;
   const nextMinimum = values.minimumPrice !== undefined ? values.minimumPrice : existing.minimumPrice;
@@ -404,18 +489,26 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   }
 
   const updates = {};
-  for(const property of ['name', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'productType', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(values[property] !== undefined) updates[property] = values[property];
   }
-  if(changes.type !== undefined) updates.type = type;
   if(changes.slug !== undefined){
     const [slugError, slug] = normalizeSlug(changes.slug, values.name ?? existing.name);
     if(slugError) return [slugError, null];
     updates.slug = slug;
   }
-  if(values.fields !== undefined){
-    updates.data = withoutNulls({ ...existing.fields, ...values.fields });
-    for(const [key, value] of Object.entries(values.fields)) if(value === null) delete updates.data[key];
+  if(changes.template !== undefined) updates.template = template?.key ?? '';
+  if(values.attributeDefs !== undefined) updates.attributeDefs = values.attributeDefs;
+  if(values.attributes !== undefined || values.attributeDefs !== undefined){
+    const data = { ...existing.attributes };
+    // an attribute the product no longer has takes its value with it
+    if(values.attributeDefs !== undefined){
+      const kept = new Set(values.attributeDefs.map(attribute => attribute.key));
+      for(const attribute of existing.attributeDefs) if(!kept.has(attribute.key)) delete data[attribute.key];
+    }
+    Object.assign(data, values.attributes ?? {});
+    for(const [key, value] of Object.entries(values.attributes ?? {})) if(value === null) delete data[key];
+    updates.data = withoutNulls(data);
   }
 
   let options = null;
@@ -445,7 +538,7 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
       }
       return updated;
     });
-    const product = shape({ ...row, managedBy: existing.managedBy }, options ?? existing.options);
+    const product = shape({ ...row, managedBy: existing.managedBy }, options ?? existing.ownOptions, await templateMap());
     await notify(EVENTS.productUpdated, { product, previous: existing, userId: data.userId ?? '', actor: owner });
     if(product.quantity !== existing.quantity){
       await notify(EVENTS.productQuantityChanged, { product, previousQuantity: existing.quantity, quantity: product.quantity, reason: 'edited', actor: owner });
@@ -513,7 +606,7 @@ export const setManagedBy = async (id, extension) => {
   if(name === existing.managedBy) return [null, existing];
   try {
     const [row] = await db.update(kempoProduct).set({ managedBy: name, updated: new Date() }).where(eq(kempoProduct.id, existing.id)).returning();
-    return [null, shape(row, existing.options)];
+    return [null, shape(row, existing.ownOptions, await templateMap())];
   } catch {
     return [{ code: 500, msg: 'Failed to update the product' }, null];
   }
@@ -528,9 +621,11 @@ export const setChoiceAvailability = async (id, optionKey, choiceKey, available,
   const option = existing.options.find(candidate => candidate.key === optionKey);
   const choice = option?.choices.find(candidate => candidate.key === choiceKey);
   if(!choice) return [{ code: 404, msg: 'That option choice does not exist' }, null];
+  if(choice.fromTemplate) return [{ code: 400, msg: `${choice.label} comes from the product's template, so it is changed on the template` }, null];
   if(choice.available === Boolean(available)) return [null, existing];
 
-  const choices = option.choices.map(candidate => candidate.key === choiceKey ? { ...candidate, available: Boolean(available) } : candidate);
+  const own = existing.ownOptions.find(candidate => candidate.key === optionKey);
+  const choices = own.choices.map(candidate => candidate.key === choiceKey ? { ...candidate, available: Boolean(available) } : candidate);
   try {
     await db.update(kempoProductOption).set({ choices }).where(and(eq(kempoProductOption.productId, existing.id), eq(kempoProductOption.key, optionKey)));
     return getProduct(existing.id);

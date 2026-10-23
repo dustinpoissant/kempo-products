@@ -1,11 +1,11 @@
 import authorize from '../../../../server/utils/authorize.js';
-import { deleteField } from '../../../../server/utils/fields.js';
+import { deleteTemplate } from '../../../../server/utils/templates.js';
 
 export default async (request, response) => {
-  const [authError] = await authorize(request, 'types:manage');
+  const [authError] = await authorize(request, 'templates:manage');
   if(authError) return response.status(authError.code).json({ error: authError.msg });
 
-  const [error, result] = await deleteField(request.params.key, { productType: request.query.type ?? '' });
+  const [error, result] = await deleteTemplate(request.params.key);
   if(error) return response.status(error.code).json({ error: error.msg });
   response.json(result);
 };

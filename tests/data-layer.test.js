@@ -4,15 +4,14 @@ import { sql, eq } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
 import { extension } from 'kempo/server/db/schema.js';
 import {
-  kempoProduct, kempoProductType, kempoProductField, kempoProductOption, kempoProductLedger,
+  kempoProduct, kempoProductAttribute, kempoProductOption, kempoProductLedger,
 } from '../server/db/schema.js';
 import {
   createProduct, updateProduct, deleteProduct, getProduct, getProducts, setManagedBy,
   setChoiceAvailability, getPrice, unregisterProducts,
 } from '../server/utils/products.js';
 import { setQuantity, adjustQuantity, addLedgerEntry, getLedger, getLedgerEntry } from '../server/utils/ledger.js';
-import { createType, deleteType, registerType, getTypes, unregisterTypes } from '../server/utils/types.js';
-import { createField, updateField, deleteField, registerField, getFields, unregisterFields } from '../server/utils/fields.js';
+import { createAttribute, updateAttribute, deleteAttribute, registerAttribute, getAttributes, unregisterAttributes } from '../server/utils/attributes.js';
 import install from '../install.js';
 
 /*
@@ -36,7 +35,7 @@ if(!reachable && process.env.KEMPO_TEST_TIER === 'integration'){
 }
 
 const purge = async () => {
-  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]){
+  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductAttribute]){
     await db.delete(table);
   }
 };
@@ -65,47 +64,31 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
     if(reachable) await purge();
   });
 
-  describe('types and fields', () => {
-    test('a type gets a key from its name, and can be created once', async () => {
-      const type = ok(await createType({ name: 'Model car' }));
-      assert.equal(type.key, 'model-car');
-      refused(await createType({ name: 'Model car' }), 409);
+  describe('attributes', () => {
+    test('an attribute gets a key from its label, and its key can be used once', async () => {
+      const scale = ok(await createAttribute({ label: 'Scale', type: 'select', options: ['1:18', '1:24'] }));
+      assert.equal(scale.key, 'scale');
+      refused(await createAttribute({ label: 'Scale', type: 'text' }), 409);
+      ok(await createAttribute({ label: 'Brand', type: 'text' }));
     });
 
-    test('a field is scoped to a type, and a key cannot collide across scopes', async () => {
-      const scoped = ok(await createField({ label: 'Scale', type: 'select', options: ['1:18', '1:24'], productType: 'model-car' }));
-      assert.equal(scoped.productType, 'model-car');
-      refused(await createField({ label: 'Scale', type: 'text', productType: 'model-car' }), 409);
-      ok(await createField({ label: 'Brand', type: 'text' }));
-      refused(await createField({ label: 'Brand', type: 'text', productType: 'model-car' }), 409);
-      refused(await createField({ label: 'Nope', type: 'text', productType: 'missing-type' }), 400);
-    });
-
-    test('a field type can only change where nothing is lost', async () => {
-      refused(await updateField('brand', { type: 'number' }), 409);
-      assert.equal(ok(await updateField('brand', { type: 'longtext' })).type, 'longtext');
-    });
-
-    test('a type that products or fields use cannot be deleted', async () => {
-      refused(await deleteType('model-car'), 409);
+    test('an attribute type can only change where nothing is lost', async () => {
+      refused(await updateAttribute('brand', { type: 'number' }), 409);
+      assert.equal(ok(await updateAttribute('brand', { type: 'longtext' })).type, 'longtext');
     });
 
     test('an extension owns what it registers; people cannot delete it', async () => {
-      ok(await registerType('ext-a', { name: 'Vehicle' }));
-      ok(await registerType('ext-a', { name: 'Vehicle' }));
-      refused(await registerType('ext-b', { name: 'Vehicle' }), 409);
-      refused(await deleteType('vehicle'), 403);
-      ok(await registerField('ext-a', { label: 'Mileage', type: 'number', productType: 'vehicle' }));
-      refused(await deleteField('mileage', { productType: 'vehicle' }), 403);
-      refused(await updateField('mileage', { type: 'text' }, { productType: 'vehicle' }), 409);
-      assert.equal(ok(await updateField('mileage', { label: 'Odometer' }, { productType: 'vehicle' })).label, 'Odometer');
+      ok(await registerAttribute('ext-a', { label: 'Mileage', type: 'number' }));
+      ok(await registerAttribute('ext-a', { label: 'Mileage', type: 'number' }));
+      refused(await registerAttribute('ext-b', { label: 'Mileage', type: 'number' }), 409);
+      refused(await deleteAttribute('mileage'), 403);
+      refused(await updateAttribute('mileage', { type: 'text' }), 409);
+      assert.equal(ok(await updateAttribute('mileage', { label: 'Odometer' })).label, 'Odometer');
     });
 
     test('unregistering removes what an extension owns', async () => {
-      ok(await unregisterFields('ext-a'));
-      ok(await unregisterTypes('ext-a'));
-      assert.equal(ok(await getTypes({ owner: 'ext-a' })).length, 0);
-      assert.equal(ok(await getFields({ owner: 'ext-a' })).length, 0);
+      ok(await unregisterAttributes('ext-a'));
+      assert.equal(ok(await getAttributes({ owner: 'ext-a' })).length, 0);
     });
   });
 
@@ -138,14 +121,13 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
       assert.equal(String(again.publishedAt), String(live.publishedAt));
     });
 
-    test('field values are validated against the product type, merged on update and cleared when empty', async () => {
-      const car = ok(await createProduct({ name: 'Typed car', type: 'model-car', fields: { scale: '1:18', brand: 'Acme' } }));
-      assert.deepEqual(car.fields, { scale: '1:18', brand: 'Acme' });
-      refused(await createProduct({ name: 'Bad scale', type: 'model-car', fields: { scale: '1:99' } }), 400);
-      refused(await createProduct({ name: 'Unknown', fields: { nonsense: 1 } }), 400);
-      const merged = ok(await updateProduct(car.id, { fields: { brand: '' } }));
-      assert.deepEqual(merged.fields, { scale: '1:18' });
-      refused(await createProduct({ name: 'No such type', type: 'nope' }), 400);
+    test('attribute values are validated, merged on update and cleared when empty', async () => {
+      const car = ok(await createProduct({ name: 'Typed car', attributes: { scale: '1:18', brand: 'Acme' } }));
+      assert.deepEqual(car.attributes, { scale: '1:18', brand: 'Acme' });
+      refused(await createProduct({ name: 'Bad scale', attributes: { scale: '1:99' } }), 400);
+      refused(await createProduct({ name: 'Unknown', attributes: { nonsense: 1 } }), 400);
+      const merged = ok(await updateProduct(car.id, { attributes: { brand: '' } }));
+      assert.deepEqual(merged.attributes, { scale: '1:18' });
     });
 
     test('options are stored with the product and replaced as a set', async () => {
@@ -166,10 +148,9 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
 
     test('listing searches, filters, sorts and counts', async () => {
       await purge();
-      ok(await createType({ name: 'Model car' }));
-      ok(await createField({ label: 'Scale', type: 'select', options: ['1:18', '1:24'], productType: 'model-car' }));
-      ok(await createProduct({ name: 'Red car', type: 'model-car', price: 3000, status: 'published', tags: ['Red'], fields: { scale: '1:18' } }));
-      ok(await createProduct({ name: 'Blue car', type: 'model-car', price: 2000, status: 'published', fields: { scale: '1:24' } }));
+      ok(await createAttribute({ label: 'Scale', type: 'select', options: ['1:18', '1:24'] }));
+      ok(await createProduct({ name: 'Red car', price: 3000, status: 'published', tags: ['Red'], attributes: { scale: '1:18' } }));
+      ok(await createProduct({ name: 'Blue car', price: 2000, status: 'published', attributes: { scale: '1:24' } }));
       ok(await createProduct({ name: 'Hidden', status: 'draft' }));
       const all = ok(await getProducts({}));
       assert.equal(all.total, 3);
@@ -177,7 +158,6 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
       assert.deepEqual(ok(await getProducts({ q: 'blue' })).items.map(p => p.name), ['Blue car']);
       assert.deepEqual(ok(await getProducts({ filters: { scale: '1:18' } })).items.map(p => p.name), ['Red car']);
       assert.deepEqual(ok(await getProducts({ tag: 'red' })).items.map(p => p.name), ['Red car']);
-      assert.deepEqual(ok(await getProducts({ type: '' })).items.map(p => p.name), ['Hidden']);
       assert.equal(ok(await getProducts({ limit: 1 })).items.length, 1);
       assert.equal(ok(await getProducts({ ids: [] })).total, 0);
       assert.deepEqual(ok(await getProducts({ slugs: ['red-car', 'BLUE-CAR', 'nope'], sort: 'name' })).items.map(p => p.name), ['Blue car', 'Red car']);

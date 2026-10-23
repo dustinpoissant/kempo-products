@@ -2,12 +2,15 @@
   <content>
     <p>Everything on this page is done in the admin, under <strong>Products</strong>, with no code.</p>
 
-    <h2 id="types-and-fields" class="mt">Types and fields</h2>
-    <p>A product has only what every catalog needs: a name, an address, a description, a status, a price, quantity, pictures and tags. Everything else is up to you.</p>
-    <p>Under <strong>Products &gt; Types</strong> make a type, such as "Vehicle" or "Model car". Under <strong>Products &gt; Fields</strong> give it fields: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". A field applies to every product or to one type, and a product only shows the fields of its type.</p>
+    <h2 id="templates" class="mt">Templates</h2>
+    <p>Under <strong>Products &gt; Templates</strong> make a template, such as "Model car", with its own attributes (a "Scale"), options (a Color in black and white) and default values (every model car is the same size and weight). Pick it on a product's <strong>Template</strong> tab and the product inherits all of it. A product can still add attributes, options and extra choices of its own: the template offers black and white, this product adds red and blue. A template can also give its products a product type, a price, a description, tags and categories, which a product uses until it sets its own.</p>
+
+    <h2 id="attributes" class="mt">Attributes</h2>
+    <p>A product has only what every catalog needs: a name, a URL, a description, a status, a price, quantity, pictures and tags. Everything else is up to you.</p>
+    <p>Under <strong>Products &gt; Attributes</strong> add the facts your products have: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". Every product shows them.</p>
     <div class="table-wrapper mb">
       <table>
-        <thead><tr><th>Kind of field</th><th>Holds</th></tr></thead>
+        <thead><tr><th>Kind of attribute</th><th>Holds</th></tr></thead>
         <tbody>
           <tr><td>Short text, long text</td><td>Words. Short is up to 1,000 characters, long up to 20,000</td></tr>
           <tr><td>Number</td><td>Any number</td></tr>
@@ -21,21 +24,21 @@
       </table>
     </div>
     <div class="mb">
-      <img src="./media/admin-new-field.png" alt="The New field dialog on the Fields page, filling in a Year field: a number that applies to the Model car type, with help text, shown in the list and filterable by visitors." class="full b r" />
-      <small class="d-b tc-muted">Adding a field. This "Year" is a number that only model cars have.</small>
+      <img src="./media/admin-new-attribute.png" alt="The New attribute dialog on the Attributes page, filling in a Year attribute: a number that applies to the Model car type, with help text, shown in the list and filterable by visitors." class="full b r" />
+      <small class="d-b tc-muted">Adding an attribute. This "Year" is a number that only model cars have.</small>
     </div>
-    <p>Tick <strong>Visitors can filter by this</strong> on a choice-list field and it becomes a drop-down on the public list. A field can be changed to another kind only where nothing can be lost: a choice list can become text, and short text can become long text.</p>
+    <p>Tick <strong>Visitors can filter by this</strong> on a choice-list attribute and it becomes a drop-down on the public list. An attribute can be changed to another kind only where nothing can be lost: a choice list can become text, and short text can become long text.</p>
 
     <h2 id="categories" class="mt">Categories</h2>
-    <p>A product is of one type, which decides its fields, and can be in <strong>any number of categories</strong>, which are how shoppers browse. Add them under <strong>Admin &rarr; Products &rarr; Product Categories</strong>, then tick them on a product's <strong>Details</strong> tab, when you create or edit it.</p>
+    <p>A product is of one type, which decides its attributes, and can be in <strong>any number of categories</strong>, which are how shoppers browse. Add them under <strong>Admin &rarr; Products &rarr; Product Categories</strong>, then tick them on a product's <strong>Details</strong> tab, when you create or edit it.</p>
     <p>A category has a name, a description and a <strong>key</strong> made from its name (<code>model-cars</code>). The key never changes, because it is in addresses like <code>/products/?category=model-cars</code>. Deleting a category takes it off its products and leaves them.</p>
     <p><code>/categories/</code> lists the categories that have published products in them, with how many, and each links to the product list narrowed to it. <code>&lt;k-products-list category="model-cars"&gt;</code> shows one anywhere on your site.</p>
 
     <h2 id="products" class="mt">Products</h2>
     <p>A product's <strong>status</strong> is <code>draft</code>, <code>published</code> or <code>archived</code>. Only published products are public. Its <strong>availability</strong> is <code>available</code>, <code>pending</code> or <code>sold</code>, for things like a dealership's "sale pending". Neither needs a count.</p>
-    <p>A product's <strong>address</strong> (its slug) is made from its name, and is the last part of its page: <code>/products/1969-camaro/</code>. You can change it. A few words are reserved because they are this extension's own addresses: <code>api</code>, <code>components</code>, <code>vendor</code>, <code>sdk</code>, <code>index</code>, <code>admin</code>, <code>new</code> and <code>edit</code>.</p>
+    <p>A product's <strong>URL</strong> (its slug) is made from its name, and is the last part of its page: <code>/products/1969-camaro/</code>. You can change it. A few words are reserved because they are this extension's own addresses: <code>api</code>, <code>components</code>, <code>vendor</code>, <code>sdk</code>, <code>index</code>, <code>admin</code>, <code>new</code> and <code>edit</code>.</p>
     <div class="mb">
-      <img src="./media/admin-product-form.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, address, type, status, availability, price, quantity and tags." class="full b r" />
+      <img src="./media/admin-product-form.png" alt="The product form for the 1969 Camaro: the tabs (Details, Description, Media, Options), and on Details the name, URL, status, availability, price, quantity and tags." class="full b r" />
       <small class="d-b tc-muted">The product form is split into tabs. Here the quantity box is read-only, because another extension keeps it up to date.</small>
     </div>
     <p>The <strong>Description</strong> tab is the same full rich text editor pages use: headings, lists, links, tables and pictures. It is stored as HTML, and the public page sanitizes it when showing it, so scripts, event handlers and <code>javascript:</code> links never run. Search engines get its plain text as the meta description.</p>
@@ -82,6 +85,6 @@
     <p>The price on the page is asked of the server every time the choices change, so it is always the number that would be charged. <strong>Never trust a price from a browser.</strong> Anything that charges money should ask for it with <code>getPrice</code>.</p>
 
     <h2 id="images" class="mt">Images</h2>
-    <p>If <a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a> is installed and enabled, the product form lets you upload pictures. The first is the primary one shown in lists. Without it the field is simply not shown, and pages show no picture.</p>
+    <p>If <a href="https://github.com/dustinpoissant/kempo-media" target="_blank">kempo-media</a> is installed and enabled, the product form lets you upload pictures. The first is the primary one shown in lists. Without it the attribute is simply not shown, and pages show no picture.</p>
   </content>
 </page>

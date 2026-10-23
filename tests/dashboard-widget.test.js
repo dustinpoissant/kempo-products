@@ -42,8 +42,8 @@ const problems = widget => {
   return found;
 };
 
-test('package.json carries no kempo field: kempo-config.json is where an extension is declared', () => {
-  assert.equal('kempo' in pkg, false, `package.json has a kempo field (${JSON.stringify(pkg.kempo)}); move it into kempo-config.json`);
+test('package.json carries no kempo attribute: kempo-config.json is where an extension is declared', () => {
+  assert.equal('kempo' in pkg, false, `package.json has a kempo attribute (${JSON.stringify(pkg.kempo)}); move it into kempo-config.json`);
   assert.ok(config['public-scope'], 'kempo-config.json has no public-scope');
 });
 

@@ -7,7 +7,7 @@ import { getConfig, getProduct, getPrice, displayMoney, formatMoney } from '/pro
 import { syncActions } from '/products/components/actions.js';
 
 /*
-  A product's page: pictures, price, the options a buyer chooses and the details of its type.
+  A product's page: pictures, price, the options a buyer chooses and its details.
 
   Choosing an option writes it into the address (/products/camaro/?color=red&clear-coat=no), so a
   refresh or a shared link comes back with the same choices selected. A choice that does not exist
@@ -150,7 +150,7 @@ export default class ProductDetail extends ShadowComponent {
 
   /*
     Reads the address into the choices. Anything that is not a real, available choice is dropped,
-    and a required option with exactly one available choice is chosen for the buyer.
+    and an option starts on its default choice.
   */
   readSelections = () => {
     if(!this.data) return;
@@ -159,7 +159,8 @@ export default class ProductDetail extends ShadowComponent {
     for(const option of this.data.product.options){
       const wanted = params.get(option.key);
       const choice = option.choices.find(candidate => candidate.key === wanted && candidate.available);
-      if(choice) selections[option.key] = choice.key;
+      const preset = choice ?? option.choices.find(candidate => candidate.default && candidate.available);
+      if(preset) selections[option.key] = preset.key;
     }
     this.selections = selections;
     this.refreshPrice();
@@ -212,7 +213,7 @@ export default class ProductDetail extends ShadowComponent {
     }));
   };
 
-  money = minor => displayMoney(minor, this.config.currency, this.config.decimals);
+  money = minor => displayMoney(minor, this.config.currency);
 
   /*
     Event handlers
@@ -291,30 +292,30 @@ export default class ProductDetail extends ShadowComponent {
 
   renderDetails(){
     const { product } = this.data;
-    const rows = this.data.fields
-      .map(field => [field, product.fields[field.key]])
+    const rows = this.data.attributes
+      .map(attribute => [attribute, [undefined, null, ''].includes(product.attributes[attribute.key]) ? product.inherited?.[attribute.key] : product.attributes[attribute.key]])
       .filter(([, value]) => value !== undefined && value !== null && value !== '');
     if(!rows.length) return '';
-    const show = (field, value) => {
-      if(field.type === 'boolean') return value ? 'Yes' : 'No';
-      if(field.type === 'rating') return `${value} / 5`;
-      if(field.type === 'color') return html`<span style=${`display: inline-block; width: 1em; height: 1em; vertical-align: middle; border: 1px solid var(--c_border); background: ${/^#[0-9a-f]{6,8}$/i.test(value) ? value : 'transparent'}`}></span> ${value}`;
+    const show = (attribute, value) => {
+      if(attribute.type === 'boolean') return value ? 'Yes' : 'No';
+      if(attribute.type === 'rating') return `${value} / 5`;
+      if(attribute.type === 'currency') return this.money(value);
+      if(attribute.type === 'color') return html`<span style=${`display: inline-block; width: 1em; height: 1em; vertical-align: middle; border: 1px solid var(--c_border); background: ${/^#[0-9a-f]{6,8}$/i.test(value) ? value : 'transparent'}`}></span> ${value}`;
       return String(value);
     };
     return html`<table class="mb"><tbody>
-      ${rows.map(([field, value]) => html`<tr><th scope="row" style="width: 40%;">${field.label}</th><td>${show(field, value)}</td></tr>`)}
+      ${rows.map(([attribute, value]) => html`<tr><th scope="row" style="width: 40%;">${attribute.label}</th><td>${show(attribute, value)}</td></tr>`)}
     </tbody></table>`;
   }
 
   render(){
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-muted">${this.error}</p>`;
-    const { product, type } = this.data;
+    const { product } = this.data;
     const status = product.availability === 'sold' ? 'Sold' : product.availability === 'pending' ? 'Sale pending' : !product.inStock ? 'Out of stock' : '';
     return html`<article class="row" style="gap: var(--spacer) 0;">
       <div class="span-12 d-span-6" style="padding-right: var(--spacer);">${this.renderGallery()}</div>
       <div class="span-12 d-span-6">
-        ${type ? html`<div class="tc-muted small">${type.name}</div>` : ''}
         <h1>${product.name}</h1>
         <slot name="price"><div class="large mb" aria-live="polite">${this.priceLine}${this.pricing ? html` <k-spinner size="xs"></k-spinner>` : ''}</div></slot>
         ${this.creditLines.map(line => html`<p class="tc-muted mbq">${line}</p>`)}

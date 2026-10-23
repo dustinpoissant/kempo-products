@@ -1,7 +1,7 @@
 /*
   Pure helpers for product slugs, with no database access so they can be tested without a server.
 
-  A slug is the last part of a product's public address: /products/<slug>/. The product pages live
+  A slug is the last part of a product's public URL: /products/<slug>/. The product pages live
   in the same folder as the extension's own routes, so a slug that matches one of them would make
   the product unreachable and shadow the route; those words are reserved.
 */

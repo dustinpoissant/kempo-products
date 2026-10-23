@@ -1,7 +1,7 @@
 import authorize from '../../../server/utils/authorize.js';
 import { buildExport } from '../../../server/utils/importExport.js';
 
-/* Downloads the catalog: ?format=csv (a spreadsheet, the default) or ?format=json (everything, including types and fields). */
+/* Downloads the catalog: ?format=csv (a spreadsheet, the default) or ?format=json (everything, including types and attributes). */
 export default async (request, response) => {
   const [authError] = await authorize(request, 'read');
   if(authError) return response.status(authError.code).json({ error: authError.msg });

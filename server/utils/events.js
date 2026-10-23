@@ -10,7 +10,7 @@
   manages some of those products (`managedBy`) takes or gives back whatever it keeps their quantity from there
   and throws when it cannot, because products never writes a managed product's quantity itself. When the entry
   fails after a guard passed, `ledger:add_failed` ({ ref }) tells them to undo what they did.
-  Type and field guards can only refuse. Every payload carries `actor`: the extension that made the
+  Type and attribute guards can only refuse. Every payload carries `actor`: the extension that made the
   change through the server SDK, or '' for a person using the admin.
   Notifications ("after" events) run once the work is committed; nothing they do can undo it.
 */
@@ -25,18 +25,18 @@ export const EVENTS = {
   categoryCreated: 'kempo-products:category:created',
   categoryUpdated: 'kempo-products:category:updated',
   categoryDeleted: 'kempo-products:category:deleted',
-  typeBeforeCreate: 'kempo-products:type:before_create',
-  typeCreated: 'kempo-products:type:created',
-  typeBeforeUpdate: 'kempo-products:type:before_update',
-  typeUpdated: 'kempo-products:type:updated',
-  typeBeforeDelete: 'kempo-products:type:before_delete',
-  typeDeleted: 'kempo-products:type:deleted',
-  fieldBeforeCreate: 'kempo-products:field:before_create',
-  fieldCreated: 'kempo-products:field:created',
-  fieldBeforeUpdate: 'kempo-products:field:before_update',
-  fieldUpdated: 'kempo-products:field:updated',
-  fieldBeforeDelete: 'kempo-products:field:before_delete',
-  fieldDeleted: 'kempo-products:field:deleted',
+  templateBeforeCreate: 'kempo-products:template:before_create',
+  templateCreated: 'kempo-products:template:created',
+  templateBeforeUpdate: 'kempo-products:template:before_update',
+  templateUpdated: 'kempo-products:template:updated',
+  templateBeforeDelete: 'kempo-products:template:before_delete',
+  templateDeleted: 'kempo-products:template:deleted',
+  attributeBeforeCreate: 'kempo-products:attribute:before_create',
+  attributeCreated: 'kempo-products:attribute:created',
+  attributeBeforeUpdate: 'kempo-products:attribute:before_update',
+  attributeUpdated: 'kempo-products:attribute:updated',
+  attributeBeforeDelete: 'kempo-products:attribute:before_delete',
+  attributeDeleted: 'kempo-products:attribute:deleted',
   ledgerBeforeAdd: 'kempo-products:ledger:before_add',
   ledgerAdded: 'kempo-products:ledger:added',
   ledgerAddFailed: 'kempo-products:ledger:add_failed',

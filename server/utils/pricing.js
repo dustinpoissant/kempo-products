@@ -38,7 +38,7 @@ const normalizeChoice = (input, optionLabel, taken) => {
   taken.add(key);
   const price = input?.price === undefined || input?.price === null || input?.price === '' ? 0 : Number(input.price);
   if(!Number.isSafeInteger(price)) return bad(`${optionLabel}: the price of "${label}" must be a whole number in the smallest currency unit`);
-  return [null, { key, label, price, available: input?.available === undefined ? true : Boolean(input.available) }];
+  return [null, { key, label, price, available: input?.available === undefined ? true : Boolean(input.available), default: Boolean(input?.default) }];
 };
 
 /*
@@ -70,6 +70,9 @@ export const normalizeOptions = (input = []) => {
       if(error) return [error, null];
       choices.push({ ...choice, position });
     }
+    // one choice at most is the one chosen for the buyer to start with; the first marked wins
+    const first = choices.findIndex(choice => choice.default);
+    choices.forEach((choice, position) => { choice.default = position === first; });
     options.push({ key, label, required: raw?.required === undefined ? true : Boolean(raw.required), priceType, position: index, choices });
   }
   if(options.filter(option => option.priceType === 'replace').length > 1){
@@ -80,7 +83,7 @@ export const normalizeOptions = (input = []) => {
 
 /*
   Checks a buyer's selections ({ optionKey: choiceKey }) against the product's options: every
-  required option chosen, every choice real and in stock, nothing unknown. Returns
+  required option chosen (or its default choice, when it has one), every choice real and in stock, nothing unknown. Returns
   [error, selections] where selections holds only the chosen options.
 */
 export const checkSelections = (options, selections = {}) => {
@@ -93,10 +96,13 @@ export const checkSelections = (options, selections = {}) => {
   }
   const chosen = {};
   for(const option of options){
-    const value = selections[option.key];
+    let value = selections[option.key];
     if(value === undefined || value === null || value === ''){
-      if(option.required) return bad(`Choose a ${option.label.toLowerCase()}`);
-      continue;
+      // a required option left blank takes its default choice, when it has one in stock
+      const fallback = option.required ? option.choices.find(choice => choice.default && choice.available) : null;
+      if(fallback) value = fallback.key;
+      else if(option.required) return bad(`Choose a ${option.label.toLowerCase()}`);
+      else continue;
     }
     const choice = option.choices.find(candidate => candidate.key === value);
     if(!choice) return bad(`"${value}" is not a choice for ${option.label}`);

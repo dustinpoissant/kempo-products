@@ -26,7 +26,7 @@ const enc = encodeURIComponent;
 
 /*
   What the page needs to know to render: currency, whether prices are shown, whether the caller
-  can manage the catalog, whether images are available, and the allowed statuses and field types.
+  can manage the catalog, whether images are available, and the allowed statuses and attribute types.
 */
 export const getConfig = () => req('GET', `${BASE}/config`);
 
@@ -38,7 +38,7 @@ export const getSettings = () => req('GET', `${BASE}/settings`);
 export const saveSettings = values => req('PUT', `${BASE}/settings`, values);
 
 /*
-  Products. `filters` is an object of field key -> exact value, e.g. { scale: '1:18' }. Visitors
+  Products. `filters` is an object of attribute key -> exact value, e.g. { scale: '1:18' }. Visitors
   only ever see published products; people who can manage the catalog can pass `status`.
 */
 export const getProducts = (params = {}) => req('GET', `${BASE}/products${buildQuery(params)}`);
@@ -53,13 +53,13 @@ export const deleteProduct = id => req('DELETE', `${BASE}/products/${enc(id)}`);
 export const getPrice = (product, options = {}) => req('GET', `${BASE}/price${buildQuery({ product, options })}`);
 
 /*
-  Types and fields. A field belongs to one type or, with no type, to every product; fields are
-  identified by their key and type, so changing or deleting a type's field passes { type }.
+  Product types (what buying a product means) and the custom attributes every product has.
 */
-export const getTypes = () => req('GET', `${BASE}/types`);
-export const createType = data => req('POST', `${BASE}/types`, data);
-export const updateType = (key, data) => req('PATCH', `${BASE}/types/${enc(key)}`, data);
-export const deleteType = key => req('DELETE', `${BASE}/types/${enc(key)}`);
+export const getProductTypes = () => req('GET', `${BASE}/product-types`);
+export const getTemplates = () => req('GET', `${BASE}/templates`);
+export const createTemplate = data => req('POST', `${BASE}/templates`, data);
+export const updateTemplate = (key, data) => req('PATCH', `${BASE}/templates/${enc(key)}`, data);
+export const deleteTemplate = key => req('DELETE', `${BASE}/templates/${enc(key)}`);
 
 /*
   Categories group products for browsing. A product is in any number of them: set `categories` (a list of
@@ -70,10 +70,10 @@ export const getCategories = () => req('GET', `${BASE}/categories`);
 export const createCategory = data => req('POST', `${BASE}/categories`, data);
 export const updateCategory = (key, data) => req('PATCH', `${BASE}/categories/${enc(key)}`, data);
 export const deleteCategory = key => req('DELETE', `${BASE}/categories/${enc(key)}`);
-export const getFields = (params = {}) => req('GET', `${BASE}/fields${buildQuery(params)}`);
-export const createField = data => req('POST', `${BASE}/fields`, data);
-export const updateField = (key, data, { type = '' } = {}) => req('PATCH', `${BASE}/fields/${enc(key)}${buildQuery({ type })}`, data);
-export const deleteField = (key, { type = '' } = {}) => req('DELETE', `${BASE}/fields/${enc(key)}${buildQuery({ type })}`);
+export const getAttributes = (params = {}) => req('GET', `${BASE}/attributes${buildQuery(params)}`);
+export const createAttribute = data => req('POST', `${BASE}/attributes`, data);
+export const updateAttribute = (key, data) => req('PATCH', `${BASE}/attributes/${enc(key)}`, data);
+export const deleteAttribute = key => req('DELETE', `${BASE}/attributes/${enc(key)}`);
 
 /*
   The ledger: every change to a product's quantity. An entry adds to (or, negative, takes from) the
@@ -112,7 +112,7 @@ export const displayMoney = (minor, currency = 'usd', decimals = 2, locale = und
 
 /*
   Import and export. exportUrl('csv' | 'json') is a download link: CSV is a spreadsheet, JSON is
-  everything including types and fields. importProducts({ content, onMatch, dryRun }) takes the text
+  everything including types and attributes. importProducts({ content, onMatch, dryRun }) takes the text
   of a file; onMatch is 'skip' or 'update' for a slug that already exists, and dryRun reports what
   would happen without changing anything. Resolves to { created, updated, skipped, errors, notes }.
 */

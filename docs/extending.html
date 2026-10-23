@@ -67,7 +67,8 @@
       </div>
       <h5><a href="./catalog.html">Your catalog</a></h5>
       <div class="ml mb -mt">
-        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#templates" class="d-b">Templates</a>
+        <a href="./catalog.html#attributes" class="d-b">Attributes</a>
         <a href="./catalog.html#products" class="d-b">Products</a>
         <a href="./catalog.html#price" class="d-b">Price</a>
         <a href="./catalog.html#quantity" class="d-b">Quantity</a>
@@ -108,7 +109,7 @@
       <h5><a href="./extending.html">Building on it</a></h5>
       <div class="ml mb -mt">
         <a href="./extending.html#sdk" class="d-b">Server SDK</a>
-        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#register" class="d-b">Shipping attributes</a>
         <a href="./extending.html#ownership" class="d-b">Ownership</a>
         <a href="./extending.html#hooks" class="d-b">Hooks</a>
         <a href="./extending.html#tabs" class="d-b">Adding to the pages</a>
@@ -160,7 +161,7 @@
       <table>
         <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td><code>getProducts({ q, type, status, availability, tag, filters, ids, slugs, owner, inStock, sort, limit, offset })</code></td><td>List and search. Returns <code>{ items, total }</code></td></tr>
+          <tr><td><code>getProducts({ q, status, availability, tag, filters, ids, slugs, owner, inStock, sort, limit, offset })</code></td><td>List and search. Returns <code>{ items, total }</code></td></tr>
           <tr><td><code>getProduct(idOrSlug)</code></td><td>One product, with its options</td></tr>
           <tr><td><code>createProduct(data, { owner })</code>, <code>updateProduct(id, data, { owner })</code>, <code>deleteProduct(id, { owner })</code></td><td>Manage products. <code>owner</code> makes them your extension's</td></tr>
           <tr><td><code>getPrice(productId, selections)</code></td><td>The server's price for <code>{ optionKey: choiceKey }</code>: <code>{ unit, base, lines, currency }</code></td></tr>
@@ -168,44 +169,42 @@
           <tr><td><code>setQuantity(id, quantity, { actor })</code>, <code>adjustQuantity(id, delta, { actor })</code></td><td>Change quantity; <code>-1</code> is unlimited. Atomic, and never below zero</td></tr>
           <tr><td><code>setManagedBy(id, extension)</code></td><td>Declare that your extension keeps this product's quantity and choice availability in step with something else</td></tr>
           <tr><td><code>setChoiceAvailability(id, optionKey, choiceKey, available, { actor })</code></td><td>Mark one choice in or out of stock</td></tr>
-          <tr><td><code>getTypes</code>, <code>registerType(owner, { name })</code>, <code>unregisterTypes(owner)</code></td><td>Product types</td></tr>
-          <tr><td><code>getFields</code>, <code>registerField(owner, definition)</code>, <code>registerFields</code>, <code>unregisterFields(owner)</code></td><td>Fields. <code>definition.productType</code> scopes one to a type</td></tr>
+          <tr><td><code>getTemplates</code>, <code>createTemplate</code>, <code>updateTemplate</code>, <code>deleteTemplate</code>, <code>registerTemplate(owner, definition)</code>, <code>unregisterTemplates(owner)</code>, <code>effectiveAttributes(product)</code></td><td>Product templates: attributes, options and default values products made from them inherit and can add to</td></tr>
+          <tr><td><code>getProductTypes</code>, <code>registerProductType(owner, { key, name, description, needsShipping })</code>, <code>unregisterProductTypes(owner)</code></td><td>Product types: what kind of product it is, and how it is delivered. kempo-products has "Generic Product"; kempo-shipping adds "Physical Item", kempo-credits "Credits Only"</td></tr>
+          <tr><td><code>getAttributes</code>, <code>registerAttribute(owner, definition)</code>, <code>registerAttributes</code>, <code>unregisterAttributes(owner)</code></td><td>Attributes</td></tr>
           <tr><td><code>unregisterProducts(owner, { release })</code></td><td>For uninstall: delete what you own, or hand it back to people</td></tr>
           <tr><td><code>buildExport({ format })</code>, <code>importFile(text, { onMatch, dryRun })</code></td><td>See <a href="./import-export.html">Import and export</a></td></tr>
         </tbody>
       </table>
     </div>
 
-    <h2 id="register" class="mt">Shipping a type and its fields</h2>
-    <p>An extension can arrive with a ready-made type, so a "vehicles" extension comes with a Vehicle type already set up. <code>registerType</code> and <code>registerFields</code> are safe to call again on every update:</p>
+    <h2 id="register" class="mt">Shipping attributes</h2>
+    <p>An extension can arrive with its own attributes, so a "vehicles" extension comes with its make and year already set up. <code>registerAttributes</code> is safe to call again on every update:</p>
     <pre><code class="hljs javascript"><span class="hljs-comment">// install.js</span>
-<span class="hljs-keyword">import</span> { registerType, registerFields } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+<span class="hljs-keyword">import</span> { registerAttributes } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; {
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerType</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>, { <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Vehicle&#x27;</span> });
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerFields</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>, [
-    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;make&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Make&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;text&#x27;</span>, <span class="hljs-attr">productType</span>: <span class="hljs-string">&#x27;vehicle&#x27;</span> },
-    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;year&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Year&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;number&#x27;</span>, <span class="hljs-attr">productType</span>: <span class="hljs-string">&#x27;vehicle&#x27;</span> },
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">registerAttributes</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>, [
+    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;make&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Make&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;text&#x27;</span> },
+    { <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;year&#x27;</span>, <span class="hljs-attr">label</span>: <span class="hljs-string">&#x27;Year&#x27;</span>, <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;number&#x27;</span> },
   ]);
 };</code></pre>
     <pre><code class="hljs javascript"><span class="hljs-comment">// uninstall.js</span>
-<span class="hljs-keyword">import</span> { unregisterFields, unregisterTypes, unregisterProducts } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
+<span class="hljs-keyword">import</span> { unregisterAttributes, unregisterProducts } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title function_">async</span> () =&gt; {
   <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterProducts</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>, { <span class="hljs-attr">release</span>: <span class="hljs-literal">true</span> });   <span class="hljs-comment">// or omit release to delete them</span>
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterFields</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>);
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterTypes</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>);
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">unregisterAttributes</span>(<span class="hljs-string">&#x27;my-vehicles&#x27;</span>);
 };</code></pre>
 
     <h2 id="ownership" class="mt">Ownership</h2>
-    <p>Types, fields and products can each belong to an extension. The owner alone can delete them or change what defines them, and people can still edit everything else, so an extension's products stay useful in the admin.</p>
+    <p>Attributes and products can each belong to an extension. The owner alone can delete them or change what defines them, and people can still edit everything else, so an extension's products stay useful in the admin.</p>
     <div class="table-wrapper mb">
       <table>
         <thead><tr><th></th><th>Only the owner can</th><th>Anyone with the permission can still</th></tr></thead>
         <tbody>
-          <tr><td><strong>Product</strong></td><td>change its slug, name and type; delete it</td><td>edit its description, price, options, tags, images, field values and quantity</td></tr>
-          <tr><td><strong>Type</strong></td><td>rename it; delete it</td><td>change its description and position</td></tr>
-          <tr><td><strong>Field</strong></td><td>delete it; change its key, kind, requirement or choices</td><td>rename it; change its help text and whether it is listed or filterable</td></tr>
+          <tr><td><strong>Product</strong></td><td>change its slug and name; delete it</td><td>edit its description, price, options, tags, images, attribute values and quantity</td></tr>
+          <tr><td><strong>Attribute</strong></td><td>delete it; change its key, kind, requirement or choices</td><td>rename it; change its help text and whether it is listed or filterable</td></tr>
         </tbody>
       </table>
     </div>
@@ -223,8 +222,7 @@
           <tr><td><code>kempo-products:product:before_update</code></td><td><code>{ product, changes, userId }</code> (editable)</td></tr>
           <tr><td><code>kempo-products:product:before_delete</code></td><td><code>{ product, userId }</code></td></tr>
           <tr><td><code>kempo-products:ledger:before_add</code></td><td><code>{ ref, lines, products, reason, note, undoes, actor }</code>, refuse only. Answered by the extension that manages some of the products</td></tr>
-          <tr><td><code>kempo-products:type:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
-          <tr><td><code>kempo-products:field:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
+          <tr><td><code>kempo-products:attribute:before_create</code>, <code>before_update</code>, <code>before_delete</code></td><td>refuse only</td></tr>
         </tbody>
       </table>
     </div>
@@ -238,9 +236,8 @@
           <tr><td><code>kempo-products:product:quantity_changed</code></td><td><code>{ product, previousQuantity, quantity, reason }</code></td></tr>
           <tr><td><code>kempo-products:ledger:added</code></td><td><code>{ ref, lines, handedOver, reason, note, undoes }</code></td></tr>
           <tr><td><code>kempo-products:ledger:add_failed</code></td><td><code>{ ref }</code>: an entry a manager agreed to did not happen, so it undoes what it did</td></tr>
-          <tr><td><code>kempo-products:type:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ type, previous? }</code></td></tr>
           <tr><td><code>kempo-products:category:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ category, previous?, products? }</code> (<code>products</code> is the ids it was taken off, on delete)</td></tr>
-          <tr><td><code>kempo-products:field:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ field, previous? }</code></td></tr>
+          <tr><td><code>kempo-products:attribute:created</code>, <code>updated</code>, <code>deleted</code></td><td><code>{ attribute, previous? }</code></td></tr>
         </tbody>
       </table>
     </div>
@@ -288,8 +285,8 @@ page.<span class="hljs-title function_">addEventListener</span>(<span class="hlj
     <pre><code class="hljs xml"><span class="hljs-comment">&lt;!-- admin/product-tab.global.html --&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">content</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;my-extension-product-tab&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;Shipping tab&quot;</span> <span class="hljs-attr">owner</span>=<span class="hljs-string">&quot;my-extension&quot;</span> <span class="hljs-attr">enabled</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">locked</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;products-admin-product-tabs&quot;</span> <span class="hljs-attr">priority</span>=<span class="hljs-string">&quot;10&quot;</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">k-products-tab</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;shipping&quot;</span> <span class="hljs-attr">label</span>=<span class="hljs-string">&quot;Shipping&quot;</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/my-extension/components/ShippingFields.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">my-shipping-fields</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">my-shipping-fields</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/my-extension/components/ShippingAttributes.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">my-shipping-attributes</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">my-shipping-attributes</span>&gt;</span>
 <span class="hljs-tag">&lt;/<span class="hljs-name">k-products-tab</span>&gt;</span>
 <span class="hljs-tag">&lt;/<span class="hljs-name">content</span>&gt;</span></code></pre>
     <p>Tabs from several extensions all appear, after the built-in ones, ordered by <code>priority</code>. Your element finds the form with <code>this.closest('k-products-form')</code> and listens to what is going on:</p>

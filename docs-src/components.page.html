@@ -41,17 +41,16 @@
       <table>
         <thead><tr><th>Attribute</th><th>Shows only</th><th>Example</th></tr></thead>
         <tbody>
-          <tr><td><code>type</code></td><td>Products of one type. Use the type's key (shown on <strong>Products &gt; Types</strong>)</td><td><code>type="model-car"</code></td></tr>
           <tr><td><code>tag</code></td><td>Products that have every tag listed, comma separated</td><td><code>tag="featured"</code>, <code>tag="red,muscle"</code></td></tr>
           <tr><td><code>category</code></td><td>Products in every category listed (their keys), comma separated. Visitors also get a Category menu unless this is set</td><td><code>category="model-cars"</code></td></tr>
           <tr><td><code>slugs</code></td><td>Exactly these products, by slug, comma separated, in the order you list them</td><td><code>slugs="1969-camaro,mini-cooper"</code></td></tr>
           <tr><td><code>availability</code></td><td>Products with one of these availabilities: <code>available</code>, <code>pending</code>, <code>sold</code></td><td><code>availability="available"</code></td></tr>
           <tr><td><code>in-stock</code></td><td>Products that are not out of stock. It is a flag: no value needed</td><td><code>in-stock</code></td></tr>
-          <tr><td><code>filters</code></td><td>Products whose custom fields match, as JSON. Use a field's key</td><td><code>filters='{"scale":"1:18"}'</code></td></tr>
+          <tr><td><code>filters</code></td><td>Products whose custom attributes match, as JSON. Use an attribute's key</td><td><code>filters='{"scale":"1:18"}'</code></td></tr>
         </tbody>
       </table>
     </div>
-    <p>A product's slug is its address: it is the last part of <code>/products/1969-camaro/</code>, and you can see and change it in the product form.</p>
+    <p>A product's slug is its URL: it is the last part of <code>/products/1969-camaro/</code>, and you can see and change it in the product form.</p>
 
     <h3 id="start-state" class="mt">Where it starts</h3>
     <p>These set the starting point. Visitors can change them with the controls, unless you hide the controls.</p>
@@ -94,14 +93,14 @@
 &lt;!-- The three most expensive in stock --&gt;
 &lt;k-products-list in-stock sort="price-desc" limit="3" hide-controls no-url&gt;&lt;/k-products-list&gt;
 
-&lt;!-- A page for one type, with search and paging, twelve at a time --&gt;
-&lt;k-products-list type="model-car" page-size="12"&gt;&lt;/k-products-list&gt;
+&lt;!-- A page of one category, with search and paging, twelve at a time --&gt;
+&lt;k-products-list category="model-cars" page-size="12"&gt;&lt;/k-products-list&gt;
 
 &lt;!-- Only 1:18 scale cars --&gt;
-&lt;k-products-list type="model-car" filters='{"scale":"1:18"}' hide-controls no-url&gt;&lt;/k-products-list&gt;
+&lt;k-products-list filters='{"scale":"1:18"}' hide-controls no-url&gt;&lt;/k-products-list&gt;
 
-&lt;!-- Vehicles that are not sold yet --&gt;
-&lt;k-products-list type="vehicle" availability="available,pending" page-size="12"&gt;&lt;/k-products-list&gt;
+&lt;!-- Cars that are not sold yet --&gt;
+&lt;k-products-list category="vehicles" availability="available,pending" page-size="12"&gt;&lt;/k-products-list&gt;
 
 &lt;!-- The whole catalog, which is what /products/ is --&gt;
 &lt;k-products-list&gt;&lt;/k-products-list&gt;</code></pre>
@@ -115,16 +114,15 @@
       <table>
         <thead><tr><th>Address</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><code>?q=camaro</code></td><td>Searches the name, description, tags and field values</td></tr>
-          <tr><td><code>?type=model-car</code></td><td>Shows one type (ignored when the list has a <code>type</code> attribute)</td></tr>
+          <tr><td><code>?q=camaro</code></td><td>Searches the name, description, tags and attribute values</td></tr>
           <tr><td><code>?sort=price-asc</code></td><td>Sorts</td></tr>
           <tr><td><code>?page=2</code></td><td>The second page</td></tr>
-          <tr><td><code>?f.scale=1:18</code></td><td>Filters a field named <code>scale</code> to <code>1:18</code></td></tr>
+          <tr><td><code>?f.scale=1:18</code></td><td>Filters an attribute named <code>scale</code> to <code>1:18</code></td></tr>
         </tbody>
       </table>
     </div>
-    <p>So a link such as <code>/products/?type=model-car&amp;f.scale=1:18&amp;sort=price-asc</code> is a good thing to put in a menu.</p>
-    <p>Only choice-list fields that you marked <strong>Visitors can filter by this</strong> get a filter drop-down. Text, number and other fields can be matched with the <code>filters</code> attribute (an exact match), but they have no drop-down.</p>
+    <p>So a link such as <code>/products/?category=model-cars&amp;f.scale=1:18&amp;sort=price-asc</code> is a good thing to put in a menu.</p>
+    <p>Only choice-list attributes that you marked <strong>Visitors can filter by this</strong> get a filter drop-down. Text, number and other attributes can be matched with the <code>filters</code> attribute (an exact match), but they have no drop-down.</p>
 
     <h3 class="mt">Anything that goes wrong</h3>
     <ul>
@@ -194,14 +192,14 @@ const [error, data] = await getProducts({ tag: 'featured', sort: 'price-asc', li
       <table>
         <thead><tr><th>Parameter</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><code>q</code></td><td>Searches the name, description, slug, tags and field values</td></tr>
+          <tr><td><code>q</code></td><td>Searches the name, description, slug, tags and attribute values</td></tr>
           <tr><td><code>type</code></td><td>One type's key</td></tr>
           <tr><td><code>tag</code></td><td>A tag, or a list of tags that must all be present</td></tr>
           <tr><td><code>category</code></td><td>A category key, or a list of them that the product must all be in</td></tr>
           <tr><td><code>slugs</code></td><td>Comma separated slugs: only these</td></tr>
           <tr><td><code>availability</code></td><td>Comma separated: <code>available</code>, <code>pending</code>, <code>sold</code></td></tr>
           <tr><td><code>inStock</code></td><td><code>true</code> to drop products that are out of stock</td></tr>
-          <tr><td><code>filters</code></td><td>An object of field key to exact value: <code>{ scale: '1:18' }</code></td></tr>
+          <tr><td><code>filters</code></td><td>An object of attribute key to exact value: <code>{ scale: '1:18' }</code></td></tr>
           <tr><td><code>sort</code></td><td><code>newest</code>, <code>oldest</code>, <code>name</code>, <code>price-asc</code>, <code>price-desc</code></td></tr>
           <tr><td><code>limit</code>, <code>offset</code></td><td>Paging. <code>limit</code> is at most 200</td></tr>
         </tbody>

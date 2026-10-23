@@ -6,11 +6,12 @@ import '/kempo-ui/components/Tags.js';
 import '/kempo-ui/components/Spinner.js';
 import '/kempo-ui/components/Tabs.js';
 import '/kempo-ui/components/HtmlEditor.js';
-import { getConfig, getProduct, getTypes, getCategories, getFields, createProduct, updateProduct } from '/products/sdk.js';
+import { getConfig, getProduct, getProductTypes, getTemplates, getCategories, getAttributes, createProduct, updateProduct, formatMoney } from '/products/sdk.js';
 import '/products/components/MoneyInput.js';
-import '/products/components/FieldInput.js';
+import '/products/components/AttributeInput.js';
 import '/products/components/OptionsEditor.js';
 import '/products/components/ImagesField.js';
+import { keyFromLabel } from '/products/components/AttributesEditor.js';
 
 const FLASH_KEY = 'products.flash';
 
@@ -33,13 +34,13 @@ export const showFlash = () => {
 export const safeNext = (value, fallback) => (typeof value === 'string' && /^\/(?!\/|\\)/.test(value) ? value : fallback);
 
 const blank = () => ({
-  name: '', slug: '', type: '', description: '', status: 'draft', availability: 'available', price: null, minimumPrice: null, priceLabel: '',
-  quantity: -1, tags: [], categories: [], images: [], fields: {}, options: [], creditsGranted: 0, creditsOnly: false, creditPercent: 0,
+  name: '', slug: '', description: '', status: 'draft', availability: 'available', price: null, minimumPrice: null, priceLabel: '',
+  quantity: -1, tags: [], categories: [], images: [], attributes: {}, options: [], template: '', attributeDefs: [], productType: '', creditsGranted: 0, creditsOnly: false, creditPercent: 0,
 });
 
 /*
   Adds or edits a product, on one page split into tabs: Details (the basics, price, quantity and the
-  fields of the product's type), Description (a full rich text editor), Media (pictures) and
+  custom attributes), Description (a full rich text editor), Media (pictures) and
   Options, plus Credits when kempo-credits is installed and enabled, where a product says how many
   credits buying it gives and whether it is nothing but credits. The Details tab then also says how
   much of the price may be paid in credits. Pass `product-id` to edit; without it, a new product is
@@ -76,9 +77,10 @@ export default class ProductForm extends ShadowComponent {
     loading: { state: true },
     saving: { state: true },
     config: { state: true },
-    types: { state: true },
+    productTypes: { state: true },
+    templates: { state: true },
     categories: { state: true },
-    allFields: { state: true },
+    allAttributes: { state: true },
     original: { state: true },
     draft: { state: true },
     assets: { state: true },
@@ -94,9 +96,10 @@ export default class ProductForm extends ShadowComponent {
     this.loading = true;
     this.saving = false;
     this.config = null;
-    this.types = [];
+    this.productTypes = [];
+    this.templates = [];
     this.categories = [];
-    this.allFields = [];
+    this.allAttributes = [];
     this.original = null;
     this.draft = blank();
     this.assets = {};
@@ -136,16 +139,17 @@ export default class ProductForm extends ShadowComponent {
     Utility functions
   */
   load = async () => {
-    const [[configError, config], [typesError, types], [categoriesError, categories], [fieldsError, fields]] = await Promise.all([getConfig(), getTypes(), getCategories(), getFields()]);
-    if(configError || typesError || categoriesError || fieldsError){
-      this.error = (configError || typesError || categoriesError || fieldsError).msg;
+    const [[configError, config], [categoriesError, categories], [fieldsError, attributes], [productTypesError, productTypes], [templatesError, templates]] = await Promise.all([getConfig(), getCategories(), getAttributes(), getProductTypes(), getTemplates()]);
+    if(configError || categoriesError || fieldsError || productTypesError || templatesError){
+      this.error = (configError || categoriesError || fieldsError || productTypesError || templatesError).msg;
       this.loading = false;
       return;
     }
     this.config = config;
-    this.types = types.types;
+    this.productTypes = productTypes.productTypes;
+    this.templates = templates.templates;
     this.categories = categories.categories;
-    this.allFields = fields.fields;
+    this.allAttributes = attributes.attributes;
     if(this.productId){
       const [error, data] = await getProduct(this.productId);
       if(error){
@@ -156,10 +160,11 @@ export default class ProductForm extends ShadowComponent {
       this.original = data.product;
       this.assets = data.images;
       this.slugEdited = true;
-      this.draft = { ...blank(), ...data.product, fields: { ...data.product.fields }, options: structuredClone(data.product.options), tags: [...data.product.tags], categories: [...data.product.categories], images: [...data.product.images] };
+      /* The form edits what the product itself holds; what its template fills in is shown as a hint, not copied in. */
+      this.draft = { ...blank(), ...data.product, ...data.product.own, attributes: { ...data.product.attributes }, attributeDefs: data.product.attributeDefs.map(attribute => ({ ...attribute, default: data.product.attributes[attribute.key] ?? '' })), options: structuredClone(data.product.ownOptions), tags: [...data.product.tags], categories: [...data.product.categories], images: [...data.product.images] };
     } else {
       const params = new URLSearchParams(location.search);
-      this.draft = { ...blank(), name: params.get('name') ?? '', type: params.get('type') ?? '' };
+      this.draft = { ...blank(), name: params.get('name') ?? '', template: params.get('template') ?? '' };
     }
     this.loading = false;
     await this.updateComplete;
@@ -194,10 +199,92 @@ export default class ProductForm extends ShadowComponent {
     this.dispatchEvent(new CustomEvent('draft-change', { detail: { changed: Object.keys(changes), draft: this.draft }, bubbles: true, composed: true }));
   };
 
-  /* The fields this product's type shows: the default ones plus the type's own. */
-  get fields(){
-    return this.allFields.filter(field => !field.productType || field.productType === this.draft.type);
+  /*
+    What still has to be filled in before the product can be saved: its name, and every required attribute that has no
+    value and no default from the template. The button stays disabled until this is empty.
+  */
+  get missing(){
+    const { draft, template } = this;
+    const empty = value => [undefined, null, ''].includes(value);
+    const missing = [];
+    if(!String(draft.name ?? '').trim()) missing.push('a name');
+    for(const attribute of this.attributes){
+      if(attribute.required && attribute.type !== 'boolean' && empty(draft.attributes[attribute.key]) && empty(template?.defaults?.[attribute.key])) missing.push(attribute.label);
+    }
+    for(const attribute of draft.attributeDefs) if(attribute.required && attribute.type !== 'boolean' && empty(attribute.default)) missing.push(attribute.label || 'an attribute');
+    return missing;
   }
+
+  /* What the template gives a product that leaves a setting blank, for the hints under the fields. */
+  get base(){
+    return this.template?.product ?? {};
+  }
+
+  /* The product type the form shows for "no choice": the template's, or the generic one. */
+  get inheritedTypeName(){
+    const key = this.base.productType || 'generic';
+    return this.productTypes.find(type => type.key === key)?.name ?? key;
+  }
+
+  /* The template's price, written the way the price box writes one. */
+  money = minor => (minor === null || minor === undefined ? '' : formatMoney(minor, this.config.decimals));
+
+  /* The template this product is made from, if any. */
+  get template(){
+    return this.templates.find(template => template.key === this.draft.template) ?? null;
+  }
+
+  /* The attributes every product has, then those of its template. The product's own are in draft.attributeDefs. */
+  get attributes(){
+    const taken = new Set(this.allAttributes.map(attribute => attribute.key));
+    return [...this.allAttributes, ...(this.template?.attributes ?? []).filter(attribute => !taken.has(attribute.key)).map(attribute => ({ ...attribute, fromTemplate: true }))];
+  }
+
+  /*
+    The Template tab: which template the product is made from, the attributes that template gives it (with its default
+    shown under a blank one) and the options it offers (read-only here, changed on the template).
+  */
+  renderTemplate(){
+    const { draft, owned, template } = this;
+    return html`
+      <div class="mb" style="max-width: 20rem;">
+        <label class="d-b mbq" for="template">Template<small class="d-b tc-muted">What this product inherits: attributes, options and default values. It can add its own on top.</small></label>
+        <select id="template" class="full" ?disabled=${owned} @change=${event => this.set({ template: event.target.value })}>
+          <option value="" ?selected=${draft.template === ''}>None</option>
+          ${this.templates.map(candidate => html`<option value=${candidate.key} ?selected=${draft.template === candidate.key}>${candidate.name}</option>`)}
+        </select>
+      </div>
+      ${template ? html`<small class="d-b mb"><a href=${`/admin/extension/kempo-products/template?key=${encodeURIComponent(template.key)}`}>Edit the ${template.name} template</a></small>` : ''}
+      ${template?.attributes.length ? html`<h4 class="mt mb">${template.name} attributes</h4>${this.attributes.filter(attribute => attribute.fromTemplate).map(this.renderAttributeInput)}` : ''}
+      ${template?.options.length ? html`<h4 class="mt mb">${template.name} options</h4>
+        <small class="d-b tc-muted mbq">Every product made from this template offers these. Change them on the template, or add choices to one on the Options tab.</small>
+        <ul class="mb">${template.options.map(option => html`<li>${option.label}: ${option.choices.map(choice => choice.label).join(', ')}</li>`)}</ul>` : ''}
+    `;
+  }
+
+  /* Starts an option of the product's own with the key of one its template offers, so its choices are added to the template's. */
+  extendOption = option => this.set({ options: [...this.draft.options, { key: option.key, label: option.label, required: option.required, priceType: option.priceType, choices: [{ label: '', price: 0, available: true }] }] });
+
+  /*
+    The tabs after Credits: one for each group an attribute names with `tab` ("shipping" gives a Shipping tab holding those
+    attributes), and one for each <k-products-tab> an extension added. A group and an extension tab with the same name
+    share one tab: the attributes, then what the extension put there.
+  */
+  get sectionTabs(){
+    const tabs = new Map();
+    for(const attribute of this.allAttributes.filter(candidate => candidate.tab)){
+      if(!tabs.has(attribute.tab)) tabs.set(attribute.tab, { name: attribute.tab, label: attribute.tab.charAt(0).toUpperCase() + attribute.tab.slice(1).replace(/-/g, ' '), attributes: [], slotted: false });
+      tabs.get(attribute.tab).attributes.push(attribute);
+    }
+    for(const extra of this.extraTabs){
+      const tab = tabs.get(extra.name) ?? { name: extra.name, label: extra.label, attributes: [], slotted: false };
+      tab.slotted = true;
+      tabs.set(extra.name, tab);
+    }
+    return [...tabs.values()];
+  }
+
+  renderAttributeInput = attribute => html`<k-products-attribute-input .attribute=${attribute} .value=${this.draft.attributes[attribute.key]} .fallback=${this.template?.defaults?.[attribute.key]} .decimals=${this.config.decimals} .currency=${this.config.currency} @change=${this.handleAttribute}></k-products-attribute-input>`;
 
   /* True while kempo-credits is installed and enabled: the only time credit settings are shown. */
   get credits(){
@@ -208,7 +295,7 @@ export default class ProductForm extends ShadowComponent {
     return Boolean(this.original);
   }
 
-  /* An extension that owns the product keeps its name, slug and type. */
+  /* An extension that owns the product keeps its name and slug. */
   get owned(){
     return this.editing && Boolean(this.original.owner);
   }
@@ -233,9 +320,9 @@ export default class ProductForm extends ShadowComponent {
     this.set({ slug: event.target.value });
   };
 
-  handleField = event => {
+  handleAttribute = event => {
     event.stopPropagation();
-    this.set({ fields: { ...this.draft.fields, [event.detail.key]: event.detail.value } });
+    this.set({ attributes: { ...this.draft.attributes, [event.detail.key]: event.detail.value } });
   };
 
   handleQuantity = event => {
@@ -254,7 +341,6 @@ export default class ProductForm extends ShadowComponent {
     const data = {
       name: draft.name,
       slug: draft.slug,
-      type: draft.type,
       description: draft.description,
       status: draft.status,
       availability: draft.availability,
@@ -265,7 +351,12 @@ export default class ProductForm extends ShadowComponent {
       tags: this.readTags(),
       categories: draft.categories,
       images: draft.images,
-      fields: Object.fromEntries(this.fields.map(field => [field.key, draft.fields[field.key] ?? (field.type === 'boolean' ? false : '')])),
+      template: draft.template,
+      attributeDefs: draft.attributeDefs.map(({ default: value, ...attribute }) => ({ ...attribute, key: attribute.key || keyFromLabel(attribute.label) })),
+      attributes: {
+        ...Object.fromEntries(this.attributes.map(attribute => [attribute.key, draft.attributes[attribute.key] ?? (attribute.type === 'boolean' ? false : '')])),
+        ...Object.fromEntries(draft.attributeDefs.map(attribute => [attribute.key || keyFromLabel(attribute.label), attribute.default ?? ''])),
+      },
       options: draft.options,
     };
     if(this.credits){
@@ -273,8 +364,9 @@ export default class ProductForm extends ShadowComponent {
       data.creditsOnly = draft.creditsOnly;
       data.creditPercent = draft.creditsOnly ? 0 : draft.creditPercent;
     }
+    data.productType = draft.productType;
     if(!this.editing && !data.slug.trim()) delete data.slug;
-    if(this.owned) for(const property of ['name', 'slug', 'type']) delete data[property];
+    if(this.owned) for(const property of ['name', 'slug']) delete data[property];
     if(this.managed) delete data.quantity;
     if(!this.config.media) delete data.images;
     this.saving = true;
@@ -342,14 +434,6 @@ export default class ProductForm extends ShadowComponent {
         <input type="number" id="creditsGranted" style="width: 12rem;" min="0" step="1" .value=${String(draft.creditsGranted)}
           @input=${event => this.set({ creditsGranted: Math.max(0, Math.trunc(Number(event.target.value)) || 0) })}>
       </div>
-      <div class="mb">
-        <label class="checkbox"><input type="checkbox" id="creditsOnly" .checked=${draft.creditsOnly}
-          @change=${event => this.set(event.target.checked ? { creditsOnly: true, creditPercent: 0 } : { creditsOnly: false })}> This is a credit-only item<small class="d-b tc-muted">${draft.creditsOnly
-          ? 'Buying it gives credits and nothing else: this is how people buy credits. It cannot itself be paid for in credits.'
-          : draft.creditsGranted > 0
-            ? 'Otherwise the credits are a gift with the product: the buyer gets the item and these credits too.'
-            : 'Tick this to sell credits themselves, as a pack.'}</small></label>
-      </div>
       ${draft.creditsOnly && draft.creditsGranted < 1 ? html`<p class="tc-danger mb">Give at least 1 credit, or this is not a credit-only item.</p>` : ''}
       ${draft.creditsOnly && draft.price && draft.creditsGranted > 0
         ? html`<p class="tc-muted mb">That is ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(draft.creditsGranted / (draft.price / 10 ** config.decimals))} credits for each ${code} 1.00 spent.</p>`
@@ -374,15 +458,17 @@ export default class ProductForm extends ShadowComponent {
     const { draft, config, owned, managed } = this;
     const decimals = config.decimals;
     const editorTag = unsafeStatic(window.kempo?.componentOverrides?.['page-content-editor'] || 'k-html-editor');
-    return html`<form @submit=${this.save} style="max-width: 60rem;">
-      ${owned ? html`<p class="tc-muted">Managed by the ${this.original.owner} extension. Its name, slug and type can only be changed there; everything else you can edit here.</p>` : ''}
+    return html`<form @submit=${this.save}>
+      ${owned ? html`<p class="tc-muted">Managed by the ${this.original.owner} extension. Its name and slug can only be changed there; everything else you can edit here.</p>` : ''}
       <k-tabs class="mb">
         <k-tab for="details">Details</k-tab>
         <k-tab for="description">Description</k-tab>
         <k-tab for="media">Media</k-tab>
+        <k-tab for="template">Template</k-tab>
+        <k-tab for="attributes">Attributes</k-tab>
         <k-tab for="options">Options</k-tab>
         ${this.credits ? html`<k-tab for="credits">Credits</k-tab>` : ''}
-        ${this.extraTabs.map(tab => html`<k-tab for=${tab.name}>${tab.label}</k-tab>`)}
+        ${this.sectionTabs.map(tab => html`<k-tab for=${tab.name}>${tab.label}</k-tab>`)}
         <k-tab-content name="details" class="pt">
           <div class="mb">
             <label class="d-b mbq" for="name">Name *</label>
@@ -390,16 +476,16 @@ export default class ProductForm extends ShadowComponent {
           </div>
           <div class="d-f mb" style="gap: var(--spacer); align-items: flex-end;">
             <div class="flex" style="min-width: 12rem;">
-              <label class="d-b mbq" for="slug">Address<small class="d-b tc-muted">/products/${draft.slug || '…'}/</small></label>
+              <label class="d-b mbq" for="slug">URL<small class="d-b tc-muted">/products/${draft.slug || '…'}/</small></label>
               <input type="text" id="slug" class="full" placeholder="made from the name" autocapitalize="off" .value=${draft.slug} ?disabled=${owned} @input=${this.handleSlug}>
             </div>
-            <div class="flex" style="min-width: 10rem;">
-              <label class="d-b mbq" for="type">Type</label>
-              <select id="type" class="full" ?disabled=${owned} @change=${event => this.set({ type: event.target.value })}>
-                <option value="" ?selected=${draft.type === ''}>None</option>
-                ${this.types.map(type => html`<option value=${type.key} ?selected=${draft.type === type.key}>${type.name}</option>`)}
+            ${this.productTypes.length > 1 || this.base.productType ? html`<div class="flex" style="min-width: 10rem;">
+              <label class="d-b mbq" for="productType">Product type<small class="d-b tc-muted">Decides how it is delivered, such as whether it is shipped</small></label>
+              <select id="productType" class="full" ?disabled=${owned} @change=${event => this.set({ productType: event.target.value, creditsOnly: event.target.value === 'credits-only', ...(event.target.value === 'credits-only' ? { creditPercent: 0 } : {}) })}>
+                <option value="" ?selected=${draft.productType === ''}>${this.base.productType ? `The template's (${this.inheritedTypeName})` : `Default (${this.inheritedTypeName})`}</option>
+                ${this.productTypes.map(productType => html`<option value=${productType.key} ?selected=${draft.productType === productType.key}>${productType.name}</option>`)}
               </select>
-            </div>
+            </div>` : ''}
           </div>
           <div class="d-f mb" style="gap: var(--spacer); align-items: flex-end;">
             <div class="flex" style="min-width: 10rem;">
@@ -418,11 +504,11 @@ export default class ProductForm extends ShadowComponent {
           <div class="d-f mb" style="gap: var(--spacer); align-items: flex-end;">
             <div class="flex" style="min-width: 10rem;">
               <label class="d-b mbq">Price (${config.currency.toUpperCase()})</label>
-              <k-products-money decimals=${decimals} .value=${draft.price} placeholder="No price" label="Price" @change=${event => this.set({ price: event.detail.value })}></k-products-money>
+              <k-products-money decimals=${decimals} .value=${draft.price} placeholder=${this.base.price != null ? `Template: ${this.money(this.base.price)}` : 'No price'} label="Price" @change=${event => this.set({ price: event.detail.value })}></k-products-money>
             </div>
             <div class="flex" style="min-width: 10rem;">
               <label class="d-b mbq" for="priceLabel">Shown when there is no price</label>
-              <input type="text" id="priceLabel" class="full" placeholder="Call for price" .value=${draft.priceLabel} @input=${event => this.set({ priceLabel: event.target.value })}>
+              <input type="text" id="priceLabel" class="full" placeholder=${this.base.priceLabel || 'Call for price'} .value=${draft.priceLabel} @input=${event => this.set({ priceLabel: event.target.value })}>
             </div>
             <div style="width: 9rem;">
               <label class="d-b mbq" for="quantity">Quantity<small class="d-b tc-muted">${managed ? `Kept up to date by ${managed}.` : 'Blank is unlimited.'}</small></label>
@@ -431,19 +517,20 @@ export default class ProductForm extends ShadowComponent {
           </div>
           <div class="mb" style="max-width: 20rem;">
             <label class="d-b mbq">Lowest price after discounts (${config.currency.toUpperCase()})<small class="d-b tc-muted">Sales and codes never take the price below this. Blank has no limit.</small></label>
-            <k-products-money decimals=${decimals} .value=${draft.minimumPrice} placeholder="No minimum" label="Lowest price after discounts" @change=${event => this.set({ minimumPrice: event.detail.value })}></k-products-money>
+            <k-products-money decimals=${decimals} .value=${draft.minimumPrice} placeholder=${this.base.minimumPrice != null ? `Template: ${this.money(this.base.minimumPrice)}` : 'No minimum'} label="Lowest price after discounts" @change=${event => this.set({ minimumPrice: event.detail.value })}></k-products-money>
           </div>
           ${this.credits ? this.renderCreditPercent() : ''}
           <div class="mb">
             <label class="d-b mbq" for="tags">Tags</label>
+            ${this.base.tags?.length && !draft.tags.length ? html`<small class="d-b tc-muted">Blank uses the template's tags: ${this.base.tags.join(', ')}.</small>` : ''}
             <k-tags id="tags" .value=${draft.tags.join(',')}></k-tags>
           </div>
           ${this.renderCategories()}
-          ${this.fields.length ? html`<h4 class="mt mb">${draft.type ? this.types.find(type => type.key === draft.type)?.name ?? 'Details' : 'More details'}</h4>
-            ${this.fields.map(field => html`<k-products-field-input .field=${field} .value=${draft.fields[field.key]} @change=${this.handleField}></k-products-field-input>`)}` : ''}
+          ${this.allAttributes.some(attribute => !attribute.tab) ? html`<h4 class="mt mb">More details</h4>
+            ${this.allAttributes.filter(attribute => !attribute.tab).map(this.renderAttributeInput)}` : ''}
         </k-tab-content>
         <k-tab-content name="description" class="pt">
-          <p class="tc-muted mb">Shown on the product's page. Use headings, lists, links and pictures to describe it.</p>
+          <p class="tc-muted mb">Shown on the product's page. Use headings, lists, links and pictures to describe it.${this.base.description && !draft.description ? ' Left blank, this product uses its template\'s description.' : ''}</p>
           ${staticHtml`<${editorTag} id="description" class="r b" controls="full" mode="visual" style="height: 28rem;"
             .value=${draft.description}
             @change=${event => this.set({ description: event.target.getValue?.() ?? event.detail?.value ?? '' })}></${editorTag}>`}
@@ -453,15 +540,27 @@ export default class ProductForm extends ShadowComponent {
             <k-products-images .value=${draft.images} .assets=${this.assets} @change=${event => { this.assets = { ...this.assets, ...event.detail.assets }; this.set({ images: event.detail.value }); }}></k-products-images>`
             : html`<p class="tc-muted">Install the kempo-media extension to add pictures to products.</p>`}
         </k-tab-content>
+        <k-tab-content name="template" class="pt">${this.renderTemplate()}</k-tab-content>
+        <k-tab-content name="attributes" class="pt">
+          <p class="tc-muted">Attributes only <strong>this product</strong> has, in addition to the ones every product has and the ones its template gives it. They are not added to the template. To give every product made from a template an attribute, add it on the template.</p>
+          <k-products-attributes-editor .value=${draft.attributeDefs} .config=${this.config} value-label="Value" @change=${event => this.set({ attributeDefs: event.detail.value })}></k-products-attributes-editor>
+        </k-tab-content>
         <k-tab-content name="options" class="pt">
+          ${this.template?.options.length ? html`<div class="mb"><strong>From the ${this.template.name} template</strong>
+            <small class="d-b tc-muted mbq">Every product made from this template offers these. To give this product more choices for one, add choices to it; they are added to the template's.</small>
+            <ul class="mb">${this.template.options.map(option => html`<li>${option.label}: ${option.choices.map(choice => choice.label).join(', ')}
+              ${draft.options.some(own => own.key === option.key)
+                ? html`<span class="tc-muted">(this product's own choices are below)</span>`
+                : html`<button type="button" class="btn" ?disabled=${Boolean(managed)} @click=${() => this.extendOption(option)}><k-icon name="add"></k-icon> Add choices</button>`}</li>`)}</ul></div>` : ''}
           <k-products-options-editor .value=${draft.options} decimals=${decimals} managed=${managed} @change=${event => this.set({ options: event.detail.value })}></k-products-options-editor>
         </k-tab-content>
         ${this.credits ? html`<k-tab-content name="credits" class="pt">${this.renderCredits()}</k-tab-content>` : ''}
-        ${this.extraTabs.map(tab => html`<k-tab-content name=${tab.name} class="pt"><slot name=${`tab-${tab.name}`}></slot></k-tab-content>`)}
+        ${this.sectionTabs.map(tab => html`<k-tab-content name=${tab.name} class="pt">${tab.attributes.map(this.renderAttributeInput)}${tab.slotted ? html`<slot name=${`tab-${tab.name}`}></slot>` : ''}</k-tab-content>`)}
       </k-tabs>
       <div class="d-f" style="gap: var(--spacer_h); flex-wrap: wrap;">
-        <button type="submit" class="btn success" id="saveProduct" ?disabled=${this.saving}>${this.saving ? 'Saving…' : this.editing ? 'Save' : 'Create product'}</button>
+        <button type="submit" class="btn success" id="saveProduct" ?disabled=${this.saving || this.missing.length > 0} title=${this.missing.length ? `Still needed: ${this.missing.join(', ')}` : ''}>${this.saving ? 'Saving…' : this.editing ? 'Save' : 'Create product'}</button>
         <button type="button" class="btn" id="cancelProduct" ?disabled=${this.saving} @click=${this.cancel}>Cancel</button>
+        ${this.editing ? html`<a class="btn" id="viewProduct" href=${`/products/${this.original.slug}/`} target="_blank" rel="noopener" title=${this.original.status === 'published' ? 'Open the product page on the live site' : `This product is ${this.original.status}, so only people who manage products can see its page`}><k-icon name="link"></k-icon> View on site</a>` : ''}
         <slot name="actions"></slot>
       </div>
     </form>`;

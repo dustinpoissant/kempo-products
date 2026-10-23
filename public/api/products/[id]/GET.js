@@ -1,7 +1,8 @@
 import { readAccess, forCaller, visibleTo } from '../../../../server/utils/access.js';
 import { getProduct, resolveImages } from '../../../../server/utils/products.js';
-import { getFields } from '../../../../server/utils/fields.js';
-import { getType } from '../../../../server/utils/types.js';
+import { getAttributes } from '../../../../server/utils/attributes.js';
+import { getTemplate } from '../../../../server/utils/templates.js';
+import { applicableAttributes } from '../../../../server/utils/attributeTypes.js';
 import { getCurrency } from '../../../../server/utils/settings.js';
 
 export default async (request, response) => {
@@ -10,12 +11,13 @@ export default async (request, response) => {
   if(error) return response.status(error.code).json({ error: error.msg });
   if(!visibleTo(product, access)) return response.status(404).json({ error: 'Product not found' });
 
-  const [, fields] = await getFields({ productType: product.type });
-  const [, type] = product.type ? await getType(product.type) : [null, null];
+  const [, shared] = await getAttributes();
+  const [, template] = product.template ? await getTemplate(product.template) : [null, null];
+  const attributes = applicableAttributes(shared ?? [], template, product.attributeDefs);
   response.json({
     product: forCaller(product, access),
-    fields: fields ?? [],
-    type: type ? { key: type.key, name: type.name } : null,
+    attributes,
+    template: template ? { key: template.key, name: template.name } : null,
     images: await resolveImages([product]),
     currency: await getCurrency(),
   });

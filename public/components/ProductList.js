@@ -2,7 +2,7 @@ import ShadowComponent from '/kempo-ui/components/ShadowComponent.js';
 import { html, repeat } from '/kempo-ui/lit-all.min.js';
 import '/kempo-ui/components/Pagination.js';
 import '/kempo-ui/components/Spinner.js';
-import { getConfig, getProducts, getTypes, getCategories, getFields } from '/products/sdk.js';
+import { getConfig, getProducts, getCategories, getAttributes } from '/products/sdk.js';
 import '/products/components/ProductCard.js';
 
 const SORT_LABELS = { newest: 'Newest', oldest: 'Oldest', name: 'Name', 'price-asc': 'Price: low to high', 'price-desc': 'Price: high to low' };
@@ -14,13 +14,12 @@ const split = text => String(text ?? '').split(',').map(part => part.trim()).fil
   is optional; see docs/components.md for examples.
 
   What the list is limited to (visitors cannot change these):
-    type            only products of this type (a type's key, e.g. "model-car")
     tag             only products with every one of these tags, comma separated
     category        only products in every one of these categories (their keys), comma separated
     slugs           only these products, by slug, comma separated; shown in that order
     availability    only these, comma separated: available, pending, sold
     in-stock        only products that are not out of stock
-    filters         only products whose fields match, as JSON: filters='{"scale":"1:18"}'
+    filters         only products whose attributes match, as JSON: filters='{"scale":"1:18"}'
 
   Where it starts (visitors can change these unless the controls are hidden):
     search          the text in the search box
@@ -43,11 +42,10 @@ const split = text => String(text ?? '').split(',').map(part => part.trim()).fil
   On a page of its own the list keeps what is searched and filtered in the address, so a filtered
   list can be bookmarked or shared and survives a refresh:
 
-    /products/?q=camaro&type=model-car&sort=price-asc&page=2&f.scale=1:18
+    /products/?q=camaro&sort=price-asc&page=2&f.scale=1:18
 */
 export default class ProductList extends ShadowComponent {
   static properties = {
-    type: { type: String, reflect: true },
     tag: { type: String },
     category: { type: String },
     slugs: { type: String },
@@ -61,9 +59,8 @@ export default class ProductList extends ShadowComponent {
     hideControls: { type: Boolean, attribute: 'hide-controls' },
     noUrl: { type: Boolean, attribute: 'no-url' },
     config: { state: true },
-    types: { state: true },
     categories: { state: true },
-    fields: { state: true },
+    attributes: { state: true },
     products: { state: true },
     images: { state: true },
     total: { state: true },
@@ -74,7 +71,6 @@ export default class ProductList extends ShadowComponent {
 
   constructor(){
     super();
-    this.type = '';
     this.tag = '';
     this.category = '';
     this.slugs = '';
@@ -88,15 +84,14 @@ export default class ProductList extends ShadowComponent {
     this.hideControls = false;
     this.noUrl = false;
     this.config = null;
-    this.types = [];
     this.categories = [];
-    this.fields = [];
+    this.attributes = [];
     this.products = [];
     this.images = {};
     this.total = 0;
     this.loading = true;
     this.error = '';
-    this.query = { q: '', type: '', category: '', sort: 'newest', page: 1, filters: {} };
+    this.query = { q: '', category: '', sort: 'newest', page: 1, filters: {} };
     this.cards = new WeakMap();
     this.searchTimer = null;
   }
@@ -119,16 +114,15 @@ export default class ProductList extends ShadowComponent {
     Utility functions
   */
   start = async () => {
-    const [[configError, config], [typesError, types], [categoriesError, categories], [fieldsError, fields]] = await Promise.all([getConfig(), getTypes(), getCategories(), getFields()]);
-    if(configError || typesError || categoriesError || fieldsError){
-      this.error = (configError || typesError || categoriesError || fieldsError).msg;
+    const [[configError, config], [categoriesError, categories], [fieldsError, attributes]] = await Promise.all([getConfig(), getCategories(), getAttributes()]);
+    if(configError || categoriesError || fieldsError){
+      this.error = (configError || categoriesError || fieldsError).msg;
       this.loading = false;
       return;
     }
     this.config = config;
-    this.types = types.types;
     this.categories = categories.categories.filter(category => category.count > 0);
-    this.fields = fields.fields.filter(field => field.filterable && field.type === 'select');
+    this.attributes = attributes.attributes.filter(attribute => attribute.filterable && attribute.type === 'select');
     this.restore();
   };
 
@@ -170,7 +164,6 @@ export default class ProductList extends ShadowComponent {
     for(const [name, value] of params) if(name.startsWith('f.') && value) filters[name.slice(2)] = value;
     this.query = {
       q: params.get('q') ?? this.search,
-      type: this.type || params.get('type') || '',
       category: this.category ? '' : params.get('category') || '',
       sort: params.get('sort') || this.defaultSort,
       page: Math.max(parseInt(params.get('page')) || 1, 1),
@@ -182,10 +175,9 @@ export default class ProductList extends ShadowComponent {
   /* Writes the query into the address (without adding a history entry for every keystroke). */
   remember = () => {
     if(this.noUrl) return;
-    const { q, type, category, sort, page, filters } = this.query;
+    const { q, category, sort, page, filters } = this.query;
     const params = new URLSearchParams();
     if(q) params.set('q', q);
-    if(type && !this.type) params.set('type', type);
     if(category) params.set('category', category);
     if(sort !== this.defaultSort) params.set('sort', sort);
     if(page > 1) params.set('page', String(page));
@@ -199,11 +191,10 @@ export default class ProductList extends ShadowComponent {
 
   load = async () => {
     this.loading = true;
-    const { q, type, category, sort, page, filters } = this.query;
+    const { q, category, sort, page, filters } = this.query;
     const slugs = split(this.slugs).map(slug => slug.toLowerCase());
     const [error, data] = await getProducts({
       q,
-      type: type || undefined,
       status: 'published',
       tag: split(this.tag),
       category: [...split(this.category), ...(category ? [category] : [])],
@@ -232,11 +223,10 @@ export default class ProductList extends ShadowComponent {
     this.load();
   };
 
-  /* The select fields that apply to the chosen type (or to every product when no type is chosen), except those the list is already fixed to. */
-  get filterFields(){
-    const { type } = this.query;
+  /* The select attributes visitors can filter by, except those the list is already fixed to. */
+  get filterAttributes(){
     const fixed = this.fixedFilters;
-    return this.fields.filter(field => !(field.key in fixed) && (!field.productType || (type && field.productType === type)));
+    return this.attributes.filter(attribute => !(attribute.key in fixed));
   }
 
   /*
@@ -268,19 +258,12 @@ export default class ProductList extends ShadowComponent {
     View
   */
   renderControls(){
-    const { q, type, category, sort, filters } = this.query;
+    const { q, category, sort, filters } = this.query;
     return html`<div class="d-f mb" style="gap: var(--spacer_h); align-items: flex-end;">
       <div class="flex" style="min-width: 12rem;">
         <label class="d-b mbq" for="q">Search</label>
         <input type="search" id="q" class="full" placeholder="Search products" .value=${q} @input=${this.handleSearch}>
       </div>
-      ${!this.type && this.types.length ? html`<div>
-        <label class="d-b mbq" for="type">Type</label>
-        <select id="type" @change=${event => this.change({ type: event.target.value, filters: {} })}>
-          <option value="">All</option>
-          ${this.types.map(candidate => html`<option value=${candidate.key} ?selected=${candidate.key === type}>${candidate.name}</option>`)}
-        </select>
-      </div>` : ''}
       ${!this.category && this.categories.length ? html`<div>
         <label class="d-b mbq" for="category">Category</label>
         <select id="category" @change=${event => this.change({ category: event.target.value })}>
@@ -288,11 +271,11 @@ export default class ProductList extends ShadowComponent {
           ${this.categories.map(candidate => html`<option value=${candidate.key} ?selected=${candidate.key === category}>${candidate.name}</option>`)}
         </select>
       </div>` : ''}
-      ${this.filterFields.map(field => html`<div>
-        <label class="d-b mbq" for=${`f-${field.key}`}>${field.label}</label>
-        <select id=${`f-${field.key}`} @change=${event => this.handleFilter(field.key, event.target.value)}>
+      ${this.filterAttributes.map(attribute => html`<div>
+        <label class="d-b mbq" for=${`f-${attribute.key}`}>${attribute.label}</label>
+        <select id=${`f-${attribute.key}`} @change=${event => this.handleFilter(attribute.key, event.target.value)}>
           <option value="">Any</option>
-          ${field.options.map(option => html`<option value=${option} ?selected=${filters[field.key] === option}>${option}</option>`)}
+          ${attribute.options.map(option => html`<option value=${option} ?selected=${filters[attribute.key] === option}>${option}</option>`)}
         </select>
       </div>`)}
       <div>

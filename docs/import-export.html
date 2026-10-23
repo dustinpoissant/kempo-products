@@ -67,7 +67,8 @@
       </div>
       <h5><a href="./catalog.html">Your catalog</a></h5>
       <div class="ml mb -mt">
-        <a href="./catalog.html#types-and-fields" class="d-b">Types and fields</a>
+        <a href="./catalog.html#templates" class="d-b">Templates</a>
+        <a href="./catalog.html#attributes" class="d-b">Attributes</a>
         <a href="./catalog.html#products" class="d-b">Products</a>
         <a href="./catalog.html#price" class="d-b">Price</a>
         <a href="./catalog.html#quantity" class="d-b">Quantity</a>
@@ -108,7 +109,7 @@
       <h5><a href="./extending.html">Building on it</a></h5>
       <div class="ml mb -mt">
         <a href="./extending.html#sdk" class="d-b">Server SDK</a>
-        <a href="./extending.html#register" class="d-b">Types and fields</a>
+        <a href="./extending.html#register" class="d-b">Shipping attributes</a>
         <a href="./extending.html#ownership" class="d-b">Ownership</a>
         <a href="./extending.html#hooks" class="d-b">Hooks</a>
         <a href="./extending.html#tabs" class="d-b">Adding to the pages</a>
@@ -155,8 +156,8 @@
       <table>
         <thead><tr><th>File</th><th>Holds</th></tr></thead>
         <tbody>
-          <tr><td>Spreadsheet (<code>.csv</code>)</td><td>One row per product, with a column for every field. Opens in Excel or Google Sheets.</td></tr>
-          <tr><td>Everything (<code>.json</code>)</td><td>Products plus the types and fields they use, to move a catalog to another site.</td></tr>
+          <tr><td>Spreadsheet (<code>.csv</code>)</td><td>One row per product, with a column for every attribute. Opens in Excel or Google Sheets.</td></tr>
+          <tr><td>Everything (<code>.json</code>)</td><td>Products plus the types and attributes they use, to move a catalog to another site.</td></tr>
         </tbody>
       </table>
     </div>
@@ -175,7 +176,7 @@
     <div class="mb">
       <img src="./media/admin-import-light.png" alt="The Import products dialog with a file chosen and a summary: 1 to add, 0 to update, 1 already there and left alone, 2 that could not be read, with the two problem rows listed." class="img-light full b r" />
       <img src="./media/admin-import-dark.png" alt="The Import products dialog with a file chosen and a summary: 1 to add, 0 to update, 1 already there and left alone, 2 that could not be read, with the two problem rows listed." class="img-dark full b r" />
-      <small class="d-b tc-muted">The check before importing. Nothing has changed yet: this says one product would be added, one is already there, and two rows have problems (a missing name, and a type that does not exist).</small>
+      <small class="d-b tc-muted">The check before importing. Nothing has changed yet: this says one product would be added, one is already there, and two rows have problems (a missing name, and a category that does not exist).</small>
     </div>
 
     <h2 id="columns" class="mt">Spreadsheet columns</h2>
@@ -184,25 +185,24 @@
       <table>
         <thead><tr><th>Column</th><th>Holds</th></tr></thead>
         <tbody>
-          <tr><td><code>slug</code></td><td>The product's address. Made from the name when empty</td></tr>
+          <tr><td><code>slug</code></td><td>The product's URL. Made from the name when empty</td></tr>
           <tr><td><code>name</code>, <code>description</code>, <code>tags</code></td><td>Text. Tags are comma separated</td></tr>
-          <tr><td><code>type</code></td><td>A type's name or key. The type must exist already</td></tr>
           <tr><td><code>status</code>, <code>availability</code></td><td>As in the admin: <code>published</code>, <code>sold</code> and so on</td></tr>
           <tr><td><code>price</code>, <code>price_label</code></td><td>A decimal such as <code>49.99</code>. The label shows when there is no price</td></tr>
           <tr><td><code>minimum_price</code></td><td>A decimal such as <code>5.00</code>: the lowest price discounts may take the product to. Blank means no floor</td></tr>
           <tr><td><code>quantity</code></td><td>A whole number, or empty for unlimited</td></tr>
           <tr><td><code>options</code></td><td>The product's options as JSON, which is what Export writes</td></tr>
-          <tr><td><code>field.&lt;key&gt;</code></td><td>One column per custom field, for example <code>field.scale</code></td></tr>
+          <tr><td><code>attribute.&lt;key&gt;</code></td><td>One column per custom attribute, for example <code>attribute.scale</code></td></tr>
         </tbody>
       </table>
     </div>
     <p>A small file that adds two products:</p>
-    <pre><code class="hljs plaintext">name,type,status,price,quantity,tags,field.scale
+    <pre><code class="hljs plaintext">name,type,status,price,quantity,tags,attribute.scale
 Mini Cooper,Model car,published,32.00,4,"british, small",1:18
 VW Beetle,Model car,draft,28.50,,classic,1:24</code></pre>
 
     <h3 id="json" class="mt">The JSON file</h3>
-    <p>The JSON export has the products, the types and the fields. Importing it creates any type or field the site does not have yet, as things people manage, so a catalog can move from one site to another in one step. A type or field that already exists is left alone, whatever the file says.</p>
+    <p>The JSON export has the products, the types and the attributes. Importing it creates any type or attribute the site does not have yet, as things people manage, so a catalog can move from one site to another in one step. A type or attribute that already exists is left alone, whatever the file says.</p>
     <p>For code, the same thing is available from the server SDK:</p>
     <pre><code class="hljs javascript"><span class="hljs-keyword">import</span> { buildExport, importFile } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;kempo-products/sdk&#x27;</span>;
 

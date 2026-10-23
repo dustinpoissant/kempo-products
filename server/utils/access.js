@@ -35,6 +35,7 @@ export const forCaller = (product, access) => {
     ...shaped,
     price: null,
     options: product.options.map(option => ({ ...option, choices: option.choices.map(choice => ({ ...choice, price: 0 })) })),
+    ownOptions: (product.ownOptions ?? []).map(option => ({ ...option, choices: option.choices.map(choice => ({ ...choice, price: 0 })) })),
   };
 };
 

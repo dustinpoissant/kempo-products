@@ -3,7 +3,7 @@ import { getExtension } from 'kempo/server/sdk.js';
 /*
   Product images come from kempo-media, an optional integration: nothing here imports it up front.
   It only counts as available when it is both installed as a package and enabled in kempo, and
-  without it the images field is hidden, `images` stays empty and public pages show no picture.
+  without it the images attribute is hidden, `images` stays empty and public pages show no picture.
 */
 let sdk;
 

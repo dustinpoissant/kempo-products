@@ -2,7 +2,7 @@ import { readAccess } from '../../../server/utils/access.js';
 import { getCurrency, getPageSize, getCreditsPerUnit } from '../../../server/utils/settings.js';
 import { creditsEnabled } from '../../../server/utils/credits.js';
 import { mediaAvailable } from '../../../server/utils/media.js';
-import { FIELD_TYPES, OPTIONAL_TYPES, CONVERSIONS } from '../../../server/utils/fieldTypes.js';
+import { ATTRIBUTE_TYPES, OPTIONAL_TYPES, CONVERSIONS } from '../../../server/utils/attributeTypes.js';
 import { STATUSES, AVAILABILITIES } from '../../../server/utils/quantity.js';
 import { PRICE_TYPES } from '../../../server/utils/pricing.js';
 import { SORT_KEYS } from '../../../server/utils/products.js';
@@ -21,7 +21,7 @@ export default async (request, response) => {
     pageSize: await getPageSize(),
     media,
     credits: { enabled: credits, perUnit: credits ? await getCreditsPerUnit() : null },
-    fieldTypes: FIELD_TYPES.filter(type => !OPTIONAL_TYPES[type] || media),
+    attributeTypes: ATTRIBUTE_TYPES.filter(type => !OPTIONAL_TYPES[type] || media),
     conversions: CONVERSIONS,
     statuses: STATUSES,
     availabilities: AVAILABILITIES,

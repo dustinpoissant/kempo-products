@@ -16,13 +16,29 @@ npm install kempo-products
 
 Then install it from **Admin > Extensions**. A **Products** entry appears in the admin menu, and the catalog is public at `/products/`.
 
-## Product types and fields
+## Product types
 
-A product has only what every catalog needs: a name, an address (its slug), a description, a status, a price, quantity, pictures and tags. Everything else is up to you, and it needs no code.
+A product has a **product type**: what kind of product it is, and so how it is delivered. kempo-products alone has one, **Generic Product**. Extensions add more: kempo-shipping adds **Physical Item**, which is shipped, and kempo-credits adds **Credits Only**. The product form shows a **Product type** dropdown once there is more than one to choose from.
 
-Under **Products > Types** make a type, such as "Vehicle" or "Model car". Under **Products > Fields** give it fields: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". A field applies to every product or to one type, and a product only shows the fields of its type. Field kinds are short text, long text, number, yes/no, date, colour, rating, choice list, and images (when kempo-media is installed).
+An extension registers its own from `install.js` with `registerProductType(owner, { key, name, description, needsShipping })` and removes it from `uninstall.js` with `unregisterProductTypes(owner)`. A product's `productType` is the key, and `GET /products/api/product-types` lists them.
 
-A field can be marked **filterable**, which gives visitors a drop-down for it on the public list.
+## Product templates
+
+A template is what products are made from. Under **Products > Templates** make one, such as "Model car": its **attributes** (a "Scale"), its **options** (a Color in black and white) and **default values** (every model car weighs 16 oz and is the same size, including for the Shipping attributes). Then pick it on a product's **Template** tab. The product keeps inheriting from it, so changing the template changes its products.
+
+A template can also give its products a **product type, price, lowest price, price label, description, tags and categories** (its Product tab): a model car template set to Physical Item at $24.99 makes every model car that, until a product says otherwise. A product that sets one keeps its own; a blank one uses the template's. `own` on a product holds only what it was given itself, and its top-level values are what is in force. Quantity and status are never inherited.
+
+A product can add to what it inherits, but not take anything away: **attributes only it has** (a model car with an "Engine"), **options of its own**, and **extra choices for an option the template offers** (the template has Color in black and white, this product adds red and blue, so the buyer sees all four). An attribute the product leaves blank shows the template's default; a required attribute with a default can be left blank. In code, `effectiveAttributes(product)` from `kempo-products/sdk` is the product's own values over its template's defaults, and `inherited` on a product lists the defaults it is falling back to.
+
+An extension can ship a template with `registerTemplate(owner, { key, name, attributes, options, defaults })` and remove it with `unregisterTemplates(owner)`. The extension owns the template's name and its deletion; people can still edit what it holds.
+
+## Attributes and options
+
+A product has only what every catalog needs: a name, a URL (its slug), a description, a status, a price, quantity, pictures and tags. Everything else is up to you, and it needs no code.
+
+Under **Products > Attributes** add the facts your products have: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". Attribute kinds are short text, long text, number, yes/no, date, colour, rating, choice list, and images (when kempo-media is installed). An attribute can be marked **filterable**, which gives visitors a drop-down for it on the public list.
+
+A product's **options** are the choices a buyer makes (a colour, a size). An attribute is a fact about the product (its scale); an option is what the buyer picks. An option has a **Default choice**, which the product page starts on (the buyer can still choose another).
 
 ## Products
 
@@ -54,11 +70,11 @@ The price on the page is asked of the server every time the choices change, so i
 
 ## Images
 
-If [kempo-media](https://github.com/dustinpoissant/kempo-media) is installed and enabled, the product form lets you upload pictures; the first is the primary one shown in lists. Lists and cards load the small thumbnail (kempo-media gets it from kempo-thumbs) and use the full image only while the thumbnail is still being made. Without it the field is simply not shown and pages show no picture.
+If [kempo-media](https://github.com/dustinpoissant/kempo-media) is installed and enabled, the product form lets you upload pictures; the first is the primary one shown in lists. Lists and cards load the small thumbnail (kempo-media gets it from kempo-thumbs) and use the full image only while the thumbnail is still being made. Without it the attribute is simply not shown and pages show no picture.
 
 ## The public pages
 
-`/products/` is the list, with search, a type filter, filters for any filterable field, sorting and paging. What is searched and filtered is in the address (`?q=camaro&type=model-car&sort=price-asc&f.scale=1:18`), so a filtered list can be shared. `/products/<slug>/` is a product.
+`/products/` is the list, with search, a type filter, filters for any filterable attribute, sorting and paging. What is searched and filtered is in the address (`?q=camaro&type=model-car&sort=price-asc&f.scale=1:18`), so a filtered list can be shared. `/products/<slug>/` is a product.
 
 Both pages are made of Lit components you can use on your own pages, such as a few featured products on the home page:
 
@@ -70,11 +86,11 @@ Both pages are made of Lit components you can use on your own pages, such as a f
 <k-products-detail slug="1969-camaro"></k-products-detail>
 ```
 
-`<k-products-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or a field's value, and can start sorted or searched. **[The components guide](https://dustinpoissant.github.io/kempo-products/components.html)** lists every attribute with recipes.
+`<k-products-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or an attribute's value, and can start sorted or searched. **[The components guide](https://dustinpoissant.github.io/kempo-products/components.html)** lists every attribute with recipes.
 
 A site can override the pages themselves with its own. Extensions add to them by composition (see below), and through two named fragments, `products-list-extra` and `products-detail-extra`.
 
-**Categories.** A product is of one **type** (which decides its fields) and can be in any number of **categories**, which are how shoppers browse. Manage them under **Admin → Products → Product Categories**, then tick them on a product's **Details** tab, when creating or editing it. A category has a name, a description and a key made from the name (`model-cars`); the key never changes, since it is in addresses like `/products/?category=model-cars`. Deleting a category takes it off its products and leaves them. `/categories/` lists the categories that have published products, with how many, and `<k-products-list category="model-cars">` (or `?category=` in the address) shows one. Categories travel in a CSV (`categories`, by key or name) and a JSON export (with the categories themselves); the server SDK has `getCategories`, `createCategory`, `updateCategory` and `deleteCategory`, and a product has `categories`, a list of keys.
+**Categories.** A product is of one **type** (which decides its attributes) and can be in any number of **categories**, which are how shoppers browse. Manage them under **Admin → Products → Product Categories**, then tick them on a product's **Details** tab, when creating or editing it. A category has a name, a description and a key made from the name (`model-cars`); the key never changes, since it is in addresses like `/products/?category=model-cars`. Deleting a category takes it off its products and leaves them. `/categories/` lists the categories that have published products, with how many, and `<k-products-list category="model-cars">` (or `?category=` in the address) shows one. Categories travel in a CSV (`categories`, by key or name) and a JSON export (with the categories themselves); the server SDK has `getCategories`, `createCategory`, `updateCategory` and `deleteCategory`, and a product has `categories`, a list of keys.
 
 **Two addresses.** This extension answers on two scopes (`"public-scopes"` in its `kempo-config.json`): `/products/`, from `public/`, and `/categories/`, from `public-categories/`. `/categories/` lists the product categories (see above). Kempo refuses to install or enable this extension beside another that claims `/products` or `/categories`.
 
@@ -88,19 +104,18 @@ A spreadsheet has one row per product. Only `name` is required:
 
 | Column | Holds |
 |---|---|
-| `slug` | The product's address. Made from the name when empty, so importing the same file twice never duplicates |
+| `slug` | The product's URL. Made from the name when empty, so importing the same file twice never duplicates |
 | `name`, `description`, `tags` | Text; tags are comma separated |
-| `type` | A type's name or key. The type must exist already |
 | `status`, `availability` | As in the admin (`published`, `sold`, ...) |
 | `price`, `price_label` | A decimal such as `49.99`; the label shows when there is no price |
 | `minimum_price` | A decimal such as `5.00`: the lowest price discounts may take the product to. Blank means no floor |
 | `quantity` | A whole number, or empty for unlimited |
 | `options` | The product's options as JSON (what Export writes) |
-| `field.<key>` | One column per custom field, e.g. `field.scale` |
+| `attribute.<key>` | One column per custom attribute, e.g. `attribute.scale` |
 
 An **empty cell leaves what a product already has unchanged** (and uses the default for a new one), so a file with just `slug` and `price` columns updates prices and nothing else. Choose **Update it from the file** to change products that are already there; the default leaves them alone. A row that cannot be read is reported with its line number and the rest carry on, and the dialog shows what will happen before anything is changed.
 
-The JSON export also carries the types and fields, and importing it creates any the site lacks. Images are not exported, because a media id means nothing on another site. Names that a spreadsheet would run as a formula (starting with `=`, `+`, `-` or `@`) are written with a leading apostrophe so they open as text, and the apostrophe is removed again on import.
+The JSON export also carries the categories and attributes, and importing it creates any the site lacks. Images are not exported, because a media id means nothing on another site. Names that a spreadsheet would run as a formula (starting with `=`, `+`, `-` or `@`) are written with a leading apostrophe so they open as text, and the apostrophe is removed again on import.
 
 ## The ledger
 
@@ -156,35 +171,34 @@ Every function resolves to `[error, result]`, where `error` is `{ code, msg }` o
 | `setQuantity(id, quantity, { actor, reason, note })`, `adjustQuantity(id, delta, { actor, reason, note })` | Change one product's quantity; `-1` is unlimited. Atomic, never below zero, and recorded in the ledger |
 | `setManagedBy(id, extension)` | Declare that your extension keeps this product's quantity and choice availability in step with something else. People then see them read-only, and you answer its ledger entries (see Managed quantity) |
 | `setChoiceAvailability(id, optionKey, choiceKey, available, { actor })` | Mark one choice in or out of stock |
-| `getTypes`, `registerType(owner, { name })`, `unregisterTypes(owner)` | Product types |
-| `getFields`, `registerField(owner, definition)`, `registerFields`, `unregisterFields(owner)` | Fields; `definition.productType` scopes one to a type |
+| `getTemplates`, `createTemplate`, `updateTemplate`, `deleteTemplate`, `registerTemplate(owner, definition)`, `unregisterTemplates(owner)`, `effectiveAttributes(product)` | Product templates |
+| `getProductTypes`, `registerProductType(owner, { key, name, description, needsShipping })`, `unregisterProductTypes(owner)` | Product types (what kind of product it is, and how it is delivered) |
+| `getAttributes`, `registerAttribute(owner, definition)`, `registerAttributes`, `unregisterAttributes(owner)` | Attributes |
 | `unregisterProducts(owner, { release })` | For uninstall: delete what you own, or hand it back to people |
 | `buildExport({ format })`, `importFile(text, { onMatch, dryRun })` | Export the catalog as a `{ filename, contentType, body }`; import the text of a `.csv` or `.json` |
 
-An extension can ship its own type and fields, so a "vehicles" extension arrives with a ready-made Vehicle type:
+An extension can ship its own attributes, so a "vehicles" extension arrives with its make and year already set up:
 
 ```javascript
 // install.js
-import { registerType, registerFields } from 'kempo-products/sdk';
+import { registerAttributes } from 'kempo-products/sdk';
 
 export default async () => {
-  await registerType('my-vehicles', { name: 'Vehicle' });
-  await registerFields('my-vehicles', [
-    { key: 'make', label: 'Make', type: 'text', productType: 'vehicle' },
-    { key: 'year', label: 'Year', type: 'number', productType: 'vehicle' },
+  await registerAttributes('my-vehicles', [
+    { key: 'make', label: 'Make', type: 'text' },
+    { key: 'year', label: 'Year', type: 'number' },
   ]);
 };
 ```
 
 ### Ownership
 
-Types, fields and products can each belong to an extension. The owner alone can delete them or change what defines them; people can still edit everything else, so an extension's products stay useful in the admin.
+Attributes and products can each belong to an extension. The owner alone can delete them or change what defines them; people can still edit everything else, so an extension's products stay useful in the admin.
 
 | | Only the owner can | Anyone with the permission can still |
 |---|---|---|
-| **Product** | change its slug, name and type, delete it | edit description, price, options, tags, images, field values and quantity |
-| **Type** | rename it, delete it | change its description and position |
-| **Field** | delete it; change its key, kind, requirement or choices | rename it, change its help text and whether it is listed or filterable |
+| **Product** | change its slug and name, delete it | edit description, price, options, tags, images, attribute values and quantity |
+| **Attribute** | delete it; change its key, kind, requirement or choices | rename it, change its help text and whether it is listed or filterable |
 
 Ownership only comes from the server SDK; the HTTP routes never read an owner from a request.
 
@@ -210,8 +224,8 @@ Declare them in your `kempo-config.json` `hooks`. Every payload carries `actor`:
 | `kempo-products:product:before_update` | `{ product, changes, userId }` (editable) |
 | `kempo-products:product:before_delete` | `{ product, userId }` |
 | `kempo-products:ledger:before_add` | `{ ref, lines, products, reason, note, undoes, actor }`, refuse only. Answered by the extension that manages some of the `products` (see Managed quantity) |
-| `kempo-products:type:before_create`, `before_update`, `before_delete` | refuse only |
-| `kempo-products:field:before_create`, `before_update`, `before_delete` | refuse only |
+| `kempo-products:template:before_create`, `before_update`, `before_delete` | refuse only |
+| `kempo-products:attribute:before_create`, `before_update`, `before_delete` | refuse only |
 
 **Notifications** run after the change is committed; nothing they do can undo it.
 
@@ -221,8 +235,8 @@ Declare them in your `kempo-config.json` `hooks`. Every payload carries `actor`:
 | `kempo-products:product:quantity_changed` | `{ product, previousQuantity, quantity, reason }` |
 | `kempo-products:ledger:added` | `{ ref, lines, handedOver, reason, note, undoes }`: `lines` are the ones products wrote, `{ productId, name, change, quantity }` |
 | `kempo-products:ledger:add_failed` | `{ ref }`: an entry a manager agreed to did not happen, so it undoes what it did |
-| `kempo-products:type:created`, `updated`, `deleted` | `{ type, previous? }` |
-| `kempo-products:field:created`, `updated`, `deleted` | `{ field, previous? }` |
+| `kempo-products:template:created`, `updated`, `deleted` | `{ template, previous? }` |
+| `kempo-products:attribute:created`, `updated`, `deleted` | `{ attribute, previous? }` |
 | `kempo-products:category:created`, `updated`, `deleted` | `{ category, previous?, products? }` (`products`: the ids it was taken off, on delete) |
 
 ### Adding controls to products
@@ -276,7 +290,7 @@ The product form is split into tabs: **Details**, **Description** (a full rich t
 ```html
 <content id="my-extension-product-tab" name="Shipping tab" owner="my-extension" enabled="true" locked="true" location="products-admin-product-tabs" priority="10">
 <k-products-tab name="shipping" label="Shipping">
-  <my-shipping-fields></my-shipping-fields>
+  <my-shipping-attributes></my-shipping-attributes>
 </k-products-tab>
 </content>
 ```
@@ -303,7 +317,7 @@ The description is stored as HTML. The public product page sanitizes it when sho
 
 When the [kempo-credits](https://github.com/dustinpoissant/kempo-credits) extension is installed and **enabled** on the site, products know about credits. Nothing here shows or does anything without it: the extension is an optional peer, looked up at run time, and a product that never uses credits is unchanged.
 
-A product gets a **Credits** tab in the admin form, and its **Details** tab gets a field under the price:
+A product gets a **Credits** tab in the admin form, and its **Details** tab gets an attribute under the price:
 
 | | |
 |---|---|
@@ -325,12 +339,13 @@ Selling credits for money needs a checkout, which this extension does not have: 
 |---|---|
 | `products:read` | See drafts and archived products, exact quantity and the ledger in the admin |
 | `products:create`, `products:update`, `products:delete` | Manage products |
-| `products:types:manage` | Create, edit and delete types and fields |
+| `products:templates:manage` | Create, edit and delete product templates |
+| `products:attributes:manage` | Create, edit and delete the custom attributes products have |
 | `products:categories:manage` | Create, edit and delete categories. Putting a product in one only needs permission to edit the product |
 | `products:ledger:add` | Add an entry to the ledger: add stock to products or take it away |
 | `products:settings:manage` | Change the catalog settings on the Product Settings page |
 
-Published products need no permission to see. Three groups are provided: `kempo-products:viewer`, `kempo-products:manager` (manage products and add to the ledger) and `kempo-products:admin` (also types, fields and the settings page).
+Published products need no permission to see. Three groups are provided: `kempo-products:viewer`, `kempo-products:manager` (manage products and add to the ledger) and `kempo-products:admin` (also types, attributes and the settings page).
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -352,7 +367,8 @@ JSON routes under `/products/api/`. Reads are public (published products only, n
 | `GET products`, `GET products/<id or slug>` | List (`q`, `type`, `status`, `availability`, `tag`, `filters`, `ids`, `sort`, `inStock`, `limit`, `offset`) and read |
 | `POST products`, `PATCH products/<id>`, `DELETE products/<id>` | Manage products |
 | `GET price?product=&options=` | The server's price for a set of choices |
-| `GET types`, `GET fields`, and `POST`/`PATCH`/`DELETE` on them | Types and fields |
+| `GET templates`, `POST templates`, `PATCH`/`DELETE templates/<key>` | Product templates |
+| `GET attributes`, and `POST`/`PATCH`/`DELETE` on it | Attributes |
 | `GET ledger` (`productId`, `limit`, `offset`), `POST ledger` (`{ ref, lines, note, reason }`) | The ledger |
 | `GET export?format=csv\|json`, `POST import` | Download the catalog; import a file (`{ content, onMatch, dryRun }`) |
 

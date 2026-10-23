@@ -4,9 +4,10 @@ import { sql, eq } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
 import { extension } from 'kempo/server/db/schema.js';
 import {
-  kempoProduct, kempoProductType, kempoProductField, kempoProductOption,
+  kempoProduct, kempoProductAttribute, kempoProductOption,
 } from '../server/db/schema.js';
 import { createProduct, updateProduct, getPrice } from '../server/utils/products.js';
+import { registerProductType, unregisterProductTypes, CREDITS_ONLY } from '../server/utils/productTypes.js';
 import { saveCatalogSettings, readCatalogSettings } from '../server/utils/catalogSettings.js';
 import install from '../install.js';
 
@@ -28,7 +29,7 @@ const ready = Boolean(reachable && credits);
 const skip = ready ? false : credits ? 'no throwaway database' : 'kempo-credits is not installed (it is an optional peer)';
 
 const purge = async () => {
-  for(const table of [kempoProductOption, kempoProduct, kempoProductField, kempoProductType]) await db.delete(table);
+  for(const table of [kempoProductOption, kempoProduct, kempoProductAttribute]) await db.delete(table);
 };
 
 const ok = ([error, value]) => {
@@ -95,7 +96,10 @@ describe('kempo-credits integration', { skip }, () => {
   });
 
   describe('when kempo-credits is installed and enabled', () => {
-    before(() => setCredits(true));
+    before(async () => {
+      await setCredits(true);
+      ok(await registerProductType('kempo-credits', { key: CREDITS_ONLY, name: 'Credits Only', needsShipping: false }));
+    });
 
     test('a product can give credits and accept some as payment', async () => {
       const product = ok(await createProduct({ name: 'Bundle', price: 1000, creditsGranted: 250, creditPercent: 50 }));

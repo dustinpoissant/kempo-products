@@ -16,6 +16,20 @@ const cars = [
 
 const product = { price: 4999 };
 
+test('a required option left blank takes its default choice', () => {
+  const [, options] = normalizeOptions([{ label: 'Color', choices: [{ label: 'Red', price: 0 }, { label: 'Gold', price: 250, default: true }, { label: 'Blue', price: 0, default: true }] }]);
+  assert.deepEqual(options[0].choices.map(choice => choice.default), [false, true, false]);
+  const [error, result] = computePrice(product, options, {});
+  assert.equal(error, null);
+  assert.equal(result.unit, 5249);
+  assert.equal(result.selections.color, 'gold');
+});
+
+test('a required option with no default still has to be chosen', () => {
+  const [error] = computePrice(product, cars, {});
+  assert.equal(error.code, 400);
+});
+
 test('an adjusting choice is relative to the base price', () => {
   const [error, result] = computePrice(product, cars, { 'clear-coat': 'no', color: 'red' });
   assert.equal(error, null);

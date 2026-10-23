@@ -2,7 +2,7 @@ import { test, before, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { sql } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
-import { kempoProduct, kempoProductCategory, kempoProductOption, kempoProductLedger, kempoProductField, kempoProductType } from '../server/db/schema.js';
+import { kempoProduct, kempoProductCategory, kempoProductOption, kempoProductLedger, kempoProductAttribute } from '../server/db/schema.js';
 import { createProduct, updateProduct, getProduct, getProducts } from '../server/utils/products.js';
 import { createCategory, updateCategory, deleteCategory, getCategories, getCategory, categoryKeyFromName } from '../server/utils/categories.js';
 import { buildExport, importFile } from '../server/utils/importExport.js';
@@ -24,7 +24,7 @@ if(!reachable && process.env.KEMPO_TEST_TIER === 'integration'){
 }
 
 const purge = async () => {
-  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductField, kempoProductType, kempoProductCategory]){
+  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductAttribute, kempoProductCategory]){
     await db.delete(table);
   }
 };

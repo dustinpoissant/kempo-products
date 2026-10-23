@@ -6,7 +6,7 @@ import db from 'kempo/server/db/index.js';
 import { extension, hook } from 'kempo/server/db/schema.js';
 import createHook from 'kempo/server/utils/hooks/createHook.js';
 import { clearHandlerCache } from 'kempo/server/utils/hooks/triggerHook.js';
-import { kempoProduct, kempoProductOption, kempoProductLedger, kempoProductField, kempoProductType } from '../server/db/schema.js';
+import { kempoProduct, kempoProductOption, kempoProductLedger, kempoProductAttribute } from '../server/db/schema.js';
 import { createProduct, getProduct, setManagedBy } from '../server/utils/products.js';
 import { setQuantity, adjustQuantity, addLedgerEntry, getLedgerEntry } from '../server/utils/ledger.js';
 import install from '../install.js';
@@ -29,7 +29,7 @@ const OWNER = 'test-manager';
 const root = join(import.meta.dirname, 'fixtures');
 
 const purge = async () => {
-  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductField, kempoProductType]) await db.delete(table);
+  for(const table of [kempoProductLedger, kempoProductOption, kempoProduct, kempoProductAttribute]) await db.delete(table);
 };
 
 const ok = ([error, value]) => {

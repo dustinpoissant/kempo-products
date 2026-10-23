@@ -25,8 +25,8 @@ test('groups form a ladder: viewer < manager < admin, and only admin sets up typ
   const [viewer, manager, admin] = ['viewer', 'manager', 'admin'].map(group);
   for(const permission of viewer) assert.ok(manager.has(permission));
   for(const permission of manager) assert.ok(admin.has(permission));
-  assert.ok(!manager.has('products:types:manage'));
-  assert.ok(admin.has('products:types:manage'));
+  assert.ok(!manager.has('products:templates:manage') && !manager.has('products:attributes:manage'));
+  assert.ok(admin.has('products:templates:manage') && admin.has('products:attributes:manage'));
   assert.ok(!viewer.has('products:update'));
 });
 
@@ -39,7 +39,7 @@ test('settings are declared with a name, a value, a type and a description', () 
 });
 
 test('the public scope matches between the config and the package', () => {
-  assert.equal('kempo' in pkg, false, 'package.json has a kempo field; it lives in kempo-config.json only');
+  assert.equal('kempo' in pkg, false, 'package.json has a kempo attribute; it lives in kempo-config.json only');
   assert.equal(config['public-scope'], 'products');
 });
 
