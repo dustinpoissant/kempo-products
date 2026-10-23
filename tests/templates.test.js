@@ -1,4 +1,4 @@
-import { test, before, describe } from 'node:test';
+import { test, before, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import db from 'kempo/server/db/index.js';
 import { kempoProduct, kempoProductTemplate, kempoProductAttribute } from '../server/db/schema.js';
@@ -28,6 +28,8 @@ const refused = ([error, value], code) => {
 };
 
 const color = (choices, extra = {}) => ({ key: 'color', label: 'Color', priceType: 'adjust', choices, ...extra });
+
+after(() => process.env.KEMPO_DB === 'pglite' ? db.$client.close() : db.$client.end());
 
 before(async () => {
   await install();

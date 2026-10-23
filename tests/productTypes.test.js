@@ -1,4 +1,4 @@
-import { test, before, describe } from 'node:test';
+import { test, before, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { sql, eq } from 'drizzle-orm';
 import db from 'kempo/server/db/index.js';
@@ -31,6 +31,8 @@ const purge = async () => {
 };
 
 const typesNow = async () => ok(await getProductTypes());
+
+after(() => process.env.KEMPO_DB === 'pglite' ? db.$client.close() : db.$client.end());
 
 before(async () => {
   await install();
