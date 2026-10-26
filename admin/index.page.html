@@ -15,6 +15,7 @@ locked: true
   <script type="module" src="/kempo-ui/components/controls/TcPageSize.js"></script>
   <script type="module" src="/kempo-ui/components/controls/TcDeleteRecord.js"></script>
   <script type="module" src="/kempo-ui/components/Icon.js"></script>
+  <script type="module" src="/kempo-ui/components/controls/TcOpen.js"></script>
   <script type="module" src="/kempo/components/Permission.js"></script>
   <script type="module" src="/products/components/RowAction.js"></script>
 
@@ -22,6 +23,7 @@ locked: true
 
   <k-table
     id="productsTable"
+    open-on-click
     enable-pages
     page-size="25"
     page-size-options="[10,25,50,100]"
@@ -87,9 +89,10 @@ locked: true
       $control.setAttribute('slot', slot);
       for(const [name, value] of Object.entries(attributes)) $control.setAttribute(name, value);
       $table.appendChild($control);
+      return $control;
     };
     addControl('k-products-row-action', 'before', { action: 'view', icon: 'show', title: 'View on the site' });
-    if(can('update')) addControl('k-products-row-action', 'before', { action: 'edit', icon: 'edit', title: 'Edit' });
+    if(can('update')) addControl('kc-tc-open', 'before', { title: 'Edit' }).appendChild(Object.assign(document.createElement('k-icon'), { name: 'edit' }));
     if(can('delete')){
       $table.setAttribute('request-delete', '');
       addControl('kc-tc-delete-record', 'after');
@@ -102,6 +105,7 @@ locked: true
     /* Display-only values are precomputed as plain strings so the table never formats user-supplied text itself. */
     const decorate = product => ({
       ...product,
+      ...(can('update') && { _url: `/admin/extension/kempo-products/edit?id=${encodeURIComponent(product.id)}` }),
       statusText: product.status[0].toUpperCase() + product.status.slice(1),
       availabilityText: product.availability[0].toUpperCase() + product.availability.slice(1),
       priceText: product.price === null ? (product.priceLabel || '') : displayMoney(product.price, config.currency, config.decimals),
@@ -112,7 +116,7 @@ locked: true
     });
 
     const columns = products => [
-      { name: 'name', label: 'Name', size: 240, editable: false },
+      { name: 'name', label: 'Name', editable: false },
       { name: 'statusText', label: 'Status', size: 100, editable: false },
       { name: 'availabilityText', label: 'Availability', size: 120, editable: false },
       { name: 'priceText', label: 'Price', size: 110, editable: false },
@@ -159,7 +163,6 @@ locked: true
     });
 
     $table.addEventListener('productAction', ({ detail: { action, record } }) => {
-      if(action === 'edit') location.href = `/admin/extension/kempo-products/edit?id=${encodeURIComponent(record.id)}`;
       if(action === 'view') window.open(`/products/${encodeURIComponent(record.slug)}/`, '_blank');
     });
 

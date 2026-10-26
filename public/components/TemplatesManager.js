@@ -4,6 +4,9 @@ import Toast from '/kempo-ui/components/Toast.js';
 import Dialog from '/kempo-ui/components/Dialog.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
+import '/kempo-ui/components/Table.js';
+import '/kempo-ui/components/controls/TcOpen.js';
+import './ListRowAction.js';
 import { showFlash } from '/products/components/ProductForm.js';
 import { getTemplates, deleteTemplate } from '/products/sdk.js';
 
@@ -71,26 +74,46 @@ export default class TemplatesManager extends ShadowComponent {
   /*
     View
   */
+  /* The templates, as a table. A row opens the template; delete is not offered for one another extension manages. */
+  templateRecords(){
+    return this.templates.map(template => ({
+      ...template,
+      _url: `${PAGE}?key=${encodeURIComponent(template.key)}`,
+      actions: template.owner ? [] : ['delete'],
+    }));
+  }
+
+  templateFields(){
+    return [
+      { name: 'name', label: 'Name', editable: false, calculator: template => `${template.name}${template.description ? ` · ${template.description}` : ''}` },
+      { name: 'attributes', label: 'Attributes', size: 240, editable: false, calculator: template => template.attributes.map(attribute => attribute.label).join(', ') || 'None' },
+      { name: 'options', label: 'Options', size: 200, editable: false, calculator: template => template.options.map(option => option.label).join(', ') || 'None' },
+      { name: 'count', label: 'Products', size: 110, editable: false },
+      { name: 'owner', label: 'Managed by', size: 150, editable: false },
+    ];
+  }
+
+  fillTemplates(){
+    this.renderRoot.querySelector('#templatesTable')?.setData({ records: this.templateRecords(), fields: this.templateFields() });
+  }
+
+  actOnTemplate = ({ action, record }) => {
+    if(action === 'delete') this.remove(record);
+  };
+
+  updated(changed){
+    super.updated?.(changed);
+    if(changed.has('templates')) this.fillTemplates();
+  }
+
+
   render(){
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
     return html`<div>
       <p class="tc-muted">A template is what products are made from. It holds attributes, options and default values (every model car has the same size and weight) that its products inherit, and each product can add its own attributes, options and extra choices on top.</p>
       <div class="mb"><a class="btn primary" id="addTemplate" href=${PAGE}><k-icon name="add"></k-icon> New template</a></div>
-      ${this.templates.length ? html`<div class="table-wrapper"><table>
-        <thead><tr><th>Name</th><th>Attributes</th><th>Options</th><th>Products</th><th>Managed by</th><th></th></tr></thead>
-        <tbody>${this.templates.map(template => html`<tr>
-          <td><a href=${`${PAGE}?key=${encodeURIComponent(template.key)}`}>${template.name}</a>${template.description ? html`<small class="d-b tc-muted">${template.description}</small>` : ''}</td>
-          <td>${template.attributes.map(attribute => attribute.label).join(', ') || html`<span class="tc-muted">None</span>`}</td>
-          <td>${template.options.map(option => option.label).join(', ') || html`<span class="tc-muted">None</span>`}</td>
-          <td>${template.count}</td>
-          <td>${template.owner}</td>
-          <td style="white-space: nowrap;">
-            <a class="btn" title="Edit" aria-label=${`Edit ${template.name}`} href=${`${PAGE}?key=${encodeURIComponent(template.key)}`}><k-icon name="edit"></k-icon></a>
-            <button type="button" class="btn" title="Delete" aria-label=${`Delete ${template.name}`} ?disabled=${Boolean(template.owner)} @click=${() => this.remove(template)}><k-icon name="delete"></k-icon></button>
-          </td>
-        </tr>`)}</tbody>
-      </table></div>` : html`<p class="tc-muted">No templates yet. Make one, like "Model car", then make products from it.</p>`}
+      ${this.templates.length ? html`<k-table id="templatesTable" open-on-click placeholder='No templates yet. Make one, like "Model car", then make products from it.' @listAction=${event => this.actOnTemplate(event.detail)}><kc-tc-open slot="before" title="Edit"><k-icon name="edit"></k-icon></kc-tc-open><k-products-list-action slot="after" action="delete" icon="delete" title="Delete"></k-products-list-action></k-table>` : html`<p class="tc-muted">No templates yet. Make one, like "Model car", then make products from it.</p>`}
     </div>`;
   }
 }

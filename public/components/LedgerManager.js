@@ -3,6 +3,7 @@ import { html } from '/kempo-ui/lit-all.min.js';
 import Toast from '/kempo-ui/components/Toast.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
+import '/kempo-ui/components/Table.js';
 import { getProducts, getLedger, addLedgerEntry } from '/products/sdk.js';
 
 /*
@@ -93,6 +94,28 @@ export default class LedgerManager extends ShadowComponent {
   /*
     View
   */
+  /* The ledger, as a table: every change to a product's stock, newest first. */
+  ledgerFields(){
+    return [
+      { name: 'created', label: 'When', size: 190, editable: false, formatter: value => new Date(value).toLocaleString() },
+      { name: 'name', label: 'Product', size: 200, editable: false },
+      { name: 'change', label: 'Change', size: 100, editable: false, calculator: entry => `${entry.change > 0 ? '+' : ''}${entry.change}` },
+      { name: 'quantity', label: 'Quantity after', size: 150, editable: false, calculator: entry => this.quantityText(entry.quantity) },
+      { name: 'note', label: 'Note', editable: false, calculator: entry => `${entry.note || entry.reason || ''}${entry.ref ? ` ${entry.ref}` : ''}` },
+      { name: 'actor', label: 'By', size: 150, editable: false, calculator: entry => entry.actor || (entry.userId ? 'A person' : '') },
+    ];
+  }
+
+  fillLedger(){
+    this.renderRoot.querySelector('#ledgerTable')?.setData({ records: this.entries, fields: this.ledgerFields() });
+  }
+
+  updated(changed){
+    super.updated?.(changed);
+    if(changed.has('entries')) this.fillLedger();
+  }
+
+
   render(){
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
@@ -111,17 +134,7 @@ export default class LedgerManager extends ShadowComponent {
         <button type="submit" class="btn success" id="addEntry" ?disabled=${this.saving}>${this.saving ? 'Adding…' : 'Add entry'}</button>
       </form>
       <h4>Ledger</h4>
-      ${this.entries.length ? html`<div class="table-wrapper"><table>
-        <thead><tr><th>When</th><th>Product</th><th>Change</th><th>Quantity after</th><th>Note</th><th>By</th></tr></thead>
-        <tbody>${this.entries.map(entry => html`<tr>
-          <td>${new Date(entry.created).toLocaleString()}</td>
-          <td>${entry.name}</td>
-          <td class=${entry.change > 0 ? 'tc-success' : entry.change < 0 ? 'tc-danger' : ''}>${entry.change > 0 ? '+' : ''}${entry.change}</td>
-          <td>${this.quantityText(entry.quantity)}</td>
-          <td>${entry.note || entry.reason}${entry.ref ? html` <span class="tc-muted">${entry.ref}</span>` : ''}</td>
-          <td>${entry.actor || (entry.userId ? 'A person' : '')}</td>
-        </tr>`)}</tbody>
-      </table></div>
+      ${this.entries.length ? html`<k-table id="ledgerTable" placeholder="Nothing in the ledger yet."></k-table>
       ${this.total > this.entries.length ? html`<p class="tc-muted">Showing the latest ${this.entries.length} of ${this.total}.</p>` : ''}` : html`<p class="tc-muted">Nothing in the ledger yet.</p>`}
     </div>`;
   }

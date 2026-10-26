@@ -159,7 +159,7 @@ const DISCOUNTS = {
   'admin-buttons.global.html': [
     '<content location="products-admin-scripts"><script type="module" src="/discounts/Buttons.js"></script></content>',
     '<content location="products-admin-product-actions"><k-discounts-product-button slot="actions"></k-discounts-product-button></content>',
-    '<content location="products-admin-category-actions"><k-discounts-category-button slot="actions"></k-discounts-category-button></content>',
+    '<content location="products-admin-category-actions"><k-discounts-category-button slot="after"></k-discounts-category-button></content>',
   ].join('\n'),
 };
 
@@ -179,7 +179,7 @@ test('the category page carries one template for the rows, filled by an extensio
   await withSite({ 'kempo-discounts': DISCOUNTS }, async (dir, dirs) => {
     const html = (await renderAdmin(dir, dirs, 'categories/index.page.html')).split(/>\s+</).join('><');
     assert.equal(html.match(/<template>/g)?.length, 1, 'exactly one template');
-    assert.match(html, /<template><k-discounts-category-button slot="actions"><\/k-discounts-category-button><\/template>/);
+    assert.match(html, /<template><k-discounts-category-button slot="after"><\/k-discounts-category-button><\/template>/);
     assert.ok(html.indexOf('/discounts/Buttons.js') > html.indexOf('</template>'), 'the script is after the template');
     assert.doesNotMatch(html, /<location/);
   });
@@ -198,10 +198,6 @@ test('the form declares an actions slot, and the category list fills a per-row i
   const { readFile } = await import('node:fs/promises');
   const form = await readFile(path.join(publicDir, 'components/ProductForm.js'), 'utf8');
   assert.ok(form.includes('<slot name="actions"></slot>'));
-  const item = await readFile(path.join(publicDir, 'components/CategoryActions.js'), 'utf8');
-  assert.ok(item.includes('<slot name="actions"></slot>') && item.includes("'k-products-category-actions'"));
-  assert.doesNotMatch(item, /importNode|template/, 'the item knows nothing about templates');
   const list = await readFile(path.join(publicDir, 'components/CategoriesManager.js'), 'utf8');
-  assert.ok(list.includes('document.importNode(template.content, true)') && list.includes('new WeakMap()'));
-  assert.ok(list.includes('<k-products-category-actions .category=${category}>${this.itemContent(category)}</k-products-category-actions>'));
+  assert.ok(list.includes('document.importNode(template.content, true)') && list.includes('<k-products-category-action slot="after"') && list.includes('${this.extrasFor()}'));
 });

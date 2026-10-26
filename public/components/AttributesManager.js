@@ -4,6 +4,8 @@ import Toast from '/kempo-ui/components/Toast.js';
 import Dialog from '/kempo-ui/components/Dialog.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
+import '/kempo-ui/components/Table.js';
+import './ListRowAction.js';
 import { getConfig, getAttributes, createAttribute, updateAttribute, deleteAttribute } from '/products/sdk.js';
 
 const LABELS = {
@@ -169,25 +171,42 @@ export default class AttributesManager extends ShadowComponent {
   /*
     View
   */
+  /* The attributes, as a table. Edit is always there; delete is not offered for an attribute another extension manages. */
+  attributeRecords(){
+    return this.attributes.map(attribute => ({ ...attribute, actions: attribute.owner ? ['edit'] : ['edit', 'delete'] }));
+  }
+
+  attributeFields(){
+    return [
+      { name: 'label', label: 'Label', editable: false },
+      { name: 'key', label: 'Key', size: 170, editable: false },
+      { name: 'type', label: 'Kind', size: 150, editable: false, calculator: attribute => LABELS[attribute.type] ?? attribute.type },
+      { name: 'required', label: 'Required', size: 110, editable: false, calculator: attribute => attribute.required ? 'Yes' : '' },
+      { name: 'owner', label: 'Managed by', size: 150, editable: false },
+    ];
+  }
+
+  fillAttributes(){
+    this.renderRoot.querySelector('#attributesTable')?.setData({ records: this.attributeRecords(), fields: this.attributeFields() });
+  }
+
+  actOnAttribute = ({ action, record }) => {
+    if(action === 'edit') this.edit(record);
+    else if(action === 'delete') this.remove(record);
+  };
+
+  updated(changed){
+    super.updated?.(changed);
+    if(changed.has('attributes')) this.fillAttributes();
+  }
+
+
   render(){
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
     return html`<div>
       <div class="mb"><button type="button" class="btn primary" id="addAttribute" @click=${this.add}><k-icon name="add"></k-icon> New attribute</button></div>
-      ${this.attributes.length ? html`<div class="table-wrapper"><table>
-        <thead><tr><th>Label</th><th>Key</th><th>Kind</th><th>Required</th><th>Managed by</th><th></th></tr></thead>
-        <tbody>${this.attributes.map(attribute => html`<tr>
-          <td>${attribute.label}</td>
-          <td><code>${attribute.key}</code></td>
-          <td>${LABELS[attribute.type] ?? attribute.type}</td>
-          <td>${attribute.required ? 'Yes' : ''}</td>
-          <td>${attribute.owner}</td>
-          <td style="white-space: nowrap;">
-            <button type="button" class="btn" title="Edit" aria-label=${`Edit ${attribute.label}`} @click=${() => this.edit(attribute)}><k-icon name="edit"></k-icon></button>
-            <button type="button" class="btn" title="Delete" aria-label=${`Delete ${attribute.label}`} ?disabled=${Boolean(attribute.owner)} @click=${() => this.remove(attribute)}><k-icon name="delete"></k-icon></button>
-          </td>
-        </tr>`)}</tbody>
-      </table></div>` : html`<p class="tc-muted">No attributes yet. Add one to give your products details such as a scale, a make or a year.</p>`}
+      ${this.attributes.length ? html`<k-table id="attributesTable" placeholder="No attributes yet. Add one to give your products details such as a scale, a make or a year." @listAction=${event => this.actOnAttribute(event.detail)}><k-products-list-action slot="before" action="edit" icon="edit" title="Edit"></k-products-list-action><k-products-list-action slot="after" action="delete" icon="delete" title="Delete"></k-products-list-action></k-table>` : html`<p class="tc-muted">No attributes yet. Add one to give your products details such as a scale, a make or a year.</p>`}
     </div>`;
   }
 }

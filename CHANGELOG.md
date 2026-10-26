@@ -99,3 +99,10 @@ A product catalog for kempo that works on its own, with no checkout and no inven
 ### Admin
 
 - Products, Types, Attributes and Ledger pages, built from kempo-ui components. Permissions `products:*` and groups `kempo-products:viewer`, `manager` and `admin`.
+
+## [0.3.1] - 2026-10-26
+### Changed
+- The admin product list is a kempo-ui table. The product name opens the product, and the view and edit actions are row controls.
+- The categories list is a table with Edit before the row and Delete after it. The category sale buttons are row controls: `products-admin-category-actions` now puts its elements in each row with `slot="after"`, and `<k-products-category-actions>` is removed.
+- Attributes, templates and the stock ledger are tables. Deleting an attribute or template is a row control.
+- Requires kempo 4.9.7 (the admin lists use kempo-ui tables).

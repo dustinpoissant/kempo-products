@@ -40,10 +40,10 @@
     "drizzle-orm": "^0.45.2"
   },
   "peerDependencies": {
-    "kempo": ">=4.7.0",
+    "kempo": ">=4.9.7",
     "kempo-media": ">=0.2.3",
     "kempo-server": ">=3.4.0",
-    "kempo-ui": ">=0.6.0"
+    "kempo-ui": ">=0.7.0"
   },
   "peerDependenciesMeta": {
     "kempo-media": {

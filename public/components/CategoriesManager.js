@@ -4,7 +4,8 @@ import Toast from '/kempo-ui/components/Toast.js';
 import Dialog from '/kempo-ui/components/Dialog.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
-import './CategoryActions.js';
+import '/kempo-ui/components/Table.js';
+import './CategoryRowAction.js';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '/products/sdk.js';
 
 /*
@@ -16,10 +17,16 @@ import { getCategories, createCategory, updateCategory, deleteCategory } from '/
       <template><location name="products-admin-category-actions" /></template>
     </k-products-categories>
 
-  The optional <template> is what other extensions add to every row (buttons for that category, in the
-  `actions` slot of `<k-products-category-actions>`); one clone is made for each category and kept while
-  the list re-renders.
+  The optional <template> is what other extensions add to every row. Its elements become row controls
+  (`slot="after"`), so each one finds its category from its own row, the way the table's controls do.
 */
+const fields = [
+  { name: 'name', label: 'Name', size: 200, editable: false },
+  { name: 'key', label: 'Key', size: 160, editable: false },
+  { name: 'description', label: 'Description', editable: false },
+  { name: 'total', label: 'Products', size: 170, editable: false, calculator: category => `${category.total}${category.total !== category.count ? ` (${category.count} published)` : ''}` },
+];
+
 export default class CategoriesManager extends ShadowComponent {
   static properties = {
     categories: { state: true },
@@ -32,7 +39,7 @@ export default class CategoriesManager extends ShadowComponent {
     this.categories = [];
     this.loading = true;
     this.error = '';
-    this.items = new WeakMap();
+    this.extras = null;
   }
 
   /*
@@ -125,13 +132,25 @@ export default class CategoriesManager extends ShadowComponent {
     });
   };
 
-  /* What other extensions put in a category's row: a clone of the one template, made once per category. */
-  itemContent = category => {
-    const template = this.querySelector(':scope > template');
-    if(!template?.content.querySelector('[slot]')) return '';
-    if(!this.items.has(category)) this.items.set(category, document.importNode(template.content, true));
-    return this.items.get(category);
+  actOn = ({ action, record }) => {
+    if(action === 'edit') this.edit(record);
+    else if(action === 'delete') this.remove(record);
   };
+
+  /* What other extensions put in each row: the template's elements, made once and kept. */
+  extrasFor = () => {
+    if(!this.extras){
+      const template = this.querySelector(':scope > template');
+      this.extras = template ? [...document.importNode(template.content, true).children] : [];
+    }
+    return this.extras;
+  };
+
+  /* Refills the table whenever the list changes. */
+  updated(changed){
+    if(!changed.has('categories')) return;
+    this.renderRoot.querySelector('k-table')?.setData({ records: this.categories, fields });
+  }
 
   /*
     View
@@ -141,20 +160,11 @@ export default class CategoriesManager extends ShadowComponent {
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
     return html`<div>
       <div class="mb"><button type="button" class="btn primary" id="addCategory" @click=${this.add}><k-icon name="add"></k-icon> New category</button></div>
-      ${this.categories.length ? html`<div class="table-wrapper"><table>
-        <thead><tr><th>Name</th><th>Key</th><th>Description</th><th>Products</th><th></th></tr></thead>
-        <tbody>${this.categories.map(category => html`<tr>
-          <td>${category.name}</td>
-          <td><code>${category.key}</code></td>
-          <td>${category.description}</td>
-          <td>${category.total}${category.total !== category.count ? html` <span class="tc-muted">(${category.count} published)</span>` : ''}</td>
-          <td style="white-space: nowrap;">
-            <button type="button" class="btn" title="Edit" aria-label=${`Edit ${category.name}`} @click=${() => this.edit(category)}><k-icon name="edit"></k-icon></button>
-            <button type="button" class="btn" title="Delete" aria-label=${`Delete ${category.name}`} @click=${() => this.remove(category)}><k-icon name="delete"></k-icon></button>
-            <k-products-category-actions .category=${category}>${this.itemContent(category)}</k-products-category-actions>
-          </td>
-        </tr>`)}</tbody>
-      </table></div>` : html`<p class="tc-muted">No categories yet. A category, like "Model cars" or "Paint", groups products for browsing. Add some here, then put products in them on each product's page.</p>`}
+      <k-table placeholder="No categories yet. A category, like Model cars or Paint, groups products for browsing. Add some here, then put products in them on each product's page." @categoryAction=${event => this.actOn(event.detail)}>
+        <k-products-category-action slot="before" action="edit" icon="edit" title="Edit"></k-products-category-action>
+        <k-products-category-action slot="after" action="delete" icon="delete" title="Delete"></k-products-category-action>
+        ${this.extrasFor()}
+      </k-table>
     </div>`;
   }
 }

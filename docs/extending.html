@@ -306,7 +306,7 @@ form.<span class="hljs-title function_">addEventListener</span>(<span class="hlj
 
     <h3 class="mt">Buttons on the product and category pages</h3>
     <p>Two more places take buttons, with slots rather than injection. The product edit and new pages have a <code>products-admin-product-actions</code> location inside the form: an element with <code>slot="actions"</code> appears beside Save and Cancel, finds the form with <code>this.closest('k-products-form')</code>, and reads <code>productId</code> (empty until the product exists, so wait for <code>product-saved</code> on the new page) and <code>original</code>.</p>
-    <p>The category list has one template holding a <code>products-admin-category-actions</code> location, which the list clones into a <code>&lt;k-products-category-actions&gt;</code> item in every row. Your element carries <code>slot="actions"</code> and finds its category with <code>this.closest('k-products-category-actions').category</code>. Load your module from the <code>products-admin-scripts</code> location, which sits outside every template.</p>
+    <p>The category list has one template holding a <code>products-admin-category-actions</code> location, which the list makes into a row control in every row. Your element carries <code>slot="after"</code>, so the table puts it in each row after the edit and delete controls, and it finds its category from its row. Load your module from the <code>products-admin-scripts</code> location, which sits outside every template.</p>
 
     <h3 class="mt">Under the public pages</h3>
     <p>The public pages are extended with <strong>fragments</strong>: a file named after a fragment the page includes, in your own package, which kempo also picks up without registration.</p>
