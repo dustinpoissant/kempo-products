@@ -17,10 +17,27 @@ locked: true
   <script type="module" src="/kempo-ui/components/Icon.js"></script>
   <script type="module" src="/kempo-ui/components/controls/TcOpen.js"></script>
   <script type="module" src="/kempo/components/Permission.js"></script>
+  <script type="module" src="/kempo/components/PermissionTarget.js"></script>
+  <script type="module" src="/kempo-ui/components/Tabs.js"></script>
   <script type="module" src="/products/components/RowAction.js"></script>
+  <script type="module" src="/products/components/ToolbarControl.js"></script>
+  <script type="module" src="/products/components/CategoriesManager.js"></script>
+  <script type="module" src="/products/components/SettingsManager.js"></script>
+  <script type="module" src="/products/components/TemplatesManager.js"></script>
+  <script type="module" src="/products/components/AttributesManager.js"></script>
+  <script type="module" src="/products/components/LedgerManager.js"></script>
 
   <h1 class="mb">Products</h1>
 
+  <k-tabs active="products" hash-routing>
+    <k-tab id="productsTab" for="products">Products</k-tab>
+    <k-tab id="categoriesTab" for="categories">Categories</k-tab>
+    <k-tab id="settingsTab" for="settings">Settings</k-tab>
+    <k-tab id="templatesTab" for="templates">Templates</k-tab>
+    <k-tab id="attributesTab" for="attributes">Attributes</k-tab>
+    <k-tab id="ledgerTab" for="ledger">Stock Levels</k-tab>
+
+    <k-tab-content id="productsContent" name="products">
   <k-table
     id="productsTable"
     open-on-click
@@ -36,21 +53,9 @@ locked: true
       <kc-tc-field-sort-hide></kc-tc-field-sort-hide>
       <div class="flex"></div>
       <k-permission has="products:create">
-        <button id="importBtn" class="btn m0"><k-icon name="download" rotation="180"></k-icon> Import</button>
+        <k-products-toolbar-control id="importBtn"><k-icon name="download" rotation="180"></k-icon> Import</k-products-toolbar-control>
       </k-permission>
-      <button id="exportBtn" class="btn m0"><k-icon name="download"></k-icon> Export</button>
-      <k-permission has="products:read">
-        <a href="/admin/extension/kempo-products/ledger" class="btn"><k-icon src="/products/icons/product-ledger.svg"></k-icon> Ledger</a>
-      </k-permission>
-      <k-permission has="products:templates:manage">
-        <a href="/admin/extension/kempo-products/templates" class="btn"><k-icon src="/products/icons/product-templates.svg"></k-icon> Templates</a>
-      </k-permission>
-      <k-permission has="products:categories:manage">
-        <a href="/admin/extension/kempo-products/categories" class="btn"><k-icon src="/products/icons/product-categories.svg"></k-icon> Categories</a>
-      </k-permission>
-      <k-permission has="products:attributes:manage">
-        <a href="/admin/extension/kempo-products/attributes" class="btn"><k-icon name="fields"></k-icon> Attributes</a>
-      </k-permission>
+      <k-products-toolbar-control id="exportBtn"><k-icon name="download"></k-icon> Export</k-products-toolbar-control>
       <k-permission has="products:create">
         <a href="/admin/extension/kempo-products/new" class="btn primary" id="newProductBtn"><k-icon name="add"></k-icon> New Product</a>
       </k-permission>
@@ -68,6 +73,40 @@ locked: true
       <div><kc-tc-page-size></kc-tc-page-size></div>
     </div>
   </k-table>
+    </k-tab-content>
+
+    <k-tab-content id="categoriesContent" name="categories">
+      <k-products-categories>
+        <template><location name="products-admin-category-actions" /></template>
+      </k-products-categories>
+    </k-tab-content>
+
+    <k-tab-content id="settingsContent" name="settings">
+      <k-products-settings></k-products-settings>
+    </k-tab-content>
+
+    <k-tab-content id="templatesContent" name="templates">
+      <k-products-templates></k-products-templates>
+    </k-tab-content>
+
+    <k-tab-content id="attributesContent" name="attributes">
+      <k-products-attributes></k-products-attributes>
+    </k-tab-content>
+
+    <k-tab-content id="ledgerContent" name="ledger">
+      <location name="products-admin-stock-notes"></location>
+      <k-products-ledger></k-products-ledger>
+    </k-tab-content>
+
+    <location name="products-admin-tabs" />
+  </k-tabs>
+
+  <k-permission-target has="products:categories:manage" target="#categoriesTab, #categoriesContent"></k-permission-target>
+  <k-permission-target has="products:settings:manage" target="#settingsTab, #settingsContent"></k-permission-target>
+  <k-permission-target has="products:templates:manage" target="#templatesTab, #templatesContent"></k-permission-target>
+  <k-permission-target has="products:attributes:manage" target="#attributesTab, #attributesContent"></k-permission-target>
+  <k-permission-target has="products:read" target="#ledgerTab, #ledgerContent"></k-permission-target>
+  <location name="products-admin-scripts" />
 
   <script type="module">
     import { getConfig, getProducts, getCategories, deleteProduct, displayMoney } from '/products/sdk.js';

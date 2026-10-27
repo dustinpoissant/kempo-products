@@ -133,31 +133,28 @@ page.addEventListener('selection-change', this.update);        // when they chan
 
     <h2 id="tabs" class="mt">Adding to the pages</h2>
     <h3>A tab on the product form</h3>
-    <p>The admin product form is split into tabs: <strong>Details</strong>, <strong>Description</strong>, <strong>Media</strong> and <strong>Options</strong>. Any extension can add its own, such as a shipping, SEO or tax tab. Ship a global content file in your package's <code>admin/</code> directory that pushes a <code>&lt;k-products-tab&gt;</code> into the <code>products-admin-product-tabs</code> location. Kempo picks it up without any registration, and it disappears when your extension is disabled.</p>
+    <p>The admin product form is a context that holds the product, with its tabs on the page: <strong>Details</strong>, <strong>Description</strong>, <strong>Media</strong>, <strong>Template</strong>, <strong>Attributes</strong>, <strong>Options</strong>, and <strong>Credits</strong> when kempo-credits is installed. Each tab saves its own fields with its own Save button. Any extension can add its own tab, such as a shipping, SEO or tax tab. Ship a global content file in your package's <code>admin/</code> directory that pushes a plain <code>&lt;k-tab&gt;</code> and <code>&lt;k-tab-content&gt;</code> into the <code>products-admin-product-tabs</code> location. Kempo picks it up without any registration, and it disappears when your extension is disabled.</p>
     <pre><code class="language-html">&lt;!-- admin/product-tab.global.html --&gt;
 &lt;content id="my-extension-product-tab" name="Shipping tab" owner="my-extension" enabled="true" locked="true" location="products-admin-product-tabs" priority="10"&gt;
-&lt;k-products-tab name="shipping" label="Shipping"&gt;
-  &lt;script type="module" src="/my-extension/components/ShippingAttributes.js"&gt;&lt;/script&gt;
-  &lt;my-shipping-attributes&gt;&lt;/my-shipping-attributes&gt;
-&lt;/k-products-tab&gt;
+&lt;k-tab for="shipping"&gt;Shipping&lt;/k-tab&gt;
+&lt;k-tab-content name="shipping" class="pt"&gt;
+  &lt;script type="module" src="/my-extension/components/ShippingProductTab.js"&gt;&lt;/script&gt;
+  &lt;k-my-shipping-product-tab&gt;&lt;/k-my-shipping-product-tab&gt;
+&lt;/k-tab-content&gt;
 &lt;/content&gt;</code></pre>
-    <p>Tabs from several extensions all appear, after the built-in ones, ordered by <code>priority</code>. Your element finds the form with <code>this.closest('k-products-form')</code> and listens to what is going on:</p>
+    <p>Your component extends <code>/products/components/ProductTab.js</code>. It finds the form with <code>closest()</code>, redraws when the form changes, and has a <code>saveButton(label, action)</code>. To save the product, call <code>this.form.save(section, pending)</code> with a section such as <code>details</code> or <code>options</code>, or <code>this.form.saveAttributes(keys)</code> for attribute values. The form fires these events:</p>
     <div class="table-wrapper mb">
       <table>
         <thead><tr><th>Event on the form</th><th>When</th><th><code>event.detail</code></th></tr></thead>
         <tbody>
           <tr><td><code>draft-change</code></td><td>The form is edited</td><td><code>{ changed, draft }</code></td></tr>
-          <tr><td><code>product-saved</code></td><td>The product has been stored</td><td><code>{ product, created, waitUntil }</code>. A tab with more to save calls <code>waitUntil(promise)</code> and the page waits for it before leaving</td></tr>
+          <tr><td><code>product-saved</code></td><td>The product has been stored</td><td><code>{ product, created, section }</code></td></tr>
         </tbody>
       </table>
     </div>
-    <pre><code class="language-js">const form = this.closest('k-products-form');
-form.addEventListener('product-saved', event => {
-  event.detail.waitUntil(saveMyOwnThing(event.detail.product.id));
-});</code></pre>
 
     <h3 class="mt">Buttons on the product and category pages</h3>
-    <p>Two more places take buttons, with slots rather than injection. The product edit and new pages have a <code>products-admin-product-actions</code> location inside the form: an element with <code>slot="actions"</code> appears beside Save and Cancel, finds the form with <code>this.closest('k-products-form')</code>, and reads <code>productId</code> (empty until the product exists, so wait for <code>product-saved</code> on the new page) and <code>original</code>.</p>
+    <p>Two more places take buttons. The product edit and new pages have a <code>products-admin-product-actions</code> location inside the form, and an element placed there appears beside the tabs. It finds the form with <code>this.closest('k-products-form')</code>, and reads <code>productId</code> (empty until the product exists, so wait for <code>product-saved</code> on the new page) and <code>original</code>.</p>
     <p>The category list has one template holding a <code>products-admin-category-actions</code> location, which the list makes into a row control in every row. Your element carries <code>slot="after"</code>, so the table puts it in each row after the edit and delete controls, and it finds its category from its row. Load your module from the <code>products-admin-scripts</code> location, which sits outside every template.</p>
 
     <h3 class="mt">Under the public pages</h3>

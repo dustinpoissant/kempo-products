@@ -15,7 +15,7 @@ const isUniqueViolation = error => (error?.code || error?.cause?.code) === '2350
   extension owns. The key and ownership never change after creation, and the data type only changes
   where nothing can be lost (see CONVERSIONS in attributeTypes.js).
 */
-const OWNER_EDITABLE = ['label', 'description', 'required', 'listed', 'tab', 'filterable', 'options', 'position', 'type'];
+const OWNER_EDITABLE = ['label', 'description', 'required', 'listed', 'filterable', 'options', 'position', 'type'];
 const ANYONE_EDITABLE = ['label', 'description', 'listed', 'filterable', 'position'];
 
 /* Every attribute, or only the ones an extension owns. */

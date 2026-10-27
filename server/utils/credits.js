@@ -83,7 +83,7 @@ export const normalizeCredits = async (supplied, existing = {}) => {
   most credits that may be used, and the money left over. Null when credits are not accepted or
   there is nothing to pay. Credits round up and money rounds down, so rounding never gives a
   discount. `perUnit` is how many credits equal one whole unit of the currency (the
-  `credits_per_unit` setting).
+  `credits_per_unit` setting, which kempo-credits owns).
 */
 export const creditQuote = ({ percent, unitPrice, currency, perUnit }) => {
   if(!percent || unitPrice === null || unitPrice === undefined || unitPrice <= 0) return null;

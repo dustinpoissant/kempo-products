@@ -24,7 +24,6 @@ export default class SettingsManager extends ShadowComponent {
   static properties = {
     saved: { state: true },
     draft: { state: true },
-    credits: { state: true },
     loading: { state: true },
     saving: { state: true },
     error: { state: true },
@@ -34,7 +33,6 @@ export default class SettingsManager extends ShadowComponent {
     super();
     this.saved = {};
     this.draft = {};
-    this.credits = false;
     this.loading = true;
     this.saving = false;
     this.error = '';
@@ -45,7 +43,12 @@ export default class SettingsManager extends ShadowComponent {
   */
   connectedCallback(){
     super.connectedCallback();
-    this.load();
+    const pane = this.closest('k-tab-content');
+    // Loads when its tab is first opened, so a tab nobody opens makes no requests.
+    if(!pane || pane.active) this.load();
+    else this.closest('k-tabs')?.addEventListener('tabfirstshown', ({ detail }) => {
+      if(detail.tab === pane.name) this.load();
+    });
   }
 
   /*
@@ -60,7 +63,6 @@ export default class SettingsManager extends ShadowComponent {
     }
     this.saved = Object.fromEntries(data.settings.map(setting => [setting.name, setting.value]));
     this.draft = { ...this.saved };
-    this.credits = data.credits;
   };
 
   get changes(){
@@ -102,7 +104,7 @@ export default class SettingsManager extends ShadowComponent {
     View
   */
   renderSection(title, description, body){
-    return html`<section class="card mb" style="max-width: 44rem; padding-bottom: var(--spacer);">
+    return html`<section class="mb">
       <h2 class="mbq">${title}</h2>
       <p class="tc-muted mb">${description}</p>
       ${body}
@@ -116,9 +118,6 @@ export default class SettingsManager extends ShadowComponent {
     const code = String(draft.currency || '').toUpperCase();
     const known = CURRENCIES.some(([value]) => value === draft.currency);
     const dirty = Object.keys(this.changes).length > 0;
-    const rate = Number.isInteger(draft.credits_per_unit) && draft.credits_per_unit > 0
-      ? `At ${new Intl.NumberFormat().format(draft.credits_per_unit)}, a ${code} 10.00 product that accepts 100% credits costs ${new Intl.NumberFormat().format(draft.credits_per_unit * 10)} credits. This only sets what spending credits on a product costs. How many credits a pack of them sells for is up to that product.`
-      : 'A whole number, 1 or more.';
 
     return html`<form @submit=${this.save}>
       ${this.renderSection('Prices', 'The currency prices are written in, and whether visitors see them at all.', html`
@@ -139,12 +138,6 @@ export default class SettingsManager extends ShadowComponent {
           <input type="number" id="page_size" style="width: 8rem;" min="1" max="100" step="1" .value=${String(draft.page_size)} @input=${this.number('page_size')}>
         </div>
       `)}
-      ${this.credits ? this.renderSection('Credits', 'Products can give credits when they are bought, and take credits as payment for part of their price. This is what a credit is worth when spent.', html`
-        <div class="mb">
-          <label class="d-b mbq" for="credits_per_unit">Credits that equal 1.00 ${code}<small class="d-b tc-muted">${rate}</small></label>
-          <input type="number" id="credits_per_unit" style="width: 10rem;" min="1" max="1000000" step="1" .value=${String(draft.credits_per_unit)} @input=${this.number('credits_per_unit')}>
-        </div>
-      `) : html`<p class="tc-muted mb">Install the kempo-credits extension to let products give credits and accept them as payment.</p>`}
       <div class="d-f mb" style="gap: var(--spacer_h);">
         <button type="submit" class="btn success" ?disabled=${this.saving || !dirty}>${this.saving ? 'Saving…' : 'Save settings'}</button>
         <button type="button" class="btn" ?disabled=${this.saving || !dirty} @click=${this.revert}>Discard changes</button>

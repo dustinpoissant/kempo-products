@@ -35,7 +35,7 @@ export const COLUMNS = [
   sql`ALTER TABLE "kempoProductTemplate" ADD COLUMN IF NOT EXISTS "product" jsonb NOT NULL DEFAULT '{}'::jsonb`,
   sql`ALTER TABLE "kempoProduct" ADD COLUMN IF NOT EXISTS "template" text NOT NULL DEFAULT ''`,
   sql`ALTER TABLE "kempoProduct" ADD COLUMN IF NOT EXISTS "attributeDefs" jsonb NOT NULL DEFAULT '[]'::jsonb`,
-  sql`ALTER TABLE "kempoProductAttribute" ADD COLUMN IF NOT EXISTS "tab" text NOT NULL DEFAULT ''`,
+  sql`ALTER TABLE "kempoProductAttribute" DROP COLUMN IF EXISTS "tab"`,
 ];
 
 /*
@@ -100,7 +100,7 @@ export const migrateTypesToTemplates = async () => {
     const [existing] = await db.execute(sql`select 1 from "kempoProductTemplate" where "key" = ${type.key}`);
     if(existing) continue;
     const attributes = scoped ? (await db.execute(sql`select * from "kempoProductAttribute" where "productType" = ${type.key} order by "position", "created"`)).map((attribute, position) => ({
-      key: attribute.key, label: attribute.label, type: attribute.type, description: attribute.description, required: attribute.required, listed: attribute.listed, tab: '', filterable: attribute.filterable, options: attribute.options ?? [], position,
+      key: attribute.key, label: attribute.label, type: attribute.type, description: attribute.description, required: attribute.required, listed: attribute.listed, filterable: attribute.filterable, options: attribute.options ?? [], position,
     })) : [];
     await db.execute(sql`insert into "kempoProductTemplate" ("id", "key", "name", "description", "owner", "position", "attributes", "options", "defaults", "created") values (${'migrated-' + type.key}, ${type.key}, ${type.name}, ${type.description ?? ''}, ${type.owner ?? ''}, ${type.position ?? 0}, ${JSON.stringify(attributes)}::jsonb, ${JSON.stringify(type.options ?? [])}::jsonb, ${JSON.stringify(type.defaults ?? {})}::jsonb, now())`);
     migrated.push(type.key);

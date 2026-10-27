@@ -33,7 +33,7 @@
   (`creditsGranted`, or `creditsOnly` for a credit pack) and accept credits as payment for part of its
   price (`creditPercent`). Giving and taking back credits is the caller's job, because only it knows an
   order was paid. `getPrice` also returns `credits`: the most credits that may be used and the money
-  left, worked out from the `credits_per_unit` setting.
+  left, worked out from the `credits_per_unit` setting that kempo-credits owns.
 
   An extension that keeps quantity in step with something else (inventory, a supplier feed) calls
   setManagedBy(productId, 'my-extension') and then setQuantity / setChoiceAvailability with

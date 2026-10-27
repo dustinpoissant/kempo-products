@@ -42,7 +42,7 @@ export const keyFromLabel = label => {
   return /^[a-z]/.test(key) ? key.slice(0, 40) : '';
 };
 
-/* An attribute's tab and a product type's key are lower-case with dashes. */
+/* A product type's key is lower-case with dashes. */
 export const DASH_KEY_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
 
 /* Validates and normalises an attribute definition. Returns [error, definition]. */
@@ -58,9 +58,6 @@ export const normalizeAttributeDefinition = (input = {}) => {
 
   if(!ATTRIBUTE_TYPES.includes(input.type)) return [{ code: 400, msg: `Attribute type must be one of: ${ATTRIBUTE_TYPES.join(', ')}` }, null];
 
-  const tab = String(input.tab ?? '').trim();
-  if(tab && !DASH_KEY_PATTERN.test(tab)) return [{ code: 400, msg: 'An attribute tab must start with a lowercase letter and use only lowercase letters, numbers and dashes (max 40)' }, null];
-
   let options = [];
   if(input.type === 'select'){
     options = [...new Set((Array.isArray(input.options) ? input.options : []).map(o => String(o).trim()).filter(Boolean))];
@@ -74,7 +71,6 @@ export const normalizeAttributeDefinition = (input = {}) => {
     description: String(input.description ?? ''),
     required: Boolean(input.required),
     listed: input.listed === undefined ? true : Boolean(input.listed),
-    tab,
     filterable: input.filterable === undefined ? input.type === 'select' : Boolean(input.filterable),
     options,
     position: Number.isInteger(input.position) ? input.position : 0,

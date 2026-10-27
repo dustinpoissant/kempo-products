@@ -6,6 +6,11 @@ import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
 import '/kempo-ui/components/Table.js';
 import './CategoryRowAction.js';
+import './ToolbarControl.js';
+import { openCategoryExportDialog, openCategoryImportDialog } from './CategoryImportExport.js';
+import '/kempo-ui/components/controls/TcSearch.js';
+import '/kempo-ui/components/controls/TcFilters.js';
+import '/kempo-ui/components/controls/TcFieldSortHide.js';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '/products/sdk.js';
 
 /*
@@ -47,7 +52,12 @@ export default class CategoriesManager extends ShadowComponent {
   */
   connectedCallback(){
     super.connectedCallback();
-    this.load();
+    const pane = this.closest('k-tab-content');
+    // Loads when its tab is first opened, so a tab nobody opens makes no requests.
+    if(!pane || pane.active) this.load();
+    else this.closest('k-tabs')?.addEventListener('tabfirstshown', ({ detail }) => {
+      if(detail.tab === pane.name) this.load();
+    });
   }
 
   /*
@@ -159,8 +169,16 @@ export default class CategoriesManager extends ShadowComponent {
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
     return html`<div>
-      <div class="mb"><button type="button" class="btn primary" id="addCategory" @click=${this.add}><k-icon name="add"></k-icon> New category</button></div>
       <k-table placeholder="No categories yet. A category, like Model cars or Paint, groups products for browsing. Add some here, then put products in them on each product's page." @categoryAction=${event => this.actOn(event.detail)}>
+        <div slot="top" class="d-f full" style="align-items: center; gap: var(--spacer_h); flex-wrap: wrap;">
+          <kc-tc-search style="width: 16rem"></kc-tc-search>
+          <kc-tc-filters></kc-tc-filters>
+          <kc-tc-field-sort-hide></kc-tc-field-sort-hide>
+          <div class="flex"></div>
+          <k-products-toolbar-control id="importCategoriesBtn" @click=${() => openCategoryImportDialog({ onDone: () => this.load() })}><k-icon name="download" rotation="180"></k-icon> Import</k-products-toolbar-control>
+          <k-products-toolbar-control id="exportCategoriesBtn" @click=${() => openCategoryExportDialog()}><k-icon name="download"></k-icon> Export</k-products-toolbar-control>
+          <button type="button" class="btn primary" id="addCategory" @click=${this.add}><k-icon name="add"></k-icon> New category</button>
+        </div>
         <k-products-category-action slot="before" action="edit" icon="edit" title="Edit"></k-products-category-action>
         <k-products-category-action slot="after" action="delete" icon="delete" title="Delete"></k-products-category-action>
         ${this.extrasFor()}

@@ -234,7 +234,7 @@ const checkAttributeDefs = async (list, template) => {
     if(invalid) return [invalid, null];
     if(taken.has(attribute.key)) return [{ code: 409, msg: `An attribute with the key "${attribute.key}" already exists on this product` }, null];
     taken.add(attribute.key);
-    defs.push({ ...attribute, tab: '' });
+    defs.push(attribute);
   }
   return [null, defs];
 };

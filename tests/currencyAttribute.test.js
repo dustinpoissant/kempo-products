@@ -17,9 +17,7 @@ test('money is an attribute type of its own, and can become a plain number but n
   assert.equal(canConvert('number', 'currency'), false);
 });
 
-test('an attribute can name a tab, which must look like a type key', async () => {
+test('an attribute has no tab: the product form decides where attributes go', async () => {
   const { normalizeAttributeDefinition } = await import('../server/utils/attributeTypes.js');
-  assert.equal(normalizeAttributeDefinition({ label: 'Weight', type: 'number', tab: 'shipping' })[1].tab, 'shipping');
-  assert.equal(normalizeAttributeDefinition({ label: 'Weight', type: 'number' })[1].tab, '');
-  assert.equal(normalizeAttributeDefinition({ label: 'Weight', type: 'number', tab: 'Not A Tab' })[0].code, 400);
+  assert.equal(normalizeAttributeDefinition({ label: 'Weight', type: 'number' })[1].tab, undefined);
 });

@@ -92,7 +92,7 @@ export const kempoProductTemplate = pgTable('kempoProductTemplate', {
 }, table => [uniqueIndex('kempoProductTemplateKeyIdx').on(table.key)]);
 
 /*
-  A custom attribute every product has. `tab` puts it in a tab of its own on the product form.
+  A custom attribute every product has. It is listed under the product form's Attributes tab.
 */
 export const kempoProductAttribute = pgTable('kempoProductAttribute', {
   id: text('id').primaryKey(),
@@ -102,7 +102,6 @@ export const kempoProductAttribute = pgTable('kempoProductAttribute', {
   description: text('description').notNull().default(''),
   required: boolean('required').notNull().default(false),
   listed: boolean('listed').notNull().default(true),
-  tab: text('tab').notNull().default(''), // '' shows the attribute under Details; a name puts it in its own tab on the product form
   filterable: boolean('filterable').notNull().default(false),
   options: jsonb('options').notNull().default([]),
   owner: text('owner').notNull().default(''),

@@ -177,7 +177,7 @@ test('the product edit and new pages put an extension\'s button straight into th
 
 test('the category page carries one template for the rows, filled by an extension, with its script outside it', async () => {
   await withSite({ 'kempo-discounts': DISCOUNTS }, async (dir, dirs) => {
-    const html = (await renderAdmin(dir, dirs, 'categories/index.page.html')).split(/>\s+</).join('><');
+    const html = (await renderAdmin(dir, dirs, 'index.page.html')).split(/>\s+</).join('><');
     assert.equal(html.match(/<template>/g)?.length, 1, 'exactly one template');
     assert.match(html, /<template><k-discounts-category-button slot="after"><\/k-discounts-category-button><\/template>/);
     assert.ok(html.indexOf('/discounts/Buttons.js') > html.indexOf('</template>'), 'the script is after the template');
@@ -189,15 +189,15 @@ test('with nothing contributing the admin pages have no extra buttons', async ()
   await withSite({}, async (dir, dirs) => {
     const html = (await renderAdmin(dir, dirs, 'edit/index.page.html')).split(/>\s+</).join('><');
     assert.doesNotMatch(html, /slot="actions"|<location/);
-    const categories = (await renderAdmin(dir, dirs, 'categories/index.page.html')).split(/>\s+</).join('><');
+    const categories = (await renderAdmin(dir, dirs, 'index.page.html')).split(/>\s+</).join('><');
     assert.match(categories, /<template><\/template>/, 'an empty template adds nothing to a row');
   });
 });
 
 test('the form declares an actions slot, and the category list fills a per-row item the same way the product list fills a card', async () => {
   const { readFile } = await import('node:fs/promises');
-  const form = await readFile(path.join(publicDir, 'components/ProductForm.js'), 'utf8');
-  assert.ok(form.includes('<slot name="actions"></slot>'));
+  const edit = await readFile(path.join(adminDir, 'edit/index.page.html'), 'utf8');
+  assert.ok(edit.includes('<location name="products-admin-product-actions"></location>'));
   const list = await readFile(path.join(publicDir, 'components/CategoriesManager.js'), 'utf8');
   assert.ok(list.includes('document.importNode(template.content, true)') && list.includes('<k-products-category-action slot="after"') && list.includes('${this.extrasFor()}'));
 });

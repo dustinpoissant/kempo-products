@@ -1,10 +1,15 @@
 import ShadowComponent from '/kempo-ui/components/ShadowComponent.js';
+import '/kempo-ui/components/controls/TcSearch.js';
+import '/kempo-ui/components/controls/TcFilters.js';
+import '/kempo-ui/components/controls/TcFieldSortHide.js';
 import { html } from '/kempo-ui/lit-all.min.js';
+import Dialog from '/kempo-ui/components/Dialog.js';
+import '/products/components/ProductPicker.js';
 import Toast from '/kempo-ui/components/Toast.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
 import '/kempo-ui/components/Table.js';
-import { getProducts, getLedger, addLedgerEntry } from '/products/sdk.js';
+import { getLedger, addLedgerEntry } from '/products/sdk.js';
 
 /*
   The ledger: every change to a product's quantity, newest first, and a form to add stock to a product
@@ -37,22 +42,24 @@ export default class LedgerManager extends ShadowComponent {
   */
   connectedCallback(){
     super.connectedCallback();
-    this.load();
+    const pane = this.closest('k-tab-content');
+    // Loads when its tab is first opened, so a tab nobody opens makes no requests.
+    if(!pane || pane.active) this.load();
+    else this.closest('k-tabs')?.addEventListener('tabfirstshown', ({ detail }) => {
+      if(detail.tab === pane.name) this.load();
+    });
   }
 
   /*
     Utility functions
   */
   load = async () => {
-    const [[productsError, products], [ledgerError, ledger]] = await Promise.all([
-      getProducts({ limit: 200, sort: 'name' }), getLedger({ limit: 100 }),
-    ]);
+    const [ledgerError, ledger] = await getLedger({ limit: 100 });
     this.loading = false;
-    if(productsError || ledgerError){
-      this.error = (productsError || ledgerError).msg;
+    if(ledgerError){
+      this.error = ledgerError.msg;
       return;
     }
-    this.products = products.items.filter(product => product.status !== 'archived');
     this.entries = ledger.items;
     this.total = ledger.total;
   };
@@ -62,11 +69,38 @@ export default class LedgerManager extends ShadowComponent {
   /*
     Event handlers
   */
-  save = async event => {
-    event.preventDefault();
-    const $form = event.target;
-    const productId = $form.querySelector('#product').value;
-    const change = Number($form.querySelector('#change').value);
+  /* The dialog's Add button: the dialog stays open until the entry is stored, so a failure keeps what was typed. */
+  addEntry = () => {
+    const $dialog = Dialog.create(html`
+      <div class="p">
+        <p class="tc-muted">Add stock to a product, or take it away, for a delivery, a count or a sale made somewhere else. A product with unlimited quantity is not counted.</p>
+        <div class="mb">
+          <label class="d-b mbq" for="ledgerProduct">Product</label>
+          <k-products-product-picker id="ledgerProduct" name="product" class="full"></k-products-product-picker>
+        </div>
+        <div class="mb">
+          <label class="d-b mbq" for="ledgerChange">Change<small class="d-b tc-muted">Whole numbers. Use a minus sign to take stock away.</small></label>
+          <input type="number" id="ledgerChange" step="1" class="full" placeholder="+5 or -2">
+        </div>
+        <div class="mb">
+          <label class="d-b mbq" for="ledgerNote">Note</label>
+          <input type="text" id="ledgerNote" class="full" placeholder="e.g. Delivery from the supplier, or an Etsy order number">
+        </div>
+      </div>`, {
+      title: 'Add an entry',
+      confirmText: 'Add entry',
+      cancelText: 'Cancel',
+      overlayClose: false,
+      confirmAction: async event => {
+        event.keepDialogOpen = true;
+        await this.save($dialog);
+      },
+    });
+  };
+
+  save = async $dialog => {
+    const productId = $dialog.querySelector('#ledgerProduct').value;
+    const change = Number($dialog.querySelector('#ledgerChange').value);
     if(!productId){
       Toast.error('Choose a product');
       return;
@@ -79,7 +113,7 @@ export default class LedgerManager extends ShadowComponent {
     const [error] = await addLedgerEntry({
       lines: [{ productId, change }],
       reason: change > 0 ? 'added' : 'removed',
-      note: $form.querySelector('#note').value.trim(),
+      note: $dialog.querySelector('#ledgerNote').value.trim(),
     });
     this.saving = false;
     if(error){
@@ -87,7 +121,7 @@ export default class LedgerManager extends ShadowComponent {
       return;
     }
     Toast.success('Added to the ledger');
-    $form.reset();
+    $dialog.close();
     this.load();
   };
 
@@ -97,7 +131,7 @@ export default class LedgerManager extends ShadowComponent {
   /* The ledger, as a table: every change to a product's stock, newest first. */
   ledgerFields(){
     return [
-      { name: 'created', label: 'When', size: 190, editable: false, formatter: value => new Date(value).toLocaleString() },
+      { name: 'created', label: 'When', size: 230, editable: false, formatter: value => new Date(value).toLocaleString() },
       { name: 'name', label: 'Product', size: 200, editable: false },
       { name: 'change', label: 'Change', size: 100, editable: false, calculator: entry => `${entry.change > 0 ? '+' : ''}${entry.change}` },
       { name: 'quantity', label: 'Quantity after', size: 150, editable: false, calculator: entry => this.quantityText(entry.quantity) },
@@ -120,22 +154,14 @@ export default class LedgerManager extends ShadowComponent {
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
     return html`<div>
-      <form @submit=${this.save} class="card mb" style="max-width: 48rem;">
-        <h4>Add an entry</h4>
-        <p class="tc-muted">Add stock to a product, or take it away, for a delivery, a count or a sale made somewhere else. A product with unlimited quantity is not counted.</p>
-        <div class="d-f mbh" style="align-items: flex-start; gap: var(--spacer_h);">
-          <select id="product" class="flex" style="width: auto; min-width: 12rem; margin: 0;" aria-label="Product">
-            <option value="">Choose a product…</option>
-            ${this.products.map(product => html`<option value=${product.id}>${product.name} (${this.quantityText(product.quantity)})</option>`)}
-          </select>
-          <input type="number" id="change" step="1" style="width: 8rem; margin: 0;" placeholder="+5 or -2" aria-label="Change">
-        </div>
-        <div class="mb"><label class="d-b mbq" for="note">Note</label><input type="text" id="note" class="full" placeholder="e.g. Delivery from the supplier, or an Etsy order number"></div>
-        <button type="submit" class="btn success" id="addEntry" ?disabled=${this.saving}>${this.saving ? 'Adding…' : 'Add entry'}</button>
-      </form>
-      <h4>Ledger</h4>
-      ${this.entries.length ? html`<k-table id="ledgerTable" placeholder="Nothing in the ledger yet."></k-table>
-      ${this.total > this.entries.length ? html`<p class="tc-muted">Showing the latest ${this.entries.length} of ${this.total}.</p>` : ''}` : html`<p class="tc-muted">Nothing in the ledger yet.</p>`}
+      <div class="d-f mb" style="align-items: center; gap: var(--spacer_h);">
+        <p class="flex m0 tc-muted">Every change to the stock of these products, newest first.</p>
+      </div>
+      <h4>Stock changes</h4>
+      <k-table id="ledgerTable" placeholder="Nothing has changed yet.">
+        <div slot="top" class="d-f full" style="align-items: center;"><kc-tc-search style="width: 16rem"></kc-tc-search><kc-tc-filters></kc-tc-filters><kc-tc-field-sort-hide></kc-tc-field-sort-hide><div class="flex"></div><button type="button" class="btn success" id="addEntry" ?disabled=${this.saving} @click=${this.addEntry}>+ Add Stock Entry</button></div>
+      </k-table>
+      ${this.total > this.entries.length ? html`<p class="tc-muted">Showing the latest ${this.entries.length} of ${this.total}.</p>` : ''}
     </div>`;
   }
 }

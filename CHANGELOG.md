@@ -4,6 +4,29 @@ All notable changes to `kempo-products` are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- The Products admin page has a `products-admin-tabs` location after its tabs, so an extension can add a tab there.
+
+- **Categories can be imported and exported** as a spreadsheet (.csv) or everything (.json), from the Categories tab's top bar. Categories are matched by key, so importing a file twice never duplicates; a category already there is left alone unless the import is set to update it. Dry run first, as for products. Server: `GET /products/api/categories/export`, `POST /products/api/categories/import`, both with `products:categories:manage`.
+- **The Categories table has search, filters and the field sort and hide control**, like the Products table.
+
+### Changed
+
+- The Stock Levels tab has a `products-admin-stock-notes` location above the ledger, for an extension to add a note (kempo-products-inventory adds its warning there).
+
+- **`k-products-product-picker`** is a reusable form input for choosing one product. It searches the server as you type, so it works for any number of products, and its value is the product id. Stock Levels uses it in place of a dropdown of every product.
+- **Stock Levels** (formerly Ledger) adds entries in a dialog, opened by an Add entry button. The tab says at the top that it is only for products with no linked inventory: a product made from inventory takes its stock from the inventory, and an entry for it is refused.
+- **Templates, Attributes and Ledger are tabs on the Products page**, next to Products, Categories and Settings, with hash routing. Their own pages and the toolbar links to them are removed, with no redirects. The tabs need the same permissions as the old pages did.
+- **The product and template forms are a context with the tabs on the page.** `k-products-form` and `k-products-template-form` hold the product or template and call no visible UI themselves. One Save above the tabs (`k-products-save-button`) saves the whole product or template at once. Each tab (`k-products-details-tab`, `-description-`, `-media-`, `-template-`, `-attributes-`, `-options-`, `-credits-` and the template's `k-products-template-*-tab`s) is a component on the page with its own Save button, which saves only its fields. The first Save creates the product. The page no longer moves to a list after saving.
+- **The attribute `tab` field is removed.** The product form puts admin-added attributes on its Attributes tab and does not take the placement from the data. A migration drops the column. Extension-owned attributes are shown by their extension, on its own tab.
+- **The Credits tab is contributed by kempo-credits**, through the `products-admin-product-tabs` location, so it appears only while kempo-credits is installed. The Template tab's Defaults show the attributes an administrator added; kempo-shipping shows its own on its tabs.
+- **`k-products-tab` is replaced by a plain `k-tab` and `k-tab-content`** in the `products-admin-product-tabs` location, and the `product-saved` event waits for nothing: a tab saves its own data.
+
+- **The Products toolbar's Import, Export, Ledger, Templates and Attributes are controls** that look like the table's search and filter controls, not grey buttons. New Product stays a primary button. The Categories tab's New category button is in the table's top bar.
+- **Products, Categories and Settings are one admin page** at `/admin/extension/kempo-products/`, with a tab for each (hash routing, so each has its own address: `#categories`, `#settings`). The Categories and Settings pages and their nav entries are removed, with no redirects from the old addresses, and the Categories button on the Products toolbar is gone. The Categories tab needs `products:categories:manage` and the Settings tab needs `products:settings:manage`, as the old links did. The Settings sections are no longer boxed and fill the tab's width.
+- **The credits rate (`credits_per_unit`) belongs to kempo-credits now**, and is set on its Settings tab. Products reads it from there and falls back to 100 without it. The setting is removed from Product Settings and from `/admin/settings`: kempo-credits' update moves a value kempo-products still holds, and kempo-products' update removes it when kempo-credits is not installed.
+
 ### Added (templates)
 
 - **A template can give a product its product type, price, lowest price after discounts, price label, description, tags and categories** (a **Product** tab on the template page). A product that sets one itself keeps its own; one that leaves it blank uses the template's, so a "Model car" template set to Physical Item at $24.99 makes every model car that, until one says otherwise. The product form shows the template's value as the placeholder ("Template: 24.99") or a hint, and the product type has a "The template's (Physical Item)" choice, which a new product starts on. Everything that reads a product (the cart, discounts, the public pages, the price API) sees the value in force; `own` on a product holds only what it was given itself, which is what the form edits and an export writes. A template holds them in `product`. Quantity and status are not inherited, because stock and whether something is for sale belong to each product.

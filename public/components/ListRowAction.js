@@ -35,8 +35,10 @@ export default class ListRowAction extends ButtonControl {
     this.host.dispatchEvent(new CustomEvent('listAction', { detail: { action: this.action, record: this.record } }));
   }
 
+  /* A row that does not offer this action gets no box at all, not an empty one. */
   render(){
-    return this.shown ? html`<slot><k-icon name="${this.icon}"></k-icon></slot>` : html``;
+    this.toggleAttribute('hidden', !this.shown);
+    return html`<slot><k-icon name="${this.icon}"></k-icon></slot>`;
   }
 }
 

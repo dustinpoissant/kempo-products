@@ -4,7 +4,15 @@ locked: true
 <page title="Edit Product - Admin">
 <content>
   <script type="module" src="/kempo-ui/components/Icon.js"></script>
+  <script type="module" src="/kempo-ui/components/Tabs.js"></script>
   <script type="module" src="/products/components/ProductForm.js"></script>
+  <script type="module" src="/products/components/ProductSaveButton.js"></script>
+  <script type="module" src="/products/components/ProductDetailsTab.js"></script>
+  <script type="module" src="/products/components/ProductDescriptionTab.js"></script>
+  <script type="module" src="/products/components/ProductMediaTab.js"></script>
+  <script type="module" src="/products/components/ProductTemplateTab.js"></script>
+  <script type="module" src="/products/components/ProductAttributesTab.js"></script>
+  <script type="module" src="/products/components/ProductOptionsTab.js"></script>
 
   <div class="d-f mb" style="align-items: center; gap: var(--spacer);">
     <a href="/admin/extension/kempo-products/" class="btn"><k-icon name="arrow" direction="left"></k-icon> Products</a>
@@ -12,11 +20,27 @@ locked: true
   </div>
 
   <!--
-    ?id= is the product; ?next= (a path on this site) is where to go after saving or cancelling.
-    Extensions add a tab with a global content file; see the new page.
+    ?id= is the product. One Save above the tabs saves everything. Extensions add a tab with a global content file; see the new page.
   -->
   <k-products-form from-url>
-    <location name="products-admin-product-tabs"></location>
+    <div class="d-f mb"><k-products-save-button></k-products-save-button></div>
+    <k-tabs active="details" hash-routing>
+      <k-tab for="details">Details</k-tab>
+      <k-tab for="description">Description</k-tab>
+      <k-tab for="media">Media</k-tab>
+      <k-tab for="template">Template</k-tab>
+      <k-tab for="attributes">Attributes</k-tab>
+      <k-tab for="options">Options</k-tab>
+
+      <k-tab-content name="details" class="pt"><k-products-details-tab></k-products-details-tab></k-tab-content>
+      <k-tab-content name="description" class="pt"><k-products-description-tab></k-products-description-tab></k-tab-content>
+      <k-tab-content name="media" class="pt"><k-products-media-tab></k-products-media-tab></k-tab-content>
+      <k-tab-content name="template" class="pt"><k-products-template-tab></k-products-template-tab></k-tab-content>
+      <k-tab-content name="attributes" class="pt"><k-products-attributes-tab></k-products-attributes-tab></k-tab-content>
+      <k-tab-content name="options" class="pt"><k-products-options-tab></k-products-options-tab></k-tab-content>
+
+      <location name="products-admin-product-tabs"></location>
+    </k-tabs>
     <location name="products-admin-product-actions"></location>
   </k-products-form>
   <location name="products-admin-scripts" />

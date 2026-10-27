@@ -1,5 +1,8 @@
 import ShadowComponent from '/kempo-ui/components/ShadowComponent.js';
-import { html, render } from '/kempo-ui/lit-all.min.js';
+import '/kempo-ui/components/controls/TcSearch.js';
+import '/kempo-ui/components/controls/TcFilters.js';
+import '/kempo-ui/components/controls/TcFieldSortHide.js';
+import { html, render, nothing } from '/kempo-ui/lit-all.min.js';
 import Toast from '/kempo-ui/components/Toast.js';
 import Dialog from '/kempo-ui/components/Dialog.js';
 import '/kempo-ui/components/Icon.js';
@@ -40,7 +43,12 @@ export default class AttributesManager extends ShadowComponent {
   */
   connectedCallback(){
     super.connectedCallback();
-    this.load();
+    const pane = this.closest('k-tab-content');
+    // Loads when its tab is first opened, so a tab nobody opens makes no requests.
+    if(!pane || pane.active) this.load();
+    else this.closest('k-tabs')?.addEventListener('tabfirstshown', ({ detail }) => {
+      if(detail.tab === pane.name) this.load();
+    });
   }
 
   /*
@@ -205,8 +213,11 @@ export default class AttributesManager extends ShadowComponent {
     if(this.loading) return html`<k-spinner></k-spinner>`;
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
     return html`<div>
-      <div class="mb"><button type="button" class="btn primary" id="addAttribute" @click=${this.add}><k-icon name="add"></k-icon> New attribute</button></div>
-      ${this.attributes.length ? html`<k-table id="attributesTable" placeholder="No attributes yet. Add one to give your products details such as a scale, a make or a year." @listAction=${event => this.actOnAttribute(event.detail)}><k-products-list-action slot="before" action="edit" icon="edit" title="Edit"></k-products-list-action><k-products-list-action slot="after" action="delete" icon="delete" title="Delete"></k-products-list-action></k-table>` : html`<p class="tc-muted">No attributes yet. Add one to give your products details such as a scale, a make or a year.</p>`}
+      <k-table id="attributesTable" placeholder="No attributes yet. Add one to give your products details such as a scale, a make or a year." @listAction=${event => this.actOnAttribute(event.detail)}>
+        <div slot="top" class="d-f full" style="align-items: center;"><kc-tc-search style="width: 16rem"></kc-tc-search><kc-tc-filters></kc-tc-filters><kc-tc-field-sort-hide></kc-tc-field-sort-hide><div class="flex"></div><button type="button" class="btn primary" id="addAttribute" @click=${this.add}><k-icon name="add"></k-icon> New attribute</button></div>
+        <k-products-list-action slot="before" action="edit" icon="edit" title="Edit"></k-products-list-action>
+        ${this.attributes.some(attribute => !attribute.owner) ? html`<k-products-list-action slot="after" action="delete" icon="delete" title="Delete"></k-products-list-action>` : nothing}
+      </k-table>
     </div>`;
   }
 }

@@ -1,6 +1,5 @@
 import { createRequire } from 'module';
 import { getSetting, setSetting } from 'kempo/server/sdk.js';
-import { creditsEnabled } from './credits.js';
 
 /*
   The catalog's settings as the settings page edits them. The list, with each one's type and
@@ -35,17 +34,16 @@ const VALIDATORS = {
     return typeof flag === 'boolean' ? [null, flag] : [{ code: 400, msg: 'Show prices is true or false' }, null];
   },
   page_size: whole(1, 100, 'Products per page'),
-  credits_per_unit: whole(1, 1000000, 'Credits per unit'),
 };
 
-const DEFAULTS = { currency: 'usd', prices_visible: true, page_size: 24, credits_per_unit: 100 };
+const DEFAULTS = { currency: 'usd', prices_visible: true, page_size: 24 };
 
 const coerce = (name, raw) => {
   const [error, value] = VALIDATORS[name](raw);
   return error ? DEFAULTS[name] : value;
 };
 
-/* Every declared setting with its current value, plus whether kempo-credits is in use. */
+/* Every declared setting with its current value. */
 export const readCatalogSettings = async () => {
   const settings = [];
   for(const [name, declared] of DECLARED){
@@ -58,7 +56,7 @@ export const readCatalogSettings = async () => {
       default: DEFAULTS[name],
     });
   }
-  return [null, { settings, credits: await creditsEnabled() }];
+  return [null, { settings }];
 };
 
 /* Saves { name: value }. Nothing is written unless every value is acceptable. */

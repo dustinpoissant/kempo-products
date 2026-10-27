@@ -9,6 +9,7 @@ import {
 import { createProduct, updateProduct, getPrice } from '../server/utils/products.js';
 import { registerProductType, unregisterProductTypes, CREDITS_ONLY } from '../server/utils/productTypes.js';
 import { saveCatalogSettings, readCatalogSettings } from '../server/utils/catalogSettings.js';
+import { setSetting } from 'kempo/server/sdk.js';
 import install from '../install.js';
 
 /*
@@ -123,13 +124,13 @@ describe('kempo-credits integration', { skip }, () => {
 
     test('the rate comes from the credits_per_unit setting, and rounding never gives a discount', async () => {
       const product = ok(await createProduct({ name: 'Odd price', price: 333, creditPercent: 50 }));
-      ok(await saveCatalogSettings({ credits_per_unit: 250 }));
+      ok(await setSetting('kempo-credits', 'credits_per_unit', 250));
       const price = ok(await getPrice(product.id)).credits;
       /* 50% of 333 is 166 (rounded down); 1.66 * 250 = 415 credits. */
       assert.equal(price.coveredMinor, 166);
       assert.equal(price.maxCredits, 415);
       assert.equal(price.remainingMinor, 167);
-      ok(await saveCatalogSettings({ credits_per_unit: 100 }));
+      ok(await setSetting('kempo-credits', 'credits_per_unit', 100));
     });
 
     test('the values are checked', async () => {
@@ -152,16 +153,14 @@ describe('kempo-credits integration', { skip }, () => {
   describe('the settings page', () => {
     test('shows every declared setting, and only saves ones that are acceptable', async () => {
       await setCredits(true);
-      const { settings, credits: enabled } = ok(await readCatalogSettings());
-      assert.equal(enabled, true);
-      assert.deepEqual(settings.map(setting => setting.name).sort(), ['credits_per_unit', 'currency', 'page_size', 'prices_visible']);
+      const { settings } = ok(await readCatalogSettings());
+      assert.deepEqual(settings.map(setting => setting.name).sort(), ['currency', 'page_size', 'prices_visible']);
 
       refused(await saveCatalogSettings({ page_sise: 10 }), 400);
       refused(await saveCatalogSettings({ page_size: 0 }), 400);
       refused(await saveCatalogSettings({ page_size: 101 }), 400);
       refused(await saveCatalogSettings({ currency: 'dollars' }), 400);
       refused(await saveCatalogSettings({ prices_visible: 'maybe' }), 400);
-      refused(await saveCatalogSettings({ credits_per_unit: 0 }), 400);
       refused(await saveCatalogSettings({ page_size: 10, currency: 'nope' }), 400);
 
       const saved = ok(await saveCatalogSettings({ page_size: 12, currency: 'EUR', prices_visible: false }));

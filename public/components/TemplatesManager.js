@@ -1,4 +1,7 @@
 import ShadowComponent from '/kempo-ui/components/ShadowComponent.js';
+import '/kempo-ui/components/controls/TcSearch.js';
+import '/kempo-ui/components/controls/TcFilters.js';
+import '/kempo-ui/components/controls/TcFieldSortHide.js';
 import { html } from '/kempo-ui/lit-all.min.js';
 import Toast from '/kempo-ui/components/Toast.js';
 import Dialog from '/kempo-ui/components/Dialog.js';
@@ -39,7 +42,12 @@ export default class TemplatesManager extends ShadowComponent {
   connectedCallback(){
     super.connectedCallback();
     showFlash();
-    this.load();
+    const pane = this.closest('k-tab-content');
+    // Loads when its tab is first opened, so a tab nobody opens makes no requests.
+    if(!pane || pane.active) this.load();
+    else this.closest('k-tabs')?.addEventListener('tabfirstshown', ({ detail }) => {
+      if(detail.tab === pane.name) this.load();
+    });
   }
 
   /*
@@ -112,8 +120,7 @@ export default class TemplatesManager extends ShadowComponent {
     if(this.error) return html`<p class="tc-danger">${this.error}</p>`;
     return html`<div>
       <p class="tc-muted">A template is what products are made from. It holds attributes, options and default values (every model car has the same size and weight) that its products inherit, and each product can add its own attributes, options and extra choices on top.</p>
-      <div class="mb"><a class="btn primary" id="addTemplate" href=${PAGE}><k-icon name="add"></k-icon> New template</a></div>
-      ${this.templates.length ? html`<k-table id="templatesTable" open-on-click placeholder='No templates yet. Make one, like "Model car", then make products from it.' @listAction=${event => this.actOnTemplate(event.detail)}><kc-tc-open slot="before" title="Edit"><k-icon name="edit"></k-icon></kc-tc-open><k-products-list-action slot="after" action="delete" icon="delete" title="Delete"></k-products-list-action></k-table>` : html`<p class="tc-muted">No templates yet. Make one, like "Model car", then make products from it.</p>`}
+      <k-table id="templatesTable" open-on-click placeholder='No templates yet. Make one, like "Model car", then make products from it.' @listAction=${event => this.actOnTemplate(event.detail)}><div slot="top" class="d-f full" style="align-items: center;"><kc-tc-search style="width: 16rem"></kc-tc-search><kc-tc-filters></kc-tc-filters><kc-tc-field-sort-hide></kc-tc-field-sort-hide><div class="flex"></div><a class="btn primary" id="addTemplate" href=${PAGE}><k-icon name="add"></k-icon> New Product Template</a></div><kc-tc-open slot="before" title="Edit"><k-icon name="edit"></k-icon></kc-tc-open><k-products-list-action slot="after" action="delete" icon="delete" title="Delete"></k-products-list-action></k-table>
     </div>`;
   }
 }

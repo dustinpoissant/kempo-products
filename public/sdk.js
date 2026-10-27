@@ -118,3 +118,10 @@ export const displayMoney = (minor, currency = 'usd', decimals = 2, locale = und
 */
 export const exportUrl = format => `${BASE}/export?format=${format === 'json' ? 'json' : 'csv'}`;
 export const importProducts = data => req('POST', `${BASE}/import`, data);
+
+/*
+  Categories' import and export, the same way: categoryExportUrl('csv' | 'json') downloads them, and
+  importCategories({ content, onMatch, dryRun }) matches rows by key.
+*/
+export const categoryExportUrl = format => `${BASE}/categories/export?format=${format === 'json' ? 'json' : 'csv'}`;
+export const importCategories = data => req('POST', `${BASE}/categories/import`, data);

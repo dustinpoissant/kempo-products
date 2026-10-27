@@ -60,7 +60,7 @@ export const getCategory = async key => {
   }
 };
 
-const normalizeCategory = (input = {}) => {
+export const normalizeCategory = (input = {}) => {
   const name = String(input.name ?? '').trim();
   if(!name) return [{ code: 400, msg: 'Category name is required' }, null];
   if(name.length > MAX_NAME) return [{ code: 400, msg: `Category name must be ${MAX_NAME} characters or fewer` }, null];

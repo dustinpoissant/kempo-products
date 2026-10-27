@@ -285,17 +285,20 @@ A component that needs more than the product (stock, ratings) fetches it from it
 
 ### Adding to the admin form
 
-The product form is split into tabs: **Details**, **Description** (a full rich text editor, the same as pages use), **Media** and **Options**. An extension adds its own tab by shipping a global content file in its `admin/` directory (`admin/product-tab.global.html`) that pushes a `<k-products-tab>` into the `products-admin-product-tabs` location the form pages carry:
+The product form is a context (`<k-products-form>`) that holds the product. Its tabs are the page's own, each a component that saves its own fields with its own Save button: **Details**, **Description**, **Media**, **Template**, **Attributes** (the admin-added attributes, and the product's own), **Options**, and **Credits** when kempo-credits is installed. The first Save creates the product.
+
+An extension adds a tab by shipping a global content file (`admin/product-tab.global.html`) that pushes a plain `<k-tab>` and `<k-tab-content>` into the `products-admin-product-tabs` location inside the form's tabs:
 
 ```html
 <content id="my-extension-product-tab" name="Shipping tab" owner="my-extension" enabled="true" locked="true" location="products-admin-product-tabs" priority="10">
-<k-products-tab name="shipping" label="Shipping">
-  <my-shipping-attributes></my-shipping-attributes>
-</k-products-tab>
+<k-tab for="shipping">Shipping</k-tab>
+<k-tab-content name="shipping" class="pt">
+  <my-shipping-tab></my-shipping-tab>
+</k-tab-content>
 </content>
 ```
 
-Tabs from several extensions all appear, after the built-in ones, ordered by `priority`. The form fires `draft-change` as it is edited and `product-saved` when the product is stored; a tab with more to save calls `event.detail.waitUntil(promise)` and the page waits. Your elements find the form with `this.closest('k-products-form')`.
+Your component extends `/products/components/ProductTab.js`, which finds the form with `closest()`, redraws when it changes, and gives a `saveButton(label, action)`. Call `this.form.save(section, pending)` to save the product's fields for a section, or `this.form.saveAttributes(keys)` for attribute values. The form fires `draft-change` as it is edited and `product-saved` when a save is stored.
 
 #### Buttons
 
@@ -329,7 +332,7 @@ How they work:
 
 - Products only says how many credits a product gives. **Giving them is the caller's job**: whoever takes the order grants them once it is paid (kempo-commerce does, with kempo-credits' `grantCredits`) and takes them back when it is refunded. Nothing here grants or takes back credits.
 - `getPrice` (and `GET /products/api/price`) also returns `credits` for a product that accepts them: `{ percent, perUnit, maxCredits, coveredMinor, remainingMinor }`, the most credits that may be used and the money left. **Spending the credits is the caller's job** (kempo-commerce) with kempo-credits' `spendCredits`; products only says how much may be.
-- Credits are not worth a fixed amount of money. The `credits_per_unit` setting says how many credits equal one whole unit of the currency (100 means 1 credit is 1 cent). Credits round up and money rounds down, so rounding never gives a discount.
+- Credits are not worth a fixed amount of money. The `credits_per_unit` setting, owned by kempo-credits, says how many credits equal one whole unit of the currency (100 means 1 credit is 1 cent). Credits round up and money rounds down, so rounding never gives a discount.
 
 Selling credits for money needs a checkout, which this extension does not have: the buy flow (and tax, payments and refunds) is kempo-commerce's, and a credit pack is a product it sells.
 
@@ -352,7 +355,6 @@ Published products need no permission to see. Three groups are provided: `kempo-
 | `currency` | `usd` | The currency code prices are shown in |
 | `prices_visible` | `true` | Show prices to visitors |
 | `page_size` | `24` | Products per page on the public list |
-| `credits_per_unit` | `100` | How many credits equal one whole unit of the currency, used when a product accepts credits as payment. Only used with kempo-credits |
 
 These can be edited in a table at **Settings → Admin Settings**, or on the **Product Settings** page (Admin → Products → Product Settings, at `/admin/extension/kempo-products/settings/`), which groups them into sections with explanations and checks every value before saving.
 
