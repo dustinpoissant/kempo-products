@@ -13,6 +13,9 @@ All notable changes to `kempo-products` are documented in this file.
 
 ### Changed
 
+- The `kempo-ui` peer dependency is now `>=1.0.0`.
+- The `kempo` peer dependency is now `>=4.10.2`.
+
 - The Stock Levels tab has a `products-admin-stock-notes` location above the ledger, for an extension to add a note (kempo-products-inventory adds its warning there).
 
 - **`k-products-product-picker`** is a reusable form input for choosing one product. It searches the server as you type, so it works for any number of products, and its value is the product id. Stock Levels uses it in place of a dropdown of every product.
