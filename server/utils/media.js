@@ -37,6 +37,16 @@ export const getAssets = async ids => {
   return result;
 };
 
+/*
+  The picture a product has in a list, a search or a cart: its first image, or failing that a video that has a thumbnail.
+  `ids` is the product's media, `assets` the map getAssets gave. Null when there is none. A video with no thumbnail is not
+  a picture. (public/utils/productMedia.js has the same rule for the browser.)
+*/
+export const primaryPicture = (ids, assets) => {
+  const media = ids.map(id => assets?.[id]).filter(Boolean);
+  return media.find(asset => asset.kind === 'image') ?? media.find(asset => asset.thumbnail) ?? null;
+};
+
 /* Returns an { code, msg } for the first id that cannot be used, or null when all can. */
 export const checkAssets = async (ids, label = 'Images') => {
   if(!(await mediaAvailable())) return { code: 409, msg: `${label}: kempo-media is not installed` };

@@ -13,7 +13,7 @@ import { STATUSES, AVAILABILITIES, UNLIMITED } from './quantity.js';
 
     csv   one row per product, for a spreadsheet. Columns: slug, name, template, status, availability,
           price (49.99), price_label, quantity (blank is unlimited), tags (comma separated),
-          categories (comma separated keys or names), description, options (JSON), and one `attribute.<key>` column per custom attribute.
+          categories (comma separated keys or names), description, short_description, options (JSON), and one `attribute.<key>` column per custom attribute.
     json  everything, including the templates, categories and attributes themselves, so a catalog can move between sites.
 
   Images are not exported: a media id means nothing on another site.
@@ -22,7 +22,7 @@ import { STATUSES, AVAILABILITIES, UNLIMITED } from './quantity.js';
   same file twice updates or skips instead of duplicating. In a CSV an empty cell leaves what the
   product has unchanged and uses the default for a new one.
 */
-const BASE_COLUMNS = ['slug', 'name', 'template', 'status', 'availability', 'price', 'price_label', 'minimum_price', 'quantity', 'tags', 'categories', 'description', 'options'];
+const BASE_COLUMNS = ['slug', 'name', 'template', 'status', 'availability', 'price', 'price_label', 'minimum_price', 'quantity', 'tags', 'categories', 'description', 'short_description', 'options'];
 
 export const FORMATS = ['csv', 'json'];
 
@@ -70,7 +70,7 @@ export const buildExport = async ({ format = 'csv' } = {}) => {
       categories: categories.map(({ key, name, description, position }) => ({ key, name, description, position })),
       attributes: attributes.map(({ key, label, type, description, required, listed, filterable, options }) => ({ key, label, type, description, required, listed, filterable, options })),
       products: products.map(product => ({
-        slug: product.slug, name: product.name, template: product.template, attributeDefs: product.attributeDefs, description: product.own.description, status: product.status,
+        slug: product.slug, name: product.name, template: product.template, attributeDefs: product.attributeDefs, description: product.own.description, shortDescription: product.own.shortDescription, status: product.status,
         availability: product.availability, price: product.own.price, minimumPrice: product.own.minimumPrice, priceLabel: product.own.priceLabel, quantity: product.quantity,
         tags: product.own.tags, categories: product.own.categories, attributes: product.attributes, options: product.ownOptions.map(stripOption),
       })),
@@ -85,7 +85,7 @@ export const buildExport = async ({ format = 'csv' } = {}) => {
       product.slug, product.name, product.template, product.status, product.availability,
       product.own.price === null ? '' : formatMoney(product.own.price, currency), product.own.priceLabel,
       product.own.minimumPrice === null ? '' : formatMoney(product.own.minimumPrice, currency),
-      product.quantity === UNLIMITED ? '' : product.quantity, product.own.tags.join(', '), product.own.categories.join(', '), product.own.description,
+      product.quantity === UNLIMITED ? '' : product.quantity, product.own.tags.join(', '), product.own.categories.join(', '), product.own.description, product.own.shortDescription,
       product.ownOptions.length ? JSON.stringify(product.ownOptions.map(stripOption)) : '',
       ...keys.map(key => cell(product.attributes[key])),
     ]);
@@ -133,6 +133,7 @@ const fromRecord = (record, line, { currency, attributeKeys }) => {
   if((record.tags ?? '').trim()) data.tags = splitTags(record.tags);
   const categories = (record.categories ?? '').trim() ? splitTags(record.categories) : undefined;
   if((record.description ?? '').trim()) data.description = record.description.trim();
+  if((record.short_description ?? '').trim()) data.shortDescription = record.short_description.trim();
   if((record.options ?? '').trim()){
     try {
       data.options = JSON.parse(record.options);
@@ -158,7 +159,7 @@ const fromJson = (product, line) => {
   const name = String(product?.name ?? '').trim();
   if(!name) return { error: fail(line, 'name is required') };
   const data = { name };
-  for(const property of ['description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'tags', 'attributes', 'attributeDefs', 'options']){
+  for(const property of ['description', 'shortDescription', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'tags', 'attributes', 'attributeDefs', 'options']){
     if(product[property] !== undefined) data[property] = product[property];
   }
   const slug = String(product.slug ?? '').trim().toLowerCase() || slugify(name);

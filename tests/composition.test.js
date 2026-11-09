@@ -127,6 +127,35 @@ test('the product page fills its slots from the two locations, and loads scripts
   });
 });
 
+const DETAIL_AREAS = ['top', 'before-options', 'before-description', 'after-description', 'bottom'];
+
+test('every area around the product page is a location on the page and a slot in the component', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const detail = await readFile(path.join(publicDir, 'components/ProductDetail.js'), 'utf8');
+  const page = await readFile(path.join(publicDir, '[slug]/index.page.html'), 'utf8');
+  for(const area of DETAIL_AREAS){
+    assert.ok(page.includes(`<location name="products-detail-${area}" />`), `${area} has no location on the page`);
+    assert.ok(detail.includes(`this.renderSlot('${area}'`), `${area} is not a slot of the component`);
+  }
+});
+
+test('an extension adds to the top, around the description and the bottom, as direct children with no wrapper', async () => {
+  await withSite({
+    'kempo-sales': { 'banner.global.html': '<content location="products-detail-top"><k-sales-banner slot="top"></k-sales-banner></content>' },
+    'kempo-guides': { 'guide.global.html': '<content location="products-detail-before-description"><k-guide-link slot="before-description"></k-guide-link></content><content location="products-detail-after-description"><k-spec-note slot="after-description"></k-spec-note></content>' },
+    'kempo-reviews': { 'reviews.global.html': '<content location="products-detail-bottom" priority="10"><k-reviews-list slot="bottom"></k-reviews-list></content>' },
+    'kempo-related': { 'related.global.html': '<content location="products-detail-bottom" priority="20"><k-related-products slot="bottom"></k-related-products></content>' },
+  }, async (dir, dirs) => {
+    const html = (await render(dir, dirs, '[slug]/index.page.html')).split(/>\s+</).join('><');
+    const detail = /<k-products-detail>([\s\S]*)<\/k-products-detail>/.exec(html)[1];
+    assert.doesNotMatch(detail, /<div/, 'a wrapper would always occupy the slot');
+    for(const [tag, slot] of [['k-sales-banner', 'top'], ['k-guide-link', 'before-description'], ['k-spec-note', 'after-description'], ['k-reviews-list', 'bottom'], ['k-related-products', 'bottom']]){
+      assert.ok(detail.includes(`<${tag} slot="${slot}"></${tag}>`), `${tag} is not in the ${slot} slot`);
+    }
+    assert.ok(detail.indexOf('k-related-products') < detail.indexOf('k-reviews-list'), 'two extensions in one location stack, highest priority first');
+  });
+});
+
 test('the card declares a slot and the list fills it, so the card knows nothing about templates', async () => {
   const { readFile } = await import('node:fs/promises');
   const card = await readFile(path.join(publicDir, 'components/ProductCard.js'), 'utf8');

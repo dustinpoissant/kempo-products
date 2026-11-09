@@ -24,6 +24,7 @@ const isUniqueViolation = error => (error?.code || error?.cause?.code) === '2350
 
 const MAX_NAME = 200;
 const MAX_DESCRIPTION = 50000;
+const MAX_SHORT_DESCRIPTION = 5000;
 const MAX_PRICE_LABEL = 100;
 const MAX_IMAGES = 20;
 const MEDIA_ID = /^[a-f0-9]{16}$/;
@@ -50,7 +51,7 @@ const shapeOption = row => ({
   export writes. `attributes` is only the values the product holds; `inherited` is the template's defaults it falls back
   to, and `attributeDefs` the attributes the product added to its template's.
 
-  A template can also give a product its type, price, lowest price, price label, description, tags and categories
+  A template can also give a product its type, price, lowest price, price label, description, short description, tags and categories
   (see templates.js): each is the product's own when it has one and the template's when it leaves it blank. What
   the top-level properties hold is what is in force, so everything that reads a product sees it; `own` holds only
   what the product itself was given, which is what a form edits and an export writes.
@@ -73,6 +74,7 @@ const shape = (row, ownOptions = [], templates = {}) => {
     slug: row.slug,
     name: row.name,
     description: row.description || base.description || '',
+    shortDescription: row.shortDescription || base.shortDescription || '',
     status: row.status,
     availability: row.availability,
     price: row.price ?? base.price ?? null,
@@ -87,7 +89,7 @@ const shape = (row, ownOptions = [], templates = {}) => {
     images: row.images ?? [],
     tags: row.tags?.length ? row.tags : base.tags ?? [],
     categories: row.categories?.length ? row.categories : base.categories ?? [],
-    own: { productType: row.productType ?? '', price: row.price ?? null, minimumPrice: row.minimumPrice ?? null, priceLabel: row.priceLabel ?? '', description: row.description ?? '', tags: row.tags ?? [], categories: row.categories ?? [] },
+    own: { productType: row.productType ?? '', price: row.price ?? null, minimumPrice: row.minimumPrice ?? null, priceLabel: row.priceLabel ?? '', description: row.description ?? '', shortDescription: row.shortDescription ?? '', tags: row.tags ?? [], categories: row.categories ?? [] },
     template: row.template ?? '',
     attributeDefs: row.attributeDefs ?? [],
     attributes: row.data ?? {},
@@ -161,6 +163,7 @@ export const getProducts = async ({ q, template, status, availability, tag, cate
       conditions.push(or(
         ilike(kempoProduct.name, like),
         ilike(kempoProduct.description, like),
+        ilike(kempoProduct.shortDescription, like),
         ilike(kempoProduct.slug, like),
         sql`${kempoProduct.tags}::text ilike ${like}`,
         sql`${kempoProduct.data}::text ilike ${like}`,
@@ -270,6 +273,11 @@ const validate = async (input, { partial, template = null, ownDefs = [] }) => {
     if(description.length > MAX_DESCRIPTION) return [{ code: 400, msg: `Description must be ${MAX_DESCRIPTION} characters or fewer` }, null];
     values.description = description;
   }
+  if(input.shortDescription !== undefined){
+    const shortDescription = String(input.shortDescription).trim();
+    if(shortDescription.length > MAX_SHORT_DESCRIPTION) return [{ code: 400, msg: `The short description must be ${MAX_SHORT_DESCRIPTION} characters or fewer` }, null];
+    values.shortDescription = shortDescription;
+  }
   if(input.status !== undefined){
     if(!STATUSES.includes(input.status)) return [{ code: 400, msg: `Status must be one of: ${STATUSES.join(', ')}` }, null];
     values.status = input.status;
@@ -369,6 +377,7 @@ export const createProduct = async (data = {}, { owner = '' } = {}) => {
     name: data.name,
     slug: data.slug,
     description: data.description ?? '',
+    shortDescription: data.shortDescription ?? '',
     status: data.status ?? 'draft',
     availability: data.availability ?? 'available',
     price: data.price ?? null,
@@ -448,7 +457,7 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   if(lookupError) return [lookupError, null];
 
   const changes = {};
-  for(const property of ['name', 'slug', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'options', 'productType', 'creditsGranted', 'creditsOnly', 'creditPercent', 'template', 'attributeDefs']){
+  for(const property of ['name', 'slug', 'description', 'shortDescription', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'options', 'productType', 'creditsGranted', 'creditsOnly', 'creditPercent', 'template', 'attributeDefs']){
     if(data[property] !== undefined) changes[property] = data[property];
   }
   if(data.attributes !== undefined) changes.attributes = { ...data.attributes };
@@ -489,7 +498,7 @@ export const updateProduct = async (id, data = {}, { owner = '' } = {}) => {
   }
 
   const updates = {};
-  for(const property of ['name', 'description', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'productType', 'creditsGranted', 'creditsOnly', 'creditPercent']){
+  for(const property of ['name', 'description', 'shortDescription', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'images', 'tags', 'categories', 'productType', 'creditsGranted', 'creditsOnly', 'creditPercent']){
     if(values[property] !== undefined) updates[property] = values[property];
   }
   if(changes.slug !== undefined){

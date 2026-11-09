@@ -200,6 +200,7 @@ describe('data layer', { skip: reachable ? false : 'no throwaway database (set D
       refused(await updateProduct(product.id, { quantity: 1 }), 403);
       refused(await setChoiceAvailability(product.id, 'color', 'red', false), 403);
       assert.equal(ok(await updateProduct(product.id, { quantity: 5, description: 'still editable' })).description, 'still editable');
+      assert.equal(ok(await updateProduct(product.id, { shortDescription: ' also editable ' })).shortDescription, 'also editable');
       assert.equal(ok(await setQuantity(product.id, 2, { actor: 'connector' })).quantity, 2);
       const out = ok(await setChoiceAvailability(product.id, 'color', 'red', false, { actor: 'connector' }));
       assert.equal(out.options[0].choices[0].available, false);

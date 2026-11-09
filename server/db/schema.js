@@ -14,6 +14,7 @@ export const kempoProduct = pgTable('kempoProduct', {
   slug: text('slug').notNull(),
   name: text('name').notNull(),
   description: text('description').notNull().default(''),
+  shortDescription: text('shortDescription').notNull().default(''), // the few lines shown beside the price; description is the full text
   status: text('status').notNull().default('draft'), // draft | published | archived
   availability: text('availability').notNull().default('available'), // available | pending | sold
   price: integer('price'),

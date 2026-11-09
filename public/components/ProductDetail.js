@@ -1,10 +1,13 @@
 import ShadowComponent from '/kempo-ui/components/ShadowComponent.js';
-import { html, unsafeHTML } from '/kempo-ui/lit-all.min.js';
+import { html } from '/kempo-ui/lit-all.min.js';
 import sanitizeHtml from '/kempo-ui/utils/sanitizeHtml.js';
 import '/kempo-ui/components/Icon.js';
 import '/kempo-ui/components/Spinner.js';
 import { getConfig, getProduct, getPrice, displayMoney, formatMoney } from '/products/sdk.js';
 import { syncActions } from '/products/components/actions.js';
+import renderGallery from '/products/utils/renderGallery.js';
+import { primaryPicture } from '/products/utils/productMedia.js';
+import renderText from '/products/utils/renderText.js';
 
 /*
   A product's page: pictures, price, the options a buyer chooses and its details.
@@ -23,22 +26,32 @@ import { syncActions } from '/products/components/actions.js';
   an ordinary child of this element and finds it with `closest('k-products-detail')`. It reads `product`,
   `selections`, `price` and `complete` from here (and `config` and `money(minor)` to show an amount), and
   listens for `selection-change` on it to follow the buyer's choices.
-    price     has the price line as its default content. An extension that shows it differently (a sale
-              price with the old one struck through) puts its own element here and the default is not shown
-    actions   under the options, such as add to cart
-    extra     under the description
-  Elements registered with registerProductAction (see actions.js) are still placed above the description
+    top                 full width above the pictures and the column beside them (a sale banner)
+    price               has the price line as its default content. An extension that shows it differently (a sale
+                        price with the old one struck through) puts its own element here and the default is not shown
+    before-options      in the right column, after the short description and above the options
+    actions             under the options, such as add to cart
+    extra               under the tags, in the right column
+    before-description  full width, above the full description
+    after-description   full width, between the full description and the table of attributes
+    bottom              full width, at the very bottom (recommended products, reviews, a discussion)
+  Every slot but price holds any number of elements and has no default content. A slot nothing fills takes no room.
+  Elements registered with registerProductAction (see actions.js) are still placed under the options
   for extensions that have not moved over.
+
+  The short description sits between the price and the options. The full description is full width under the
+  picture and the column beside it, and the table of attributes is full width under that, at the very bottom.
 */
 export default class ProductDetail extends ShadowComponent {
   static properties = {
     slug: { type: String },
+    noUrl: { type: Boolean, attribute: 'no-url' },
+    noFullscreen: { type: Boolean, attribute: 'no-fullscreen' },
     config: { state: true },
     data: { state: true },
     selections: { state: true },
     price: { state: true },
     pricing: { state: true },
-    activeImage: { state: true },
     loading: { state: true },
     error: { state: true },
   };
@@ -46,15 +59,17 @@ export default class ProductDetail extends ShadowComponent {
   constructor(){
     super();
     this.slug = '';
+    this.noUrl = false;
+    this.noFullscreen = false;
     this.config = null;
     this.data = null;
     this.selections = {};
     this.price = null;
     this.pricing = false;
-    this.activeImage = 0;
     this.loading = true;
     this.error = '';
     this.priceRequest = 0;
+    this.slotWatcher = new MutationObserver(() => this.requestUpdate());
   }
 
   /*
@@ -64,12 +79,14 @@ export default class ProductDetail extends ShadowComponent {
     super.connectedCallback();
     window.addEventListener('popstate', this.readSelections);
     window.addEventListener('products-actions-changed', this.refreshActions);
+    this.slotWatcher.observe(this, { childList: true });
     this.load();
   }
 
   disconnectedCallback(){
     window.removeEventListener('popstate', this.readSelections);
     window.removeEventListener('products-actions-changed', this.refreshActions);
+    this.slotWatcher.disconnect();
     super.disconnectedCallback();
   }
 
@@ -117,9 +134,9 @@ export default class ProductDetail extends ShadowComponent {
   */
   describePage = () => {
     const { product } = this.data;
-    const image = this.data.images[product.images[0]];
+    const image = primaryPicture(product, this.data.images);
     const absolute = path => path ? new URL(path, location.origin).href : undefined;
-    const description = (new DOMParser().parseFromString(sanitizeHtml(product.description).replace(/<\/(p|h[1-6]|li|div|tr|td|th|blockquote)>|<br\s*\/?>/gi, '$& '), 'text/html').body.textContent || product.name).replace(/\s+/g, ' ').trim().slice(0, 300);
+    const description = (new DOMParser().parseFromString(sanitizeHtml(product.shortDescription || product.description).replace(/<\/(p|h[1-6]|li|div|tr|td|th|blockquote)>|<br\s*\/?>/gi, '$& '), 'text/html').body.textContent || product.name).replace(/\s+/g, ' ').trim().slice(0, 300);
     let meta = document.head.querySelector('meta[name="description"]');
     if(!meta){
       meta = document.createElement('meta');
@@ -154,7 +171,7 @@ export default class ProductDetail extends ShadowComponent {
   */
   readSelections = () => {
     if(!this.data) return;
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(this.noUrl ? '' : location.search);
     const selections = {};
     for(const option of this.data.product.options){
       const wanted = params.get(option.key);
@@ -167,6 +184,7 @@ export default class ProductDetail extends ShadowComponent {
   };
 
   writeSelections = () => {
+    if(this.noUrl) return;
     const params = new URLSearchParams(location.search);
     for(const option of this.data.product.options){
       if(this.selections[option.key]) params.set(option.key, this.selections[option.key]); else params.delete(option.key);
@@ -264,21 +282,6 @@ export default class ProductDetail extends ShadowComponent {
     return `${choice.label}${price}${choice.available ? '' : ' - sold out'}`;
   }
 
-  renderGallery(){
-    const { product } = this.data;
-    const images = product.images.map(id => this.data.images[id]).filter(Boolean);
-    if(!images.length) return html`<div class="tc-muted" style="display: flex; align-items: center; justify-content: center; aspect-ratio: 4 / 3; border: 1px solid var(--c_border); border-radius: var(--radius); font-size: 3rem;"><k-icon name="image"></k-icon></div>`;
-    const current = images[Math.min(this.activeImage, images.length - 1)];
-    return html`<div>
-      <img src=${current.path} alt=${current.alt || product.name} style="width: 100%; border-radius: var(--radius); display: block;">
-      ${images.length > 1 ? html`<div class="d-f mt" style="gap: var(--spacer_h);">
-        ${images.map((image, index) => html`<button type="button" class="no-btn" style="cursor: pointer; width: 4.5rem; aspect-ratio: 1; padding: 0; border: 2px solid ${index === this.activeImage ? 'var(--c_primary)' : 'transparent'}; border-radius: var(--radius); overflow: hidden;" aria-label=${`Show picture ${index + 1}`} @click=${() => { this.activeImage = index; }}>
-          <img src=${image.thumbnail ?? image.path} alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-        </button>`)}
-      </div>` : ''}
-    </div>`;
-  }
-
   renderOption(option){
     const id = `opt-${option.key}`;
     return html`<div class="mb">
@@ -288,6 +291,11 @@ export default class ProductDetail extends ShadowComponent {
         ${option.choices.map(choice => html`<option value=${choice.key} ?disabled=${!choice.available} ?selected=${this.selections[option.key] === choice.key}>${this.choiceLabel(option, choice)}</option>`)}
       </select>
     </div>`;
+  }
+
+  /* A slot's place in the page, drawn only while something is in it, so an empty one adds no gap. */
+  renderSlot(name, classes){
+    return [...this.children].some(child => child.slot === name) ? html`<div class=${classes}><slot name=${name}></slot></div>` : '';
   }
 
   renderDetails(){
@@ -303,9 +311,9 @@ export default class ProductDetail extends ShadowComponent {
       if(attribute.type === 'color') return html`<span style=${`display: inline-block; width: 1em; height: 1em; vertical-align: middle; border: 1px solid var(--c_border); background: ${/^#[0-9a-f]{6,8}$/i.test(value) ? value : 'transparent'}`}></span> ${value}`;
       return String(value);
     };
-    return html`<table class="mb"><tbody>
-      ${rows.map(([attribute, value]) => html`<tr><th scope="row" style="width: 40%;">${attribute.label}</th><td>${show(attribute, value)}</td></tr>`)}
-    </tbody></table>`;
+    return html`<div class="span-12"><div class="table-wrapper mb"><table class="left-headers"><tbody>
+      ${rows.map(([attribute, value]) => html`<tr><th scope="row">${attribute.label}</th><td>${show(attribute, value)}</td></tr>`)}
+    </tbody></table></div></div>`;
   }
 
   render(){
@@ -314,22 +322,26 @@ export default class ProductDetail extends ShadowComponent {
     const { product } = this.data;
     const status = product.availability === 'sold' ? 'Sold' : product.availability === 'pending' ? 'Sale pending' : !product.inStock ? 'Out of stock' : '';
     return html`<article class="row" style="gap: var(--spacer) 0;">
-      <div class="span-12 d-span-6" style="padding-right: var(--spacer);">${this.renderGallery()}</div>
+      ${this.renderSlot('top', 'span-12')}
+      <div class="span-12 d-span-6" style="padding-right: var(--spacer);">${renderGallery(this.data.product, this.data.images, { noFullscreen: this.noFullscreen })}</div>
       <div class="span-12 d-span-6">
         <h1>${product.name}</h1>
         <slot name="price"><div class="large mb" aria-live="polite">${this.priceLine}${this.pricing ? html` <k-spinner size="xs"></k-spinner>` : ''}</div></slot>
         ${this.creditLines.map(line => html`<p class="tc-muted mbq">${line}</p>`)}
         ${status ? html`<p><strong>${status}</strong></p>` : ''}
+        ${renderText(product.shortDescription)}
+        ${this.renderSlot('before-options', 'mb')}
         ${product.options.map(option => this.renderOption(option))}
         <slot name="actions"></slot>
         <div data-actions class="mb"></div>
-        ${product.description ? (/<[a-z][\s\S]*>/i.test(product.description)
-          ? html`<div class="mb">${unsafeHTML(sanitizeHtml(product.description))}</div>`
-          : html`<div style="white-space: pre-line;" class="mb">${product.description}</div>`) : ''}
-        ${this.renderDetails()}
         ${product.tags.length ? html`<p class="tc-muted small">${product.tags.join(' · ')}</p>` : ''}
         <slot name="extra"></slot>
       </div>
+      ${this.renderSlot('before-description', 'span-12')}
+      ${product.description ? html`<div class="span-12">${renderText(product.description)}</div>` : ''}
+      ${this.renderSlot('after-description', 'span-12')}
+      ${this.renderDetails()}
+      ${this.renderSlot('bottom', 'span-12')}
     </article>`;
   }
 }

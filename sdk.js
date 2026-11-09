@@ -109,6 +109,6 @@ export { buildExport, parseImport, applyImport, importFile } from './server/util
 export { computePrice, normalizeOptions, checkSelections } from './server/utils/pricing.js';
 export { parseMoney, formatMoney, displayMoney, decimalsFor } from './server/utils/money.js';
 export { unavailableReason, isPurchasable, UNLIMITED } from './server/utils/quantity.js';
-export { mediaAvailable } from './server/utils/media.js';
+export { mediaAvailable, primaryPicture } from './server/utils/media.js';
 export { ATTRIBUTE_TYPES } from './server/utils/attributeTypes.js';
 export { EVENTS } from './server/utils/events.js';

@@ -46,7 +46,7 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     ok(await createAttribute({ label: 'Scale', type: 'select', options: ['1:18', '1:24'] }));
     ok(await createAttribute({ label: 'Engine size', type: 'number' }));
     ok(await createProduct({
-      name: 'Red car', price: 4999, status: 'published', quantity: 3, tags: ['red', 'muscle'], description: 'A red, fast car.\nWith a second line.',
+      name: 'Red car', price: 4999, status: 'published', quantity: 3, tags: ['red', 'muscle'], description: 'A red, fast car.\nWith a second line.', shortDescription: 'Red and fast.',
       attributes: { scale: '1:18', engineSize: 5.7 },
       options: [{ label: 'Clear coat', choices: [{ label: 'Yes' }, { label: 'No', price: -100 }] }],
     }));
@@ -62,11 +62,12 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     assert.equal(filename, 'products.csv');
     assert.match(contentType, /text\/csv/);
     const [header, ...rows] = parseCsv(body);
-    assert.deepEqual(header.slice(0, 13), ['slug', 'name', 'template', 'status', 'availability', 'price', 'price_label', 'minimum_price', 'quantity', 'tags', 'categories', 'description', 'options']);
+    assert.deepEqual(header.slice(0, 14), ['slug', 'name', 'template', 'status', 'availability', 'price', 'price_label', 'minimum_price', 'quantity', 'tags', 'categories', 'description', 'short_description', 'options']);
     assert.ok(header.includes('attribute.scale') && header.includes('attribute.engineSize'));
     assert.equal(rows.length, 2);
     const red = rows.find(row => row[0] === 'red-car');
     assert.equal(red[header.indexOf('price')], '49.99');
+    assert.equal(red[header.indexOf('short_description')], 'Red and fast.');
     assert.equal(red[header.indexOf('quantity')], '3');
     assert.equal(red[header.indexOf('tags')], 'red, muscle');
     assert.equal(red[header.indexOf('attribute.scale')], '1:18');
@@ -118,6 +119,7 @@ describe('import and export', { skip: reachable ? false : 'no throwaway database
     const red = ok(await getProduct('red-car'));
     assert.equal(red.price, 5900);
     assert.match(red.description, /second line/, 'the empty description did not clear it');
+    assert.equal(red.shortDescription, 'Red and fast.', 'a file with no short_description column leaves it alone');
     assert.equal(red.quantity, 3);
     assert.equal(red.options.length, 1, 'options were not in the file, so they are unchanged');
   });

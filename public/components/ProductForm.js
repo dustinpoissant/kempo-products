@@ -23,7 +23,7 @@ export const showFlash = () => {
 export const safeNext = (value, fallback) => (typeof value === 'string' && /^\/(?!\/|\\)/.test(value) ? value : fallback);
 
 export const blank = () => ({
-  name: '', slug: '', description: '', status: 'draft', availability: 'available', price: null, minimumPrice: null, priceLabel: '',
+  name: '', slug: '', description: '', shortDescription: '', status: 'draft', availability: 'available', price: null, minimumPrice: null, priceLabel: '',
   quantity: -1, tags: [], categories: [], images: [], attributes: {}, options: [], template: '', attributeDefs: [], productType: '', creditsGranted: 0, creditsOnly: false, creditPercent: 0,
 });
 
@@ -32,7 +32,7 @@ export const blank = () => ({
 */
 export const SECTIONS = {
   details: ['name', 'slug', 'status', 'availability', 'price', 'minimumPrice', 'priceLabel', 'quantity', 'tags', 'categories', 'productType'],
-  description: ['description'],
+  description: ['shortDescription', 'description'],
   media: ['images'],
   template: ['template'],
   attributes: ['attributeDefs'],

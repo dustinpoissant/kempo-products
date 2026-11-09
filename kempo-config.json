@@ -4,6 +4,9 @@
   "public-scope": "products",
   "public-scopes": { "categories": "public-categories" },
   "schema": "./server/db/schema.js",
+  "suggestedPeers": [
+    { "name": "kempo-media", "reason": "Pictures and videos for products, shown in a gallery on the product page" }
+  ],
   "widgets": [
     {
       "key": "catalog",
@@ -18,6 +21,188 @@
       "minHeight": 2,
       "permission": "products:read",
       "priority": 101
+    }
+  ],
+  "page_widgets": [
+    {
+      "key": "listing",
+      "title": "Product list",
+      "description": "A list of products, limited by category, tag, availability or stock, as on the products page.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["products", "catalog", "shop", "store", "grid"],
+      "tag": "k-products-listing-widget",
+      "page_component": "/products/components/ListingWidget.js",
+      "editor_component": "/admin/extension/kempo-products/components/sitebuilder/ListingWidgetEditor.js",
+      "editor_tag": "k-products-listing-editor",
+      "settings_component": "/admin/extension/kempo-products/components/sitebuilder/ListingWidgetSettings.js",
+      "settings_tag": "k-products-listing-settings",
+      "attributes": [
+        { "name": "category", "type": "string", "label": "Category", "hint": "Only products in this category. Use the category's key, such as shirts.", "default": "" },
+        { "name": "tag", "type": "string", "label": "Tag", "hint": "Only products with this tag. Several tags, comma separated, need all of them.", "default": "" },
+        { "name": "slugs", "type": "string", "label": "Products", "hint": "Only these products, by slug, comma separated, in this order.", "default": "" },
+        { "name": "availability", "type": "select", "label": "Availability", "default": "", "options": [
+          { "value": "", "label": "Any" },
+          { "value": "available", "label": "Available" },
+          { "value": "pending", "label": "Sale pending" },
+          { "value": "sold", "label": "Sold" }
+        ] },
+        { "name": "in-stock", "type": "boolean", "label": "Only products in stock", "default": false },
+        { "name": "search", "type": "string", "label": "Search text", "hint": "What the search box starts with. Visitors can change it unless the controls are hidden.", "default": "" },
+        { "name": "sort", "type": "select", "label": "Sort", "default": "newest", "options": [
+          { "value": "newest", "label": "Newest" },
+          { "value": "oldest", "label": "Oldest" },
+          { "value": "name", "label": "Name" },
+          { "value": "price-asc", "label": "Price: low to high" },
+          { "value": "price-desc", "label": "Price: high to low" }
+        ] },
+        { "name": "page-size", "type": "number", "label": "Products per page", "default": 12, "min": 1, "max": 100 },
+        { "name": "hide-controls", "type": "boolean", "label": "Hide the search and sort controls", "default": false }
+      ]
+    },
+    {
+      "key": "product",
+      "title": "Product",
+      "description": "One product, with its picture, price, options and details, as on its own page. Widgets such as Add to cart go in its slots.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["product", "item", "buy", "details", "variation"],
+      "tag": "k-products-product-widget",
+      "page_component": "/products/components/ProductWidget.js",
+      "editor_component": "/admin/extension/kempo-products/components/sitebuilder/ProductWidgetEditor.js",
+      "editor_tag": "k-products-product-editor",
+      "settings_component": "/admin/extension/kempo-products/components/sitebuilder/ProductWidgetSettings.js",
+      "settings_tag": "k-products-product-settings",
+      "slots": [
+        { "name": "actions", "label": "Under the options" },
+        { "name": "before-options", "label": "Above the options" },
+        { "name": "before-description", "label": "Above the description" },
+        { "name": "after-description", "label": "Below the description" },
+        { "name": "extra", "label": "Under the tags" },
+        { "name": "price", "label": "Replaces the price" }
+      ],
+      "attributes": [
+        { "name": "product-id", "type": "id", "label": "Product", "hint": "The product this shows. Products are made under Products in the admin.", "default": "" }
+      ]
+    },
+    {
+      "key": "parent",
+      "title": "Parent Product",
+      "description": "Nothing shows here. Put the parts of a product page inside it (gallery, title, price, options, details, add to cart) and they show that product.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["product", "page", "parent", "container", "build"],
+      "tag": "k-products-parent-widget",
+      "page_component": "/products/components/ParentProductWidget.js",
+      "settings_component": "/admin/extension/kempo-products/components/sitebuilder/ProductWidgetSettings.js",
+      "settings_tag": "k-products-product-settings",
+      "slots": [{ "name": "default", "label": "Contents" }],
+      "attributes": [
+        { "name": "product-id", "type": "id", "label": "Product", "hint": "The product its parts show. Products are made under Products in the admin.", "default": "" }
+      ]
+    },
+    {
+      "key": "gallery",
+      "title": "Product gallery",
+      "description": "The pictures and videos of the product in the Parent Product, with thumbnails to choose from.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["picture", "photo", "image", "gallery"],
+      "tag": "k-products-gallery-widget",
+      "page_component": "/products/components/GalleryWidget.js",
+      "editor_component": "/admin/extension/kempo-products/components/sitebuilder/GalleryWidgetEditor.js",
+      "editor_tag": "k-products-gallery-editor",
+      "attributes": [
+        { "name": "thumbs-position", "type": "select", "label": "Thumbnails", "hint": "Where the strip of thumbnails sits, beside or below the large picture.", "default": "bottom", "options": [
+          { "value": "bottom", "label": "Below" },
+          { "value": "top", "label": "Above" },
+          { "value": "left", "label": "Left" },
+          { "value": "right", "label": "Right" }
+        ] },
+        { "name": "ratio", "type": "string", "label": "Shape", "hint": "The shape of the large picture as width/height: 1/1 is square, 4/3 or 16/9 are wider.", "default": "1/1" },
+        { "name": "no-fullscreen", "type": "boolean", "label": "No fullscreen", "hint": "Clicking a picture does not open it fullscreen.", "default": false }
+      ]
+    },
+    {
+      "key": "title",
+      "title": "Product title",
+      "description": "The name of the product in the Parent Product, as a heading.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["name", "heading", "title"],
+      "tag": "k-products-title-widget",
+      "page_component": "/products/components/TitleWidget.js",
+      "attributes": [
+        { "name": "inline", "type": "boolean", "format": "text", "label": "Inline", "hint": "Sits on the line with the content around it, instead of on a line of its own.", "default": false }
+      ]
+    },
+    {
+      "key": "price",
+      "title": "Product price",
+      "description": "The price of the product in the Parent Product, for the options chosen.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["price", "cost", "amount"],
+      "tag": "k-products-price-widget",
+      "page_component": "/products/components/PriceWidget.js",
+      "attributes": [
+        { "name": "inline", "type": "boolean", "format": "text", "label": "Inline", "hint": "Sits on the line with the content around it, instead of on a line of its own.", "default": false }
+      ]
+    },
+    {
+      "key": "short-description",
+      "title": "Product short description",
+      "description": "The short description of the product in the Parent Product.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["description", "short", "summary", "intro", "text"],
+      "tag": "k-products-short-description-widget",
+      "page_component": "/products/components/ShortDescriptionWidget.js"
+    },
+    {
+      "key": "options",
+      "title": "Product options",
+      "description": "The options of the product in the Parent Product (size, colour and so on), one dropdown each.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["option", "variant", "size", "colour", "color", "choice"],
+      "tag": "k-products-options-widget",
+      "page_component": "/products/components/OptionsWidget.js",
+      "settings_component": "/admin/extension/kempo-products/components/sitebuilder/OptionsWidgetSettings.js",
+      "settings_tag": "k-products-options-settings",
+      "attributes": [
+        { "name": "defaults", "type": "string", "label": "Starting choices", "hint": "What each option starts on, as JSON of option key to choice key. Set from the dropdowns.", "default": "" }
+      ]
+    },
+    {
+      "key": "description",
+      "title": "Product description",
+      "description": "The full description of the product in the Parent Product.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["description", "full", "text", "about", "content"],
+      "tag": "k-products-description-widget",
+      "page_component": "/products/components/DescriptionWidget.js"
+    },
+    {
+      "key": "details",
+      "title": "Product details",
+      "description": "The attributes of the product in the Parent Product, as a table.",
+      "iconSrc": "/products/icons/products.svg",
+      "category": "products",
+      "category_title": "Products",
+      "keywords": ["attributes", "specification", "details", "table", "spec"],
+      "tag": "k-products-details-widget",
+      "page_component": "/products/components/DetailsWidget.js"
     }
   ],
   "permissions": [

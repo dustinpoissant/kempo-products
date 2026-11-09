@@ -26,7 +26,7 @@ An extension registers its own from `install.js` with `registerProductType(owner
 
 A template is what products are made from. Under **Products > Templates** make one, such as "Model car": its **attributes** (a "Scale"), its **options** (a Color in black and white) and **default values** (every model car weighs 16 oz and is the same size, including for the Shipping attributes). Then pick it on a product's **Template** tab. The product keeps inheriting from it, so changing the template changes its products.
 
-A template can also give its products a **product type, price, lowest price, price label, description, tags and categories** (its Product tab): a model car template set to Physical Item at $24.99 makes every model car that, until a product says otherwise. A product that sets one keeps its own; a blank one uses the template's. `own` on a product holds only what it was given itself, and its top-level values are what is in force. Quantity and status are never inherited.
+A template can also give its products a **product type, price, lowest price, price label, description, short description, tags and categories** (its Product tab): a model car template set to Physical Item at $24.99 makes every model car that, until a product says otherwise. A product that sets one keeps its own; a blank one uses the template's. `own` on a product holds only what it was given itself, and its top-level values are what is in force. Quantity and status are never inherited.
 
 A product can add to what it inherits, but not take anything away: **attributes only it has** (a model car with an "Engine"), **options of its own**, and **extra choices for an option the template offers** (the template has Color in black and white, this product adds red and blue, so the buyer sees all four). An attribute the product leaves blank shows the template's default; a required attribute with a default can be left blank. In code, `effectiveAttributes(product)` from `kempo-products/sdk` is the product's own values over its template's defaults, and `inherited` on a product lists the defaults it is falling back to.
 
@@ -34,7 +34,7 @@ An extension can ship a template with `registerTemplate(owner, { key, name, attr
 
 ## Attributes and options
 
-A product has only what every catalog needs: a name, a URL (its slug), a description, a status, a price, quantity, pictures and tags. Everything else is up to you, and it needs no code.
+A product has only what every catalog needs: a name, a URL (its slug), a short and a full description, a status, a price, quantity, pictures and tags. Everything else is up to you, and it needs no code.
 
 Under **Products > Attributes** add the facts your products have: a "Scale" (a choice of 1:18 or 1:24), a "Year" (a number), a "Mileage". Attribute kinds are short text, long text, number, yes/no, date, colour, rating, choice list, and images (when kempo-media is installed). An attribute can be marked **filterable**, which gives visitors a drop-down for it on the public list.
 
@@ -70,7 +70,7 @@ The price on the page is asked of the server every time the choices change, so i
 
 ## Images
 
-If [kempo-media](https://github.com/dustinpoissant/kempo-media) is installed and enabled, the product form lets you upload pictures; the first is the primary one shown in lists. Lists and cards load the small thumbnail (kempo-media gets it from kempo-thumbs) and use the full image only while the thumbnail is still being made. Without it the attribute is simply not shown and pages show no picture.
+If [kempo-media](https://github.com/dustinpoissant/kempo-media) is installed and enabled, the product form lets you upload pictures and videos (drop them on the dashed area or click it to choose them), in the order they are shown. Drag the pictures into the order you want: the first one is the primary one, with no button to press. The product page and the **Product gallery** widget show them in kempo-ui's media gallery (`<k-media-gallery>`): a large stage, a strip of thumbnails, arrows, swipe, and a fullscreen viewer. The widget's settings choose where the thumbnails sit, the shape of the stage and whether fullscreen is allowed. Lists, cards and carts show the first picture: the first image, or a video that has a thumbnail (a video with none is skipped). They load the small thumbnail (kempo-media gets it from kempo-thumbs) and use the full image only while the thumbnail is still being made. Without kempo-media the attribute is simply not shown and pages show no picture.
 
 ## The public pages
 
@@ -87,6 +87,10 @@ Both pages are made of Lit components you can use on your own pages, such as a f
 ```
 
 `<k-products-list>` can be limited to a type, a tag, hand-picked slugs, what is in stock, or an attribute's value, and can start sorted or searched. **[The components guide](https://dustinpoissant.github.io/kempo-products/components.html)** lists every attribute with recipes.
+
+**Building a product page from parts.** Put a **Parent Product** widget on a page and choose its product; it shows nothing itself. Inside it, put any of the parts (**Product gallery**, **Product title**, **Product price**, **Product short description**, **Product options** (each option can start on a choice you pick in its settings), **Product description**, **Product details**) in rows and columns, and an add-to-cart button from kempo-commerce with *Detect the parent product* on. The parts show that product, and the button adds it with the options chosen. Their markup is `<k-products-parent-widget product-id="…">` holding `<k-products-title-widget>` and the rest, which is what the page builder writes.
+
+**On a page built in the page builder** there are two widgets, **Product list** (the list, limited by its settings) and **Product** (one product, with its options). Both wrap the components above and never write to the page's address, so a page can hold several. The list widget's settings choose its categories, tags and products with three selectors that can be used on any page: `<k-products-category-selector>`, `<k-products-tag-selector>` and `<k-products-product-selector>` (each at `/products/components/`). Their value is the comma-separated text a list takes, so `<k-products-product-selector name="slugs" value="camaro,mustang">` and `<k-products-list slugs="camaro,mustang">` agree. The tags they offer come from `GET /products/api/tags`. The Product widget has the product page's own slots, so widgets go in it: **Under the options** (where an Add to cart button from kempo-commerce goes, and where the builder's Add puts a new widget), **Above the options**, **Above the description**, **Below the description**, **Under the tags** and **Replaces the price**. In the builder it draws the real product, with each slot as a labelled place to drag a widget into; on the page a slot with nothing in it takes no room, and a widget in one finds its product with `closest('k-products-product-widget')` (the widget is a light-DOM child of it, so `closest('k-products-detail')`, which is in the widget's shadow DOM, cannot reach it). The Product widget gives what a Parent Product gives: `product`, `selections`, `price`, `complete`, `config`, `money(minor)` and a `selection-change` event. The Product widget's add-to-cart button comes from kempo-commerce, and only on pages that load its product script; a page without kempo-commerce shows the product without one. The widgets need kempo 4.10.2 or later.
 
 A site can override the pages themselves with its own. Extensions add to them by composition (see below), and through two named fragments, `products-list-extra` and `products-detail-extra`.
 
@@ -105,7 +109,7 @@ A spreadsheet has one row per product. Only `name` is required:
 | Column | Holds |
 |---|---|
 | `slug` | The product's URL. Made from the name when empty, so importing the same file twice never duplicates |
-| `name`, `description`, `tags` | Text; tags are comma separated |
+| `name`, `description`, `short_description`, `tags` | Text; tags are comma separated |
 | `status`, `availability` | As in the admin (`published`, `sold`, ...) |
 | `price`, `price_label` | A decimal such as `49.99`; the label shows when there is no price |
 | `minimum_price` | A decimal such as `5.00`: the lowest price discounts may take the product to. Blank means no floor |
@@ -257,9 +261,14 @@ An extension that sells, reserves or compares products puts a control on **every
 | `products-scripts` | The `<script type="module">` that defines your element. Loads on product pages only, outside the card template, so it runs once |
 | `products-card-actions` | Your element, in the one card template, for the card's `actions` slot (under the price). Each card gets its own copy |
 | `products-card-price` | An element for the card's `price` slot: it replaces the price shown |
-| `products-detail-actions` | Your element for a product page's `actions` slot (under the options) |
+| `products-detail-top` | Your element for a product page's `top` slot: full width above the pictures and the column beside them (a sale banner) |
 | `products-detail-price` | An element for a product page's `price` slot: it replaces the price line |
-| `products-detail-extra` | Your element for a product page's `extra` slot (under the description) |
+| `products-detail-before-options` | Your element for the `before-options` slot: in the right column, after the short description and above the options |
+| `products-detail-actions` | Your element for a product page's `actions` slot (under the options) |
+| `products-detail-extra` | Your element for a product page's `extra` slot (under the tags, in the right column) |
+| `products-detail-before-description` | Your element for the `before-description` slot: full width, above the full description |
+| `products-detail-after-description` | Your element for the `after-description` slot: full width, between the description and the table of attributes |
+| `products-detail-bottom` | Your element for the `bottom` slot: full width, at the very bottom (recommended products, reviews, a discussion) |
 
 A location is a plain insertion point: the element you put in it names the slot it fills with `slot="…"`, as any child of a web component does. The `price` slots have the usual price as their **default content**, so a site that installs nothing shows it unchanged, and an extension that shows it differently (a sale price with the old one struck through, in green) puts its own element there and the default is replaced. Read `card.product` and `card.config` (`page.product`, `page.price`, `page.config` and `page.money(minor)` on a product page) and format with `displayMoney` from `/products/sdk.js`. Two extensions that both fill `price` are both shown, so a price override is something one extension should own.
 
@@ -305,6 +314,7 @@ Your component extends `/products/components/ProductTab.js`, which finds the for
 The same way, two more places take buttons (slots, not injection):
 
 - **The product edit and new pages** have a `products-admin-product-actions` location inside the form. An element with `slot="actions"` appears beside **Save** and **Cancel**. It finds the form with `this.closest('k-products-form')` and reads `productId` (empty until the product exists, so on the new page wait for `product-saved`) and `original` (the product as it was loaded).
+- **The Media tab** has a `products-admin-media-upload` location inside `<k-products-media-tab>`: that is where files are put in. An element with `slot="upload"` appears under the pictures. It does the uploading itself and fires a bubbling `media-uploaded` event, `detail: { asset }`, for each file, where `asset` is the media asset it made (`id`, `kind`, `originalName`, `altText`, `path`, `thumbnailPath`); the tab adds it to the product. kempo-media fills it with `<k-media-upload>` (built on kempo-files' `<k-files-upload>`), which is why the Media tab has nothing to upload with until kempo-media is installed and enabled.
 - **The category list** has one `<template>` holding a `products-admin-category-actions` location. The list clones it into a small `<k-products-category-actions>` item in every row, once per category. Your element carries `slot="actions"` and finds its category with `this.closest('k-products-category-actions').category` (`{ key, name, description, total, count }`).
 
 Load your module from the `products-admin-scripts` location, which sits outside every template so it runs once:
@@ -314,7 +324,7 @@ Load your module from the `products-admin-scripts` location, which sits outside 
 <content id="my-extension-product-button" name="Product button" owner="my-extension" enabled="true" locked="true" location="products-admin-product-actions"><my-product-button slot="actions"></my-product-button></content>
 ```
 
-The description is stored as HTML. The public product page sanitizes it when showing it (scripts, event handlers and `javascript:` links are removed) and the meta description and structured data use its plain text.
+A product has a **short description** (`shortDescription`) and a **description**, both edited on the Description tab, short first. Both are stored as HTML. The product page shows the short one between the price and the options, and the full one across the whole width under the pictures and the column beside them. The public page sanitizes both when showing them (scripts, event handlers and `javascript:` links are removed). The meta description and structured data use the plain text of the short description, or of the full one when there is none.
 
 ## Credits
 

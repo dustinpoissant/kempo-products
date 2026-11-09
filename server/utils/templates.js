@@ -35,6 +35,7 @@ const ANYONE_EDITABLE = ['description', 'position', 'defaults', 'options', 'attr
 
 const MAX_PRICE_LABEL = 100;
 const MAX_PRODUCT_DESCRIPTION = 50000;
+const MAX_PRODUCT_SHORT_DESCRIPTION = 5000;
 
 export const getTemplates = async ({ owner } = {}) => {
   try {
@@ -65,7 +66,7 @@ export const getTemplate = async key => {
 */
 /*
   What a product made from the template starts with: its product type, price, lowest price after discounts, the text
-  shown when there is no price, its description, tags and categories. A product that sets one of these itself keeps its
+  shown when there is no price, its description, its short description, tags and categories. A product that sets one of these itself keeps its
   own; one that leaves it blank uses the template's. Blank values are left out. Returns [error, product].
 */
 const checkProduct = async input => {
@@ -91,6 +92,9 @@ const checkProduct = async input => {
   const description = String(input.description ?? '');
   if(description.length > MAX_PRODUCT_DESCRIPTION) return [{ code: 400, msg: `The description must be ${MAX_PRODUCT_DESCRIPTION} characters or fewer` }, null];
   if(description.trim()) product.description = description;
+  const shortDescription = String(input.shortDescription ?? '');
+  if(shortDescription.length > MAX_PRODUCT_SHORT_DESCRIPTION) return [{ code: 400, msg: `The short description must be ${MAX_PRODUCT_SHORT_DESCRIPTION} characters or fewer` }, null];
+  if(shortDescription.trim()) product.shortDescription = shortDescription;
   if(!blank(input.tags) && !(Array.isArray(input.tags) && !input.tags.length)){
     const [error, tags] = normalizeTags(input.tags);
     if(error) return [error, null];

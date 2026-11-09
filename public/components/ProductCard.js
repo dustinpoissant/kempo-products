@@ -3,6 +3,7 @@ import { html } from '/kempo-ui/lit-all.min.js';
 import '/kempo-ui/components/Icon.js';
 import { displayMoney } from '/products/sdk.js';
 import { syncActions } from '/products/components/actions.js';
+import { primaryPicture } from '/products/utils/productMedia.js';
 
 /*
   One product in a list: its picture, name and price and whether it can be had. Give it the product as
@@ -92,7 +93,7 @@ export default class ProductCard extends ShadowComponent {
   render(){
     const { product } = this;
     if(!product) return html``;
-    const image = this.images?.[product.images[0]];
+    const image = primaryPicture(product, this.images);
     const badge = this.badge;
     return html`<article class="card" style="margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 100%;">
       <a href=${this.link} class="no-link" style="display: block; position: relative; aspect-ratio: 4 / 3; background: var(--c_bg__alt, var(--c_bg)); overflow: hidden;" aria-label=${product.name}>

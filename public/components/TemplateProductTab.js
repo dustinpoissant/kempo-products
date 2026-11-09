@@ -64,6 +64,12 @@ export default class TemplateProductTab extends ProductTab {
         </div>` : html`<p class="tc-muted m0">There are no categories yet. <a href="/admin/extension/kempo-products/#categories">Add some</a>, then choose them here.</p>`}
       </div>
       <div class="mb">
+        <div class="d-b mbq">Short description</div>
+        ${staticHtml`<${editorTag} id="templateProductShortDescription" class="r b" controls="full" mode="visual" style="height: 12rem;"
+          .value=${product.shortDescription}
+          @change=${event => form.setProduct({ shortDescription: event.target.getValue?.() ?? event.detail?.value ?? '' })}></${editorTag}>`}
+      </div>
+      <div class="mb">
         <div class="d-b mbq">Description</div>
         ${staticHtml`<${editorTag} id="templateProductDescription" class="r b" controls="full" mode="visual" style="height: 20rem;"
           .value=${product.description}

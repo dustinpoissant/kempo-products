@@ -70,6 +70,12 @@ export const getCategories = () => req('GET', `${BASE}/categories`);
 export const createCategory = data => req('POST', `${BASE}/categories`, data);
 export const updateCategory = (key, data) => req('PATCH', `${BASE}/categories/${enc(key)}`, data);
 export const deleteCategory = key => req('DELETE', `${BASE}/categories/${enc(key)}`);
+
+/*
+  The tags products carry, each with how many products have it (`{ tag, count }`), most used first. Visitors are
+  counted over the published products only.
+*/
+export const getTags = () => req('GET', `${BASE}/tags`);
 export const getAttributes = (params = {}) => req('GET', `${BASE}/attributes${buildQuery(params)}`);
 export const createAttribute = data => req('POST', `${BASE}/attributes`, data);
 export const updateAttribute = (key, data) => req('PATCH', `${BASE}/attributes/${enc(key)}`, data);

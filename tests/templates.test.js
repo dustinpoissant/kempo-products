@@ -150,19 +150,20 @@ describe('templates', () => {
     assert.deepEqual(ok(await getProduct(product.id)).options, []);
   });
 
-  test('a template can give a product its type, price, price label, description, tags and categories', async () => {
+  test('a template can give a product its type, price, price label, description, short description, tags and categories', async () => {
     ok(await registerProductType('ext-ship', { key: 'physical', name: 'Physical Item' }));
     ok(await createCategory({ name: 'Model cars' }));
-    ok(await createTemplate({ name: 'Priced', product: { productType: 'physical', price: 1999, minimumPrice: 1500, priceLabel: 'Ask us', description: '<p>Hand built</p>', tags: ['Die cast'], categories: ['model-cars'] } }));
+    ok(await createTemplate({ name: 'Priced', product: { productType: 'physical', price: 1999, minimumPrice: 1500, priceLabel: 'Ask us', description: '<p>Hand built</p>', shortDescription: 'Hand built, die cast.', tags: ['Die cast'], categories: ['model-cars'] } }));
     const plain = ok(await createProduct({ name: 'Inherits all', template: 'priced' }));
     assert.equal(plain.productType, 'physical');
     assert.equal(plain.price, 1999);
     assert.equal(plain.minimumPrice, 1500);
     assert.equal(plain.priceLabel, 'Ask us');
     assert.equal(plain.description, '<p>Hand built</p>');
+    assert.equal(plain.shortDescription, 'Hand built, die cast.');
     assert.deepEqual(plain.tags, ['die cast']);
     assert.deepEqual(plain.categories, ['model-cars']);
-    assert.deepEqual(plain.own, { productType: '', price: null, minimumPrice: null, priceLabel: '', description: '', tags: [], categories: [] });
+    assert.deepEqual(plain.own, { productType: '', price: null, minimumPrice: null, priceLabel: '', description: '', shortDescription: '', tags: [], categories: [] });
     assert.equal(ok(await getPrice(plain.id)).unit, 1999);
 
     const own = ok(await createProduct({ name: 'Overrides', template: 'priced', price: 2500, productType: 'generic', tags: ['rare'] }));
@@ -179,6 +180,7 @@ describe('templates', () => {
     ok(await updateTemplate('priced', { product: { productType: 'physical', price: 2999 } }));
     assert.equal(ok(await getProduct(plain.id)).price, 2999);
     assert.equal(ok(await getProduct(plain.id)).description, '');
+    assert.equal(ok(await getProduct(plain.id)).shortDescription, '');
     assert.equal(ok(await getProduct(own.id)).price, 2999);
     ok(await updateProduct(own.id, { template: '' }));
     assert.equal(ok(await getProduct(own.id)).price, null);

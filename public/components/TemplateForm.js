@@ -3,7 +3,7 @@ import Toast from '/kempo-ui/components/Toast.js';
 import { keyFromLabel } from '/products/components/AttributesEditor.js';
 
 /* What a product made from the template starts with, as the Product tab edits it. */
-const BLANK_PRODUCT = { productType: '', price: null, minimumPrice: null, priceLabel: '', description: '', tags: [], categories: [] };
+const BLANK_PRODUCT = { productType: '', price: null, minimumPrice: null, priceLabel: '', description: '', shortDescription: '', tags: [], categories: [] };
 
 const blank = value => value === null || value === undefined || value === '';
 
